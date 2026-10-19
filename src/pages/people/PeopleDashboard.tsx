@@ -1,14 +1,13 @@
 import React from 'react';
+import ComingSoon from '../../components/ComingSoon';
 
-/**
- * Headcount & people operations overview [PEO-21]
- */
 export const PeopleDashboard: React.FC = () => {
   return (
-    <div className="page-container" data-testid="peopledashboard">
-      <h2>PeopleDashboard</h2>
-      <p>Headcount & people operations overview [PEO-21]</p>
-    </div>
+    <ComingSoon
+      moduleName="People & Workforce Operations"
+      category="Core HR Module"
+      description="Employee directory, organizational charts, onboarding checklists, and asset management."
+    />
   );
 };
 

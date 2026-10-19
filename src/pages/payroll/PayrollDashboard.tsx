@@ -1,14 +1,13 @@
 import React from 'react';
+import ComingSoon from '../../components/ComingSoon';
 
-/**
- * Payroll cost & trend analytics [PAY-08]
- */
 export const PayrollDashboard: React.FC = () => {
   return (
-    <div className="page-container" data-testid="payrolldashboard">
-      <h2>PayrollDashboard</h2>
-      <p>Payroll cost & trend analytics [PAY-08]</p>
-    </div>
+    <ComingSoon
+      moduleName="Payroll & Statutory Compliance"
+      category="Payroll & Finance Module"
+      description="Salary register processing, PF/ESI statutory challans, TDS calculation, and payslip distribution."
+    />
   );
 };
 

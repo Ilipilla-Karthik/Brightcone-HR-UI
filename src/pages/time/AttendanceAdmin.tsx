@@ -1,14 +1,13 @@
 import React from 'react';
+import ComingSoon from '../../components/ComingSoon';
 
-/**
- * HR attendance & leave management page [TIM-10, PEO-22]
- */
 export const AttendanceAdmin: React.FC = () => {
   return (
-    <div className="page-container" data-testid="attendanceadmin">
-      <h2>AttendanceAdmin</h2>
-      <p>HR attendance & leave management page [TIM-10, PEO-22]</p>
-    </div>
+    <ComingSoon
+      moduleName="Shift Scheduling & Attendance"
+      category="Workforce Time & Attendance"
+      description="Weekly shift rosters, digital clock-in/out stamps, overtime calculations, and leave balances."
+    />
   );
 };
 

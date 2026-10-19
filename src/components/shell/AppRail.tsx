@@ -1,14 +1,81 @@
 import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ic } from '../icons';
 
-/**
- * Global left app switcher rail (9 apps) [SHE-01]
- */
+interface AppItem {
+  key: string;
+  name: string;
+  color: string;
+  path: string;
+  badge?: number;
+  icon: React.ReactNode;
+}
+
 export const AppRail: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const apps: AppItem[] = [
+    { key: 'people', name: 'People', color: '#12A58E', path: '/people', badge: 3, icon: ic('users', 18) },
+    { key: 'recruit', name: 'Recruit', color: '#7C5CFF', path: '/recruit', icon: ic('briefcase', 18) },
+    { key: 'payroll', name: 'Payroll', color: '#0F9F6E', path: '/payroll', icon: ic('pay', 18) },
+    { key: 'expense', name: 'Expense', color: '#E07A1D', path: '/expense', badge: 2, icon: ic('receipt', 18) },
+    { key: 'sign', name: 'Sign', color: '#D9466F', path: '/doc-sign/dashboard', icon: ic('pen', 18) },
+    { key: 'connect', name: 'Connect', color: '#0BA6CC', path: '/engagement', icon: ic('chat', 18) },
+    { key: 'learn', name: 'Learn', color: '#6366F1', path: '/learn', icon: ic('learn', 18) },
+    { key: 'shift', name: 'Shift', color: '#3B82C4', path: '/time', badge: 2, icon: ic('clock', 18) },
+    { key: 'plus', name: 'People Plus', color: '#0B87FF', path: '/suite', badge: 7, icon: ic('grid', 18) },
+  ];
+
+  const getIsActive = (app: AppItem) => {
+    if (app.key === 'sign') {
+      return (
+        location.pathname.startsWith('/doc-sign') ||
+        location.pathname.startsWith('/sign') ||
+        location.pathname.startsWith('/doc_sign')
+      );
+    }
+    if (app.key === 'plus') return location.pathname === '/suite' || location.pathname === '/';
+    return location.pathname.startsWith(app.path);
+  };
+
   return (
-    <div data-testid="apprail">
-      {/* Global left app switcher rail (9 apps) [SHE-01] */}
-      <span>AppRail</span>
-    </div>
+    <nav className="rail" aria-label="Apps Navigation">
+      {/* Brand Icon Button */}
+      <button
+        type="button"
+        className="rlogo flex items-center justify-center p-1"
+        onClick={() => navigate('/suite')}
+        title="Brightcone Home"
+      >
+        <img
+          src="/logo.png"
+          alt="Brightcone Logo"
+          className="w-9 h-9 object-contain drop-shadow-md transition-transform hover:scale-105"
+        />
+      </button>
+
+      {/* App List */}
+      <div className="rapps">
+        {apps.map((app) => {
+          const isActive = getIsActive(app);
+          return (
+            <button
+              type="button"
+              key={app.key}
+              onClick={() => navigate(app.path)}
+              className={`rapp ${isActive ? 'on' : ''}`}
+              style={{ '--ac': app.color } as React.CSSProperties}
+              title={app.name}
+            >
+              <i>{app.icon}</i>
+              <span>{app.name}</span>
+              {app.badge !== undefined && <em className="bdg">{app.badge}</em>}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
   );
 };
 

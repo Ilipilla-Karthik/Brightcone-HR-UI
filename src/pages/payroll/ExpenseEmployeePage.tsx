@@ -1,14 +1,13 @@
 import React from 'react';
+import ComingSoon from '../../components/ComingSoon';
 
-/**
- * Expense claim submission page [EXP-01]
- */
 export const ExpenseEmployeePage: React.FC = () => {
   return (
-    <div className="page-container" data-testid="expenseemployeepage">
-      <h2>ExpenseEmployeePage</h2>
-      <p>Expense claim submission page [EXP-01]</p>
-    </div>
+    <ComingSoon
+      moduleName="Expense Claims & Reimbursements"
+      category="Finance & Claims Module"
+      description="Business travel reimbursements, receipt file attachments, per diems, and manager approvals."
+    />
   );
 };
 

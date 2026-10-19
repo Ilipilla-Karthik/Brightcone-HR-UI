@@ -1,14 +1,13 @@
 import React from 'react';
+import ComingSoon from '../../components/ComingSoon';
 
-/**
- * Compliance % completion dashboard [DOC-16]
- */
 export const LearnDashboard: React.FC = () => {
   return (
-    <div className="page-container" data-testid="learndashboard">
-      <h2>LearnDashboard</h2>
-      <p>Compliance % completion dashboard [DOC-16]</p>
-    </div>
+    <ComingSoon
+      moduleName="Learn & Corporate LMS"
+      category="Learning & Development Module"
+      description="Mandatory compliance certifications, information security training, and learning paths."
+    />
   );
 };
 

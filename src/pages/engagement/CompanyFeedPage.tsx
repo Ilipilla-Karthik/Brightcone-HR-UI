@@ -1,14 +1,13 @@
 import React from 'react';
+import ComingSoon from '../../components/ComingSoon';
 
-/**
- * Newsfeed, Kudos & announcement wall [EXP-05, DOC-10]
- */
 export const CompanyFeedPage: React.FC = () => {
   return (
-    <div className="page-container" data-testid="companyfeedpage">
-      <h2>CompanyFeedPage</h2>
-      <p>Newsfeed, Kudos & announcement wall [EXP-05, DOC-10]</p>
-    </div>
+    <ComingSoon
+      moduleName="Connect & Company Feed"
+      category="Employee Social & Community"
+      description="Peer-to-peer kudos recognitions, company milestones, leadership broadcasts, and team celebrations."
+    />
   );
 };
 

@@ -1,14 +1,13 @@
 import React from 'react';
+import ComingSoon from '../../components/ComingSoon';
 
-/**
- * Recruitment funnel dashboard [REC-07]
- */
 export const RecruitDashboard: React.FC = () => {
   return (
-    <div className="page-container" data-testid="recruitdashboard">
-      <h2>RecruitDashboard</h2>
-      <p>Recruitment funnel dashboard [REC-07]</p>
-    </div>
+    <ComingSoon
+      moduleName="Recruit & Applicant Tracking System (ATS)"
+      category="Talent Acquisition Module"
+      description="Candidate stage funnel, job vacancy postings, interview scorecards, and referral pipelines."
+    />
   );
 };
 
