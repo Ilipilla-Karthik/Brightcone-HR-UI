@@ -1,23 +1,32 @@
-# Brightcone HR UI
+# React + TypeScript + Vite
 
-Frontend application for Brightcone HR Portal.
+This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
 
-## Architecture & Modules
+Currently, two official plugins are available:
 
-- **App Rail & Shell**: 9-module switcher rail with dynamic sidebar navigation.
-- **Suite**: Global admin, approvals inbox, reports, settings, and backup.
-- **People Plus**: Core HR, employee directory, org chart, onboarding & exit management.
-- **Time & Attendance**: Clock-in/out, shift roster, leave management, holiday calendar.
-- **Payroll & Expenses**: 5-step payroll run wizard, payslips, benefits, statutory filings & claims.
-- **Recruit & ATS**: Funnel pipeline, job boards, referrals, and performance reviews.
-- **DocSign**: E-signatures, document templates, and audit-ready signature workflows.
-- **LMS (Learn)**: Training catalogs, compliance tracking, and course viewer.
-- **Engagement**: Feed, kudos, celebrations calendar, events & helpdesk ticketing.
-- **Advanced HR**: Executive analytics, eNPS pulse surveys, succession & compliance scorecards.
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## Getting Started
+## React Compiler
 
-```bash
-npm install
-npm run dev
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the Oxlint configuration
+
+If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+
+```json
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "options": {
+    "typeAware": true
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  }
+}
 ```
+
+See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
