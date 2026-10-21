@@ -6,6 +6,12 @@ import {
   LearnDashboardMetrics,
   MyAssignment,
   RemindResponse,
+  ReviewCycle,
+  CycleReviewItem,
+  CycleDashboardData,
+  CreateCyclePayload,
+  RateEmployeePayload,
+  RemindReviewResult,
 } from './types';
 
 export const api = axios.create({
@@ -176,6 +182,68 @@ export async function sendReminders(params: {
   }
   const res = await api.post('/learn/remind', params);
   return res.data;
+}
+
+// ---------------------------------------------------------------------------
+// REC-12: Performance Admin API
+// ---------------------------------------------------------------------------
+
+export async function getReviewCycles(): Promise<ReviewCycle[]> {
+  const res = await api.get('/performance/cycles');
+  return res.data;
+}
+
+export async function createReviewCycle(payload: CreateCyclePayload): Promise<ReviewCycle> {
+  const res = await api.post('/performance/cycles', payload);
+  return res.data;
+}
+
+export async function advanceReviewCycle(cycleId: string): Promise<ReviewCycle> {
+  const res = await api.post(`/performance/cycles/${cycleId}/advance`);
+  return res.data;
+}
+
+export async function getCycleDashboard(cycleId: string): Promise<CycleDashboardData> {
+  const res = await api.get(`/performance/cycles/${cycleId}/dashboard`);
+  return res.data;
+}
+
+export async function rateEmployee(
+  cycleId: string,
+  employeeId: string,
+  payload: RateEmployeePayload
+): Promise<CycleReviewItem> {
+  const res = await api.post(`/performance/cycles/${cycleId}/rate/${employeeId}`, payload);
+  return res.data;
+}
+
+export async function remindReview(
+  cycleId: string,
+  employeeId: string
+): Promise<RemindReviewResult> {
+  const res = await api.post(`/performance/cycles/${cycleId}/remind/${employeeId}`);
+  return res.data;
+}
+
+export async function downloadExportRatings(cycleId: string): Promise<void> {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`/api/v1/performance/cycles/${cycleId}/export`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!response.ok) {
+    throw new Error('Failed to export ratings');
+  }
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ratings_${cycleId}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
 }
 
 // =========================================================

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, GraduationCap, LogOut } from 'lucide-react';
+import { LayoutDashboard, BookOpen, GraduationCap, BarChart3, LogOut } from 'lucide-react';
 import { useAuth } from '../../services/authContext';
 import styles from './SidebarNav.module.css';
 
@@ -63,6 +63,17 @@ export const SidebarNav: React.FC<SidebarNavProps> = () => {
             >
               <BookOpen size={16} />
               <span>Courses</span>
+            </NavLink>
+          </div>
+
+          <div className={styles.navGroup}>
+            <h3 className={styles.groupLabel}>Performance</h3>
+            <NavLink
+              to="/performance/admin"
+              className={({ isActive }) => `${styles.navLink} ${isActive ? styles.active : ''}`}
+            >
+              <BarChart3 size={16} />
+              <span>Performance</span>
             </NavLink>
           </div>
         </>

@@ -1,5 +1,40 @@
 /* CourseCatalogueAdmin.module.css — Matching Reference Computed Cascade */
 
+.tabBar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--line, #e2e8f0);
+  padding-bottom: 12px;
+}
+
+.tabBtn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted, #64748b);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+
+.tabBtn:hover {
+  color: var(--text, #0f172a);
+  background: var(--surface-2, #f1f5f9);
+}
+
+.tabActive {
+  color: var(--brand, #2563eb);
+  background: var(--info-bg, #eff6ff);
+  font-weight: 600;
+}
+
 .head {
   display: flex;
   align-items: flex-end;

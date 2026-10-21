@@ -22,10 +22,16 @@ export const EmployeeLearnPage: React.FC = () => {
   const [activeLessonAssignment, setActiveLessonAssignment] = useState<MyAssignment | null>(null);
   const [certificateAssignment, setCertificateAssignment] = useState<MyAssignment | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
 
   const addToast = (type: 'success' | 'error' | 'info', text: string) => {
-    const id = `${Date.now()}-${Math.random()}`;
-    setToasts((prev) => [...prev, { id, type, text }]);
+    setToasts((prev) => {
+      if (prev.some((t) => t.text === text)) {
+        return prev;
+      }
+      const id = `${Date.now()}-${Math.random()}`;
+      return [...prev.slice(-2), { id, type, text }];
+    });
   };
 
   const removeToast = (id: string) => {
@@ -52,22 +58,33 @@ export const EmployeeLearnPage: React.FC = () => {
     loadAssignments();
   }, [loadAssignments]);
 
-  const handleUpdateProgress = async (assignmentId: string, newProgress: number) => {
+  const handleUpdateProgress = async (assignmentId: string, newProgress: number): Promise<boolean> => {
+    if (isUpdatingProgress) return false;
+    const targetId = assignmentId || activeLessonAssignment?.assignment_id || (activeLessonAssignment as any)?.id;
+    if (!targetId) {
+      addToast('error', 'Assignment record not found. Please refresh the page.');
+      return false;
+    }
+
     try {
-      const updated = await updateAssignmentProgress(assignmentId, newProgress);
+      setIsUpdatingProgress(true);
+      const updated = await updateAssignmentProgress(targetId, newProgress);
       addToast(
         'success',
         newProgress >= 100
-          ? `Attestation verified! Course "${updated.course_title}" completed. Certificate unlocked.`
+          ? `Self-reported completion saved for "${updated.course_title || 'Course'}".`
           : `Progress updated: ${newProgress}%`
       );
       await loadAssignments();
-      if (activeLessonAssignment && activeLessonAssignment.assignment_id === assignmentId) {
+      if (activeLessonAssignment) {
         setActiveLessonAssignment(updated);
       }
+      return true;
     } catch {
-      addToast('error', 'Failed to update course progress.');
-      throw new Error('Update failed');
+      addToast('error', 'Failed to update course progress. Please retry.');
+      return false;
+    } finally {
+      setIsUpdatingProgress(false);
     }
   };
 

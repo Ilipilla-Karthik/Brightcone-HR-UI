@@ -130,3 +130,67 @@ export interface ApiResponse<T> {
   data: T;
   message?: string;
 }
+
+// ---------------------------------------------------------------------------
+// REC-12: Performance Admin Types
+// ---------------------------------------------------------------------------
+
+export type ReviewStageIndex = 0 | 1 | 2 | 3 | 4;
+
+export interface ReviewCycle {
+  id: string;
+  name: string;
+  stage: number;
+  self_review_due: string;
+  status: 'Active' | 'Archived' | 'Completed';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CycleReviewItem {
+  id: string;
+  cycle_id: string;
+  employee_id: string;
+  employee_name: string;
+  manager_name: string;
+  department: string;
+  self_review_status: 'Submitted' | 'Not submitted';
+  self_rating?: string | null;
+  goals_count: number;
+  rating?: string | null;
+  recommended_increment_percentage?: number | null;
+  rated_by?: string | null;
+  rated_at?: string | null;
+  last_reminded_at?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CycleDashboardSummary {
+  self_reviews_submitted: number;
+  manager_reviews_done: number;
+  total_eligible: number;
+  goals_count: number;
+}
+
+export interface CycleDashboardData {
+  cycle: ReviewCycle;
+  summary: CycleDashboardSummary;
+  reviews: CycleReviewItem[];
+}
+
+export interface CreateCyclePayload {
+  name: string;
+  self_review_due: string;
+}
+
+export interface RateEmployeePayload {
+  rating: string;
+  recommended_increment_percentage?: number | null;
+}
+
+export interface RemindReviewResult {
+  status: 'queued' | 'skipped' | 'failed';
+  message: string;
+  reason?: string | null;
+}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Edit2 } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { Plus, Edit2, BarChart3, GraduationCap } from 'lucide-react';
 import { getCourses, createCourse, updateCourse, sendReminders } from '../../services/api';
 import { Course, CreateCoursePayload } from '../../services/types';
 import AddEditCourseModal from '../../components/kit/AddEditCourseModal';
@@ -87,6 +88,28 @@ export const CourseCatalogueAdmin: React.FC = () => {
 
   return (
     <div data-testid="coursecatalogueadmin">
+      {/* Tab Navigation: Performance & Learning Admin */}
+      <div className={styles.tabBar} role="tablist" aria-label="Admin Sections">
+        <NavLink
+          to="/performance/admin"
+          className={styles.tabBtn}
+          role="tab"
+          aria-selected="false"
+        >
+          <BarChart3 size={16} />
+          <span>Performance</span>
+        </NavLink>
+        <NavLink
+          to="/learn/courses"
+          className={`${styles.tabBtn} ${styles.tabActive}`}
+          role="tab"
+          aria-selected="true"
+        >
+          <GraduationCap size={16} />
+          <span>Learning Admin</span>
+        </NavLink>
+      </div>
+
       <header className={styles.head}>
         <div className={styles.titleArea}>
           <div className={styles.eyebrow}>Catalogue Management</div>

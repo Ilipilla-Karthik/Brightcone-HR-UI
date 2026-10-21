@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, ShieldCheck, Award } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, CheckCircle2, ShieldCheck, Award, AlertCircle } from 'lucide-react';
 import { MyAssignment } from '../../services/types';
 import styles from './LessonPlayerModal.module.css';
 
@@ -7,7 +7,7 @@ interface LessonPlayerModalProps {
   isOpen: boolean;
   onClose: () => void;
   assignment: MyAssignment | null;
-  onUpdateProgress: (assignmentId: string, newProgress: number) => Promise<void>;
+  onUpdateProgress: (assignmentId: string, newProgress: number) => Promise<boolean>;
   onViewCertificate: () => void;
 }
 
@@ -20,39 +20,94 @@ export const LessonPlayerModal: React.FC<LessonPlayerModalProps> = ({
 }) => {
   const [currentProgress, setCurrentProgress] = useState(0);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [confirmedAttestation, setConfirmedAttestation] = useState(true);
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  const modalRef = useRef<HTMLDivElement>(null);
+  const prevActiveElement = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (assignment) {
-      setCurrentProgress(assignment.progress);
+      setCurrentProgress(assignment.progress || 0);
+      setLocalError(null);
     }
   }, [assignment]);
 
+  // Background scroll lock
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
     if (isOpen) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [isOpen]);
+
+  // Focus trap, Escape key, and focus restoration
+  useEffect(() => {
+    if (isOpen) {
+      prevActiveElement.current = document.activeElement as HTMLElement;
+
+      const timer = setTimeout(() => {
+        const closeBtn = modalRef.current?.querySelector('button');
+        closeBtn?.focus();
+      }, 50);
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          onClose();
+          return;
+        }
+
+        if (e.key === 'Tab' && modalRef.current) {
+          const focusables = modalRef.current.querySelectorAll<HTMLElement>(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          );
+          if (focusables.length === 0) return;
+          const first = focusables[0];
+          const last = focusables[focusables.length - 1];
+
+          if (e.shiftKey && document.activeElement === first) {
+            last.focus();
+            e.preventDefault();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            first.focus();
+            e.preventDefault();
+          }
+        }
+      };
+
       window.addEventListener('keydown', handleKeyDown);
-      return () => window.removeEventListener('keydown', handleKeyDown);
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('keydown', handleKeyDown);
+        prevActiveElement.current?.focus();
+      };
     }
   }, [isOpen, onClose]);
 
   if (!isOpen || !assignment) return null;
 
-  const handleStepComplete = async (targetProgress: number) => {
-    try {
-      setIsUpdating(true);
-      await onUpdateProgress(assignment.assignment_id, targetProgress);
-      setCurrentProgress(targetProgress);
-    } catch {
-      // Handled in parent toast
-    } finally {
-      setIsUpdating(false);
-    }
-  };
+  const targetId = assignment.assignment_id || (assignment as any).id;
+  const courseTitle = assignment.course_title || 'Course Details';
+  const courseType = assignment.course_type || 'Training';
+  const duration = assignment.duration || 'Standard duration';
+  const isCompleted = currentProgress >= 100 || assignment.status === 'Completed';
 
-  const isModule1Done = currentProgress >= 50;
-  const isModule2Done = currentProgress >= 100;
+  const handleAttestCompletion = async () => {
+    if (isUpdating || isCompleted) return;
+    setLocalError(null);
+    setIsUpdating(true);
+
+    const success = await onUpdateProgress(targetId, 100);
+    if (success) {
+      setCurrentProgress(100);
+    } else {
+      setLocalError('Failed to record completion on the server. Please verify your connection and retry.');
+    }
+    setIsUpdating(false);
+  };
 
   return (
     <div
@@ -63,6 +118,7 @@ export const LessonPlayerModal: React.FC<LessonPlayerModalProps> = ({
       role="presentation"
     >
       <div
+        ref={modalRef}
         className={styles.modal}
         role="dialog"
         aria-modal="true"
@@ -71,10 +127,10 @@ export const LessonPlayerModal: React.FC<LessonPlayerModalProps> = ({
         <div className={styles.header}>
           <div>
             <h2 id="lesson-title" className={styles.title}>
-              {assignment.course_title}
+              {courseTitle}
             </h2>
             <p className={styles.meta}>
-              {assignment.course_type} Course · {assignment.duration}
+              {courseType} Course · {duration}
               {assignment.due_date ? ` · Due ${assignment.due_date}` : ''}
             </p>
           </div>
@@ -103,70 +159,64 @@ export const LessonPlayerModal: React.FC<LessonPlayerModalProps> = ({
           </div>
 
           <div className={styles.attestNote}>
-            <ShieldCheck size={18} style={{ color: '#6366F1', flexShrink: 0 }} />
+            <ShieldCheck size={18} style={{ color: '#0B6FDB', flexShrink: 0 }} />
             <span>
-              <strong>Supported Learning Flow:</strong> Modules are verified through employee self-reported completion and compliance attestation.
+              <strong>Supported Learning Flow:</strong> Completion is verified through employee self-reported completion and policy attestation.
             </span>
           </div>
 
-          <div className={styles.lessonCard}>
-            <div className={styles.lessonHeader}>
-              <h3 className={styles.lessonTitle}>Module 1: Framework & Core Principles</h3>
-              {isModule1Done ? (
-                <span style={{ color: '#15A36B', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600 }}>
-                  <CheckCircle2 size={16} /> Completed
-                </span>
-              ) : (
-                <span style={{ color: '#5B6787', fontSize: 12.5, fontWeight: 500 }}>Part 1 of 2</span>
-              )}
+          {localError && (
+            <div className={styles.errorBanner} role="alert">
+              <AlertCircle size={16} style={{ color: '#D93D4A', flexShrink: 0 }} />
+              <span>{localError}</span>
             </div>
-            <p className={styles.lessonDesc}>
-              Review the statutory compliance policies, security standards, and code of conduct governing Brightcone operations. Understand data protection protocols and reporting obligations.
-            </p>
-            {isModule1Done ? (
-              <button type="button" className={`${styles.btnAction} ${styles.btnCompleted}`}>
-                ✓ Module Completed
-              </button>
-            ) : (
-              <button
-                type="button"
-                className={`${styles.btnAction} ${styles.btnPrimary}`}
-                onClick={() => handleStepComplete(50)}
-                disabled={isUpdating}
-              >
-                {isUpdating ? 'Saving...' : 'Attest & Complete Module 1 (50%)'}
-              </button>
-            )}
-          </div>
+          )}
 
           <div className={styles.lessonCard}>
             <div className={styles.lessonHeader}>
-              <h3 className={styles.lessonTitle}>Module 2: Scenarios & Compliance Attestation</h3>
-              {isModule2Done ? (
-                <span style={{ color: '#15A36B', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 600 }}>
+              <h3 className={styles.lessonTitle}>{courseTitle} — Course Overview</h3>
+              {isCompleted ? (
+                <span className={styles.completedBadge}>
                   <CheckCircle2 size={16} /> Self-reported complete
                 </span>
               ) : (
-                <span style={{ color: '#5B6787', fontSize: 12.5, fontWeight: 500 }}>Part 2 of 2</span>
+                <span className={styles.statusBadge}>Required Coursework</span>
               )}
             </div>
             <p className={styles.lessonDesc}>
-              Work through real-world scenarios regarding incident reporting, access management, and integrity guidelines. Complete final self-attestation to generate official certification.
+              Review the statutory compliance policies, guidelines, and operating standards for <strong>{courseTitle}</strong>. Verify your understanding of key protocols and reporting requirements.
             </p>
-            {isModule2Done ? (
-              <button type="button" className={`${styles.btnAction} ${styles.btnCompleted}`}>
-                ✓ Self-reported complete
-              </button>
+
+            {isCompleted ? (
+              <div className={styles.completionConfirmed}>
+                <CheckCircle2 size={18} style={{ color: '#15A36B', flexShrink: 0 }} />
+                <div>
+                  <strong>Completion Confirmed</strong>
+                  <p>Your self-reported completion has been stored in your learning record.</p>
+                </div>
+              </div>
             ) : (
-              <button
-                type="button"
-                className={`${styles.btnAction} ${styles.btnPrimary}`}
-                onClick={() => handleStepComplete(100)}
-                disabled={isUpdating || !isModule1Done}
-                title={!isModule1Done ? 'Complete Module 1 first' : undefined}
-              >
-                {isUpdating ? 'Saving...' : 'Attest Completion & Finish (100%)'}
-              </button>
+              <div className={styles.attestationSection}>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={confirmedAttestation}
+                    onChange={(e) => setConfirmedAttestation(e.target.checked)}
+                  />
+                  <span>
+                    I confirm that I have reviewed the required training material for <strong>{courseTitle}</strong> and acknowledge the policy requirements.
+                  </span>
+                </label>
+
+                <button
+                  type="button"
+                  className={`${styles.btnAction} ${styles.btnPrimary}`}
+                  onClick={handleAttestCompletion}
+                  disabled={isUpdating || !confirmedAttestation}
+                >
+                  {isUpdating ? 'Saving completion...' : 'Self-report course completion (100%)'}
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -174,13 +224,12 @@ export const LessonPlayerModal: React.FC<LessonPlayerModalProps> = ({
         <div className={styles.footer}>
           <button
             type="button"
-            className={styles.closeBtn}
+            className={styles.closeBtnFooter}
             onClick={onClose}
-            style={{ width: 'auto', padding: '6px 14px' }}
           >
             Close
           </button>
-          {isModule2Done && (
+          {isCompleted && (
             <button
               type="button"
               className={`${styles.btnAction} ${styles.btnPrimary}`}
@@ -191,7 +240,7 @@ export const LessonPlayerModal: React.FC<LessonPlayerModalProps> = ({
               style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
             >
               <Award size={15} />
-              <span>View Verified Certificate</span>
+              <span>View Completion Record</span>
             </button>
           )}
         </div>
