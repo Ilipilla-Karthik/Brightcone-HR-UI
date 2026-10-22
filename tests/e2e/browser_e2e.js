@@ -233,6 +233,56 @@ async function runBrowserFlow() {
   });
   await new Promise((r) => setTimeout(r, 2000));
 
+  // 3C. Admin seeds fresh past-due mandatory course for REC-13 testing via Node fetch
+  console.log('3C. Admin seeding fresh past-due mandatory course for REC-13 testing...');
+  const loginAdminRes = await fetch('http://127.0.0.1:5155/api/v1/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'ananya.rao@brightcone.ai', password: 'Admin@123' }),
+  });
+  const adminData = await loginAdminRes.json();
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const courseTitle = `REC-13 E2E Past Due Compliance ${Date.now()}`;
+  const unavailTitle = `REC-13 E2E No-Resource Course ${Date.now()}`;
+
+  // Course A: with valid learning resource
+  const createRes = await fetch('http://127.0.0.1:5155/api/v1/learn/courses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + adminData.token,
+    },
+    body: JSON.stringify({
+      title: courseTitle,
+      course_type: 'Mandatory',
+      duration: '45 mins',
+      audience: 'Everyone',
+      due_date: yesterday,
+      content_type: 'document',
+      content_url: 'https://example.com/',
+    }),
+  });
+  const createdCourse = await createRes.json();
+  console.log('Created test course with accessible test resource:', createdCourse.id, createdCourse.title, createdCourse.content_url);
+
+  // Course B: without learning resource (honest unavailable state)
+  const createUnavailRes = await fetch('http://127.0.0.1:5155/api/v1/learn/courses', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + adminData.token,
+    },
+    body: JSON.stringify({
+      title: unavailTitle,
+      course_type: 'Mandatory',
+      duration: '30 mins',
+      audience: 'Everyone',
+      due_date: yesterday,
+    }),
+  });
+  const createdUnavailCourse = await createUnavailRes.json();
+  console.log('Created test course without resource:', createdUnavailCourse.id, createdUnavailCourse.title);
+
   console.log('\n--- VERIFICATION STEP 4: Sign Out & Token Clearance ---');
   console.log('Signing out admin...');
   await cdpRequest(ws, reqId++, 'Runtime.evaluate', {
@@ -268,55 +318,179 @@ async function runBrowserFlow() {
     throw new Error(`Expected employee to land on /learn/my-learning but got ${empLoc.result.value}`);
   }
 
-  // Capture screenshot of My Learning page
-  const myLearningScreen = await cdpRequest(ws, reqId++, 'Page.captureScreenshot', { format: 'png' });
-  const myLearningPath = path.join(outDir, 'prod_employee_my_learning_initial.png');
-  fs.writeFileSync(myLearningPath, Buffer.from(myLearningScreen.data, 'base64'));
-  console.log(`Saved My Learning initial view: ${myLearningPath}`);
+  // 5A-1. Explicitly verify REC-13 Course Cards, Overdue Flags, and Unavailable Indicators
+  console.log('5A-1. Inspecting Course Cards, Overdue Flags, and Unavailable Resource Tags...');
+  const cardEvaluation = await cdpRequest(ws, reqId++, 'Runtime.evaluate', {
+    expression: `
+      (() => {
+        const cards = Array.from(document.querySelectorAll('div[class*="courseCard"]'));
+        const overdueBadges = Array.from(document.querySelectorAll('[data-testid="overdue-badge"]')).map(b => b.textContent.trim());
+        const unavailableTags = Array.from(document.querySelectorAll('[data-testid="no-material-indicator"]')).map(t => t.textContent.trim());
+        const cardDetails = cards.map(c => {
+          const title = c.querySelector('h3')?.textContent?.trim() || '';
+          const meta = c.querySelector('p[class*="cardMeta"]')?.textContent?.trim() || '';
+          const badges = Array.from(c.querySelectorAll('span[class*="pill"]')).map(p => p.textContent.trim());
+          const hasOverdue = badges.some(b => b.includes('Overdue'));
+          const btn = c.querySelector('button')?.textContent?.trim() || '';
+          const noMaterial = c.querySelector('[data-testid="no-material-indicator"]')?.textContent?.trim() || '';
+          return { title, meta, badges, hasOverdue, btn, noMaterial };
+        });
+        return { totalCards: cards.length, overdueBadges, unavailableTagsCount: unavailableTags.length, cardDetails };
+      })()
+    `,
+    returnByValue: true,
+  });
+  console.log('REC-13 Card Evaluation summary:', {
+    totalCards: cardEvaluation.result.value.totalCards,
+    overdueBadgesCount: cardEvaluation.result.value.overdueBadges.length,
+    unavailableTagsCount: cardEvaluation.result.value.unavailableTagsCount,
+  });
 
-  // 5B. Open Lesson Player Modal
-  console.log('5B. Opening Course Player for first assigned course...');
+  if (cardEvaluation.result.value.totalCards === 0) {
+    throw new Error('No course cards displayed on My Learning page!');
+  }
+  if (cardEvaluation.result.value.overdueBadges.length === 0) {
+    throw new Error('Expected at least one Overdue · Mandatory badge for past-due mandatory course, but found none!');
+  }
+  if (cardEvaluation.result.value.unavailableTagsCount === 0) {
+    throw new Error('Expected at least one "Course material has not been added yet." tag for resource-less courses, but found none!');
+  }
+  console.log(`Verified ${cardEvaluation.result.value.unavailableTagsCount} honest "Course material has not been added yet." indicator(s).`);
+
+  // Capture screenshot of My Learning page (desktop)
+  const myLearningScreen = await cdpRequest(ws, reqId++, 'Page.captureScreenshot', { format: 'png' });
+  const myLearningPath = path.join(outDir, 'rec13_employee_cards.png');
+  fs.writeFileSync(myLearningPath, Buffer.from(myLearningScreen.data, 'base64'));
+  console.log(`Saved My Learning cards view: ${myLearningPath}`);
+
+  // Scroll target card with material into view
   await cdpRequest(ws, reqId++, 'Runtime.evaluate', {
     expression: `
       (() => {
-        const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Start') || b.textContent.includes('Continue'));
+        const cards = Array.from(document.querySelectorAll('div[class*="courseCard"]'));
+        const targetCard = cards.find(c => c.textContent.includes('${courseTitle}'));
+        if (targetCard) targetCard.scrollIntoView({ behavior: 'instant', block: 'center' });
+      })()
+    `,
+  });
+  await new Promise((r) => setTimeout(r, 600));
+
+  const overdueFlagScreen = await cdpRequest(ws, reqId++, 'Page.captureScreenshot', { format: 'png' });
+  const overdueFlagPath = path.join(outDir, 'rec13_overdue_flag.png');
+  fs.writeFileSync(overdueFlagPath, Buffer.from(overdueFlagScreen.data, 'base64'));
+  console.log(`Saved Overdue Flag view: ${overdueFlagPath}`);
+
+  // 5B. Open Lesson Player Modal for course with attached resource
+  console.log(`5B. Opening Course Player for course with material: "${courseTitle}"...`);
+  await cdpRequest(ws, reqId++, 'Runtime.evaluate', {
+    expression: `
+      (() => {
+        const cards = Array.from(document.querySelectorAll('div[class*="courseCard"]'));
+        const targetCard = cards.find(c => c.textContent.includes('${courseTitle}'));
+        const btn = targetCard ? targetCard.querySelector('button') : null;
         if (btn) btn.click();
       })()
     `,
   });
   await new Promise((r) => setTimeout(r, 1500));
 
-  // Check Lesson Modal Header & Metadata
+  // Check Lesson Modal Header, Metadata, and Resource link flow
   const modalCheck = await cdpRequest(ws, reqId++, 'Runtime.evaluate', {
     expression: `
       (() => {
         const modal = !!document.querySelector('div[role="dialog"]');
         const title = document.querySelector('#lesson-title')?.textContent?.trim() || '';
         const meta = document.querySelector('p[class*="meta"]')?.textContent?.trim() || '';
+        const openMaterialBtn = document.querySelector('#btn-open-course-material');
+        const openMaterialHref = openMaterialBtn?.getAttribute('href') || '';
+        const openMaterialRel = openMaterialBtn?.getAttribute('rel') || '';
+        const openMaterialTarget = openMaterialBtn?.getAttribute('target') || '';
+        const hasResourceType = !!document.querySelector('span[class*="typeBadge"]');
+        const resourceTypeBadge = document.querySelector('span[class*="typeBadge"]')?.textContent?.trim() || '';
+        const hasAttestNotice = document.body.textContent.includes('Completion is self-reported by the employee.');
+        const hasProviderNotice = document.body.textContent.includes('provider sign-in may be required');
         const hasCheckbox = !!document.querySelector('input[type="checkbox"]');
         const attestBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Self-report') || b.textContent.includes('Attest'));
         const attestBtnText = attestBtn?.textContent?.trim() || '';
-        return { modal, title, meta, hasCheckbox, attestBtnText };
+        return {
+          modal,
+          title,
+          meta,
+          hasOpenMaterial: !!openMaterialBtn,
+          openMaterialHref,
+          openMaterialRel,
+          openMaterialTarget,
+          hasResourceType,
+          resourceTypeBadge,
+          hasAttestNotice,
+          hasProviderNotice,
+          hasCheckbox,
+          attestBtnText
+        };
       })()
     `,
     returnByValue: true,
   });
   console.log('Lesson Player Modal verification:', modalCheck.result.value);
-  if (!modalCheck.result.value.title || modalCheck.result.value.title === 'Course ·') {
-    throw new Error(`Invalid modal title: "${modalCheck.result.value.title}"`);
+  if (!modalCheck.result.value.modal) {
+    throw new Error('Lesson modal did not open!');
+  }
+  if (!modalCheck.result.value.hasOpenMaterial) {
+    throw new Error('Expected "Open course material" action button in modal, but none found!');
+  }
+  if (modalCheck.result.value.openMaterialTarget !== '_blank' || !modalCheck.result.value.openMaterialRel.includes('noopener')) {
+    throw new Error(`Expected target="_blank" and rel containing "noopener noreferrer", got target="${modalCheck.result.value.openMaterialTarget}" rel="${modalCheck.result.value.openMaterialRel}"`);
+  }
+  if (!modalCheck.result.value.hasAttestNotice) {
+    throw new Error('Expected exact wording "Completion is self-reported by the employee.", but not found!');
+  }
+  if (!modalCheck.result.value.hasProviderNotice) {
+    throw new Error('Expected provider sign-in notice, but not found!');
   }
 
-  // Capture screenshot of opened Lesson Player Modal
+  // Capture screenshot of opened Lesson Player Modal with Resource link
   const modalScreen = await cdpRequest(ws, reqId++, 'Page.captureScreenshot', { format: 'png' });
-  const modalPath = path.join(outDir, 'prod_lesson_player_open.png');
+  const modalPath = path.join(outDir, 'rec13_take_course.png');
   fs.writeFileSync(modalPath, Buffer.from(modalScreen.data, 'base64'));
   console.log(`Saved Lesson Player modal screenshot: ${modalPath}`);
 
-  // 5C. Execute Self-Reported Completion
-  console.log('5C. Clicking Self-report course completion button...');
+  // 5B-2. Verify actual content loads, not only the href or link attributes
+  console.log(`5B-2. Verifying actual course material content loads from ${modalCheck.result.value.openMaterialHref}...`);
+  const materialFetch = await fetch(modalCheck.result.value.openMaterialHref);
+  const materialBody = await materialFetch.text();
+  console.log(`External resource HTTP Status: ${materialFetch.status} ${materialFetch.statusText}, Content length: ${materialBody.length} bytes`);
+  if (!materialFetch.ok || !materialBody.includes('Example Domain')) {
+    throw new Error(`Failed to load actual course material content from ${modalCheck.result.value.openMaterialHref}!`);
+  }
+  console.log('Verified: external material returned HTTP 200 OK and loaded authentic content.');
+
+  // 5B-3. Verify opening material alone does NOT mark the assignment completed
+  console.log('5B-3. Verifying opening material alone does NOT mark assignment completed...');
+  const beforeAttestCheck = await cdpRequest(ws, reqId++, 'Runtime.evaluate', {
+    expression: `
+      (() => {
+        const isComplete = Array.from(document.querySelectorAll('span, div, b')).some(el => el.textContent.includes('Self-reported complete'));
+        const hasCertBtn = Array.from(document.querySelectorAll('button')).some(b => b.textContent.includes('View Completion Record'));
+        const checkboxChecked = document.querySelector('input[type="checkbox"]')?.checked || false;
+        return { isComplete, hasCertBtn, checkboxChecked };
+      })()
+    `,
+    returnByValue: true,
+  });
+  console.log('State before attestation:', beforeAttestCheck.result.value);
+  if (beforeAttestCheck.result.value.isComplete || beforeAttestCheck.result.value.hasCertBtn) {
+    throw new Error('Opening course material improperly marked the assignment completed!');
+  }
+
+  // 5C. Check attestation checkbox and execute Self-Reported Completion
+  console.log('5C. Checking attestation checkbox and submitting self-reported completion...');
   await cdpRequest(ws, reqId++, 'Runtime.evaluate', {
     expression: `
       (() => {
+        const cb = document.querySelector('input[type="checkbox"]');
+        if (cb && !cb.checked) {
+          cb.click();
+        }
         const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Self-report course completion'));
         if (btn) btn.click();
       })()
@@ -344,7 +518,7 @@ async function runBrowserFlow() {
 
   // Capture screenshot of completed state in modal
   const completedModalScreen = await cdpRequest(ws, reqId++, 'Page.captureScreenshot', { format: 'png' });
-  const completedModalPath = path.join(outDir, 'prod_lesson_player_completed.png');
+  const completedModalPath = path.join(outDir, 'rec13_lesson_player_completed.png');
   fs.writeFileSync(completedModalPath, Buffer.from(completedModalScreen.data, 'base64'));
   console.log(`Saved Completed Lesson Player screenshot: ${completedModalPath}`);
 
@@ -362,7 +536,7 @@ async function runBrowserFlow() {
     await new Promise((r) => setTimeout(r, 1200));
 
     const certScreen = await cdpRequest(ws, reqId++, 'Page.captureScreenshot', { format: 'png' });
-    const certPath = path.join(outDir, 'prod_certificate_record.png');
+    const certPath = path.join(outDir, 'rec13_certificate_modal.png');
     fs.writeFileSync(certPath, Buffer.from(certScreen.data, 'base64'));
     console.log(`Saved Certificate record screenshot: ${certPath}`);
 
@@ -383,27 +557,135 @@ async function runBrowserFlow() {
   });
   await new Promise((r) => setTimeout(r, 800));
 
-  // 5E. Verify Persisted Card on /learn/my-learning
+  // 5E. Verify Persisted Card on /learn/my-learning after reload
+  console.log('5E. Reloading page to verify persistence across page refresh...');
+  await cdpRequest(ws, reqId++, 'Page.reload');
+  await new Promise((r) => setTimeout(r, 2000));
+
   const cardCheck = await cdpRequest(ws, reqId++, 'Runtime.evaluate', {
     expression: `
       (() => {
         const has100 = Array.from(document.querySelectorAll('span, div')).some(el => el.textContent.includes('100% (Self-reported)'));
-        const hasCertButton = Array.from(document.querySelectorAll('button')).some(b => b.textContent.includes('Certificate'));
+        const hasCertButton = Array.from(document.querySelectorAll('button')).some(b => b.textContent.includes('Completion record'));
         return { has100, hasCertButton };
       })()
     `,
     returnByValue: true,
   });
-  console.log('My Learning persisted card check:', cardCheck.result.value);
+  console.log('My Learning persisted card check after refresh:', cardCheck.result.value);
+  if (!cardCheck.result.value.has100 || !cardCheck.result.value.hasCertButton) {
+    throw new Error('Course completion did not persist after page refresh!');
+  }
 
-  // Capture final My Learning view
-  const finalScreen = await cdpRequest(ws, reqId++, 'Page.captureScreenshot', { format: 'png' });
-  const finalPath = path.join(outDir, 'prod_employee_my_learning_final.png');
-  fs.writeFileSync(finalPath, Buffer.from(finalScreen.data, 'base64'));
-  console.log(`Saved final My Learning view: ${finalPath}`);
+  // 5E-2. Verify persistence across Logout and Login
+  console.log('5E-2. Testing persistence across Logout and Login...');
+  await cdpRequest(ws, reqId++, 'Runtime.evaluate', {
+    expression: `document.querySelector('button[title="Sign out"]')?.click();`,
+  });
+  await new Promise((r) => setTimeout(r, 1500));
 
-  // 5F. Verify Employee is Blocked from Performance Admin
-  console.log('5F. Verifying Employee is blocked from /performance/admin...');
+  // Log in as Rahul again
+  await cdpRequest(ws, reqId++, 'Runtime.evaluate', {
+    expression: `
+      (() => {
+        function setReactInput(input, val) {
+          const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+          setter.call(input, val);
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        setReactInput(document.querySelector('#email'), 'rahul.varma@brightcone.ai');
+        setReactInput(document.querySelector('#password'), 'Welcome@123');
+        document.querySelector('button[type="submit"]').click();
+      })()
+    `,
+  });
+  await new Promise((r) => setTimeout(r, 2000));
+
+  const reloginCardCheck = await cdpRequest(ws, reqId++, 'Runtime.evaluate', {
+    expression: `
+      (() => {
+        const has100 = Array.from(document.querySelectorAll('span, div')).some(el => el.textContent.includes('100% (Self-reported)'));
+        const hasCertButton = Array.from(document.querySelectorAll('button')).some(b => b.textContent.includes('Completion record'));
+        return { has100, hasCertButton };
+      })()
+    `,
+    returnByValue: true,
+  });
+  console.log('Persistence check after logout/login:', reloginCardCheck.result.value);
+  if (!reloginCardCheck.result.value.has100 || !reloginCardCheck.result.value.hasCertButton) {
+    throw new Error('Course completion did not persist across logout/login!');
+  }
+
+  // 5E-3. Cross-Employee Authorization Check (Employee 2 cannot access Rahul's assignment)
+  console.log('5E-3. Testing cross-employee assignment access rejection...');
+  const empLoginRes = await fetch('http://127.0.0.1:5155/api/v1/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'rahul.varma@brightcone.ai', password: 'Welcome@123' }),
+  });
+  const empData = await empLoginRes.json();
+  const rahulAssRes = await fetch('http://127.0.0.1:5155/api/v1/learn/my-learning', {
+    headers: { 'Authorization': 'Bearer ' + empData.token }
+  });
+  const rahulAssignments = await rahulAssRes.json();
+  const rahulTargetAss = rahulAssignments.find(a => a.course_id === createdCourse.id);
+
+  if (rahulTargetAss) {
+    const emp2LoginRes = await fetch('http://127.0.0.1:5155/api/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'user2@example.com', password: '12341234' }),
+    });
+    const emp2Data = await emp2LoginRes.json();
+
+    const tamperGetRes = await fetch(`http://127.0.0.1:5155/api/v1/learn/assignments/${rahulTargetAss.id}`, {
+      headers: { 'Authorization': 'Bearer ' + emp2Data.token }
+    });
+    console.log(`Cross-employee GET assignment status code: ${tamperGetRes.status}`);
+    if (tamperGetRes.status !== 401 && tamperGetRes.status !== 403) {
+      throw new Error(`Expected 401/403 when user2 accesses Rahul's assignment, got ${tamperGetRes.status}`);
+    }
+
+    const tamperPostRes = await fetch(`http://127.0.0.1:5155/api/v1/learn/assignments/${rahulTargetAss.id}/progress`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + emp2Data.token
+      },
+      body: JSON.stringify({ progress: 100 })
+    });
+    console.log(`Cross-employee POST assignment progress status code: ${tamperPostRes.status}`);
+    if (tamperPostRes.status !== 401 && tamperPostRes.status !== 403) {
+      throw new Error(`Expected 401/403 when user2 tampers with Rahul's assignment progress, got ${tamperPostRes.status}`);
+    }
+  }
+
+  // 5F. Verify Mobile Responsive Layout (375x812)
+  console.log('5F. Testing Mobile Viewport (375x812)...');
+  await cdpRequest(ws, reqId++, 'Emulation.setDeviceMetricsOverride', {
+    width: 375,
+    height: 812,
+    deviceScaleFactor: 2,
+    mobile: true,
+  });
+  await new Promise((r) => setTimeout(r, 1000));
+
+  const mobileScreen = await cdpRequest(ws, reqId++, 'Page.captureScreenshot', { format: 'png' });
+  const mobilePath = path.join(outDir, 'rec13_mobile_learning.png');
+  fs.writeFileSync(mobilePath, Buffer.from(mobileScreen.data, 'base64'));
+  console.log(`Saved Mobile Learning screenshot: ${mobilePath}`);
+
+  // Restore Desktop Viewport
+  await cdpRequest(ws, reqId++, 'Emulation.setDeviceMetricsOverride', {
+    width: 1280,
+    height: 800,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
+  await new Promise((r) => setTimeout(r, 500));
+
+  // 5G. Verify Employee is Blocked from Performance Admin
+  console.log('5G. Verifying Employee is blocked from /performance/admin...');
   await cdpRequest(ws, reqId++, 'Page.navigate', { url: 'http://127.0.0.1:3000/performance/admin' });
   await new Promise((r) => setTimeout(r, 2000));
   const blockedLoc = await cdpRequest(ws, reqId++, 'Runtime.evaluate', { expression: 'window.location.pathname' });

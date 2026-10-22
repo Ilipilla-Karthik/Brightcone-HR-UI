@@ -19,6 +19,8 @@ export interface Employee {
   status: 'Active' | 'Inactive' | 'On leave' | 'Probation' | 'Notice period';
 }
 
+export type CourseContentType = 'document' | 'video' | 'link';
+
 export interface Course {
   id: string;
   title: string;
@@ -26,6 +28,8 @@ export interface Course {
   duration: string;
   audience: string;
   due_date: string | null;
+  content_type?: CourseContentType | null;
+  content_url?: string | null;
   total_assigned: number;
   completed_count: number;
   completion_percentage: number;
@@ -49,9 +53,12 @@ export interface MyAssignment {
   course_type: 'Mandatory' | 'Elective';
   duration: string;
   due_date: string | null;
+  is_overdue?: boolean;
   progress: number;
   status: 'Not started' | 'In progress' | 'Completed';
   completed_at?: string | null;
+  content_type?: CourseContentType | null;
+  content_url?: string | null;
 }
 
 export interface OpenMandatoryItem {
@@ -118,6 +125,8 @@ export interface CreateCoursePayload {
   duration: string;
   audience: string;
   due_date: string | null;
+  content_type?: CourseContentType | null;
+  content_url?: string | null;
 }
 
 export interface AuthResponse {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, CheckCircle2, ShieldCheck, Award, AlertCircle } from 'lucide-react';
+import { X, CheckCircle2, ShieldCheck, Award, AlertCircle, FileText, Video, ExternalLink } from 'lucide-react';
 import { MyAssignment } from '../../services/types';
 import styles from './LessonPlayerModal.module.css';
 
@@ -95,8 +95,13 @@ export const LessonPlayerModal: React.FC<LessonPlayerModalProps> = ({
   const duration = assignment.duration || 'Standard duration';
   const isCompleted = currentProgress >= 100 || assignment.status === 'Completed';
 
+  const hasResource = Boolean(assignment.content_url && assignment.content_url.trim());
+  const resourceType = assignment.content_type || 'link';
+  const resourceTypeLabel = resourceType === 'document' ? 'Document' : resourceType === 'video' ? 'Video' : 'External Link';
+  const resourceIcon = resourceType === 'document' ? <FileText size={14} /> : resourceType === 'video' ? <Video size={14} /> : <ExternalLink size={14} />;
+
   const handleAttestCompletion = async () => {
-    if (isUpdating || isCompleted) return;
+    if (isUpdating || isCompleted || !hasResource) return;
     setLocalError(null);
     setIsUpdating(true);
 
@@ -161,7 +166,7 @@ export const LessonPlayerModal: React.FC<LessonPlayerModalProps> = ({
           <div className={styles.attestNote}>
             <ShieldCheck size={18} style={{ color: '#0B6FDB', flexShrink: 0 }} />
             <span>
-              <strong>Supported Learning Flow:</strong> Completion is verified through employee self-reported completion and policy attestation.
+              Completion is self-reported by the employee.
             </span>
           </div>
 
@@ -172,53 +177,96 @@ export const LessonPlayerModal: React.FC<LessonPlayerModalProps> = ({
             </div>
           )}
 
-          <div className={styles.lessonCard}>
-            <div className={styles.lessonHeader}>
-              <h3 className={styles.lessonTitle}>{courseTitle} — Course Overview</h3>
-              {isCompleted ? (
-                <span className={styles.completedBadge}>
-                  <CheckCircle2 size={16} /> Self-reported complete
+          {hasResource ? (
+            <div className={styles.resourceBlock}>
+              <div className={styles.resourceTop}>
+                <span className={styles.typeBadge}>
+                  {resourceIcon}
+                  <span>{resourceTypeLabel}</span>
                 </span>
+                {isCompleted ? (
+                  <span className={styles.completedBadge}>
+                    <CheckCircle2 size={16} /> Self-reported complete
+                  </span>
+                ) : (
+                  <span className={styles.statusBadge}>Assigned Material</span>
+                )}
+              </div>
+
+              <div>
+                <h3 className={styles.lessonTitle}>{courseTitle} — Course Material</h3>
+                <p className={styles.resourceNotice} style={{ marginTop: 4 }}>
+                  Access the assigned course material below to review training curriculum and policies.
+                </p>
+              </div>
+
+              <a
+                href={assignment.content_url!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.btnOpenMaterial}
+                id="btn-open-course-material"
+              >
+                <ExternalLink size={16} />
+                <span>Open course material</span>
+              </a>
+
+              <p className={styles.resourceNotice}>
+                External material opens in a new tab. For restricted company resources, provider sign-in may be required.
+              </p>
+
+              {isCompleted ? (
+                <div className={styles.completionConfirmed}>
+                  <CheckCircle2 size={18} style={{ color: '#15A36B', flexShrink: 0 }} />
+                  <div>
+                    <strong>Completion Confirmed</strong>
+                    <p>Your self-reported completion has been stored in your learning record.</p>
+                  </div>
+                </div>
               ) : (
-                <span className={styles.statusBadge}>Required Coursework</span>
+                <div className={styles.attestationSection}>
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={confirmedAttestation}
+                      onChange={(e) => setConfirmedAttestation(e.target.checked)}
+                    />
+                    <span>
+                      I confirm that I have reviewed the required training material for <strong>{courseTitle}</strong> and acknowledge the policy requirements.
+                    </span>
+                  </label>
+
+                  <button
+                    type="button"
+                    className={`${styles.btnAction} ${styles.btnPrimary}`}
+                    onClick={handleAttestCompletion}
+                    disabled={isUpdating || !confirmedAttestation}
+                  >
+                    {isUpdating ? 'Saving completion...' : 'Self-report course completion (100%)'}
+                  </button>
+                </div>
               )}
             </div>
-            <p className={styles.lessonDesc}>
-              Review the statutory compliance policies, guidelines, and operating standards for <strong>{courseTitle}</strong>. Verify your understanding of key protocols and reporting requirements.
-            </p>
-
-            {isCompleted ? (
-              <div className={styles.completionConfirmed}>
-                <CheckCircle2 size={18} style={{ color: '#15A36B', flexShrink: 0 }} />
-                <div>
-                  <strong>Completion Confirmed</strong>
-                  <p>Your self-reported completion has been stored in your learning record.</p>
-                </div>
+          ) : (
+            <div className={styles.unavailableBlock}>
+              <AlertCircle size={22} style={{ color: 'var(--warn, #C98200)', flexShrink: 0, marginTop: 2 }} />
+              <div className={styles.unavailableContent}>
+                <h4>Course material has not been added yet.</h4>
+                <p>
+                  An administrator has not attached a training document, video, or link for this course. Self-reported completion is unavailable until learning material is added.
+                </p>
+                {isCompleted && (
+                  <div className={styles.completionConfirmed} style={{ marginTop: 12 }}>
+                    <CheckCircle2 size={18} style={{ color: '#15A36B', flexShrink: 0 }} />
+                    <div>
+                      <strong>Completion Confirmed</strong>
+                      <p>Your previously self-reported completion remains recorded.</p>
+                    </div>
+                  </div>
+                )}
               </div>
-            ) : (
-              <div className={styles.attestationSection}>
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    checked={confirmedAttestation}
-                    onChange={(e) => setConfirmedAttestation(e.target.checked)}
-                  />
-                  <span>
-                    I confirm that I have reviewed the required training material for <strong>{courseTitle}</strong> and acknowledge the policy requirements.
-                  </span>
-                </label>
-
-                <button
-                  type="button"
-                  className={`${styles.btnAction} ${styles.btnPrimary}`}
-                  onClick={handleAttestCompletion}
-                  disabled={isUpdating || !confirmedAttestation}
-                >
-                  {isUpdating ? 'Saving completion...' : 'Self-report course completion (100%)'}
-                </button>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className={styles.footer}>

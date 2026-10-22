@@ -22,8 +22,10 @@ export const AddEditCourseModal: React.FC<AddEditCourseModalProps> = ({
   const [duration, setDuration] = useState('1 h');
   const [audience, setAudience] = useState('Everyone');
   const [dueDate, setDueDate] = useState('');
+  const [contentType, setContentType] = useState<'document' | 'video' | 'link' | ''>('');
+  const [contentUrl, setContentUrl] = useState('');
   const [departments, setDepartments] = useState<string[]>([]);
-  const [errors, setErrors] = useState<{ title?: string }>({});
+  const [errors, setErrors] = useState<{ title?: string; resource?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -53,12 +55,16 @@ export const AddEditCourseModal: React.FC<AddEditCourseModalProps> = ({
       setDuration(courseToEdit.duration || '1 h');
       setAudience(courseToEdit.audience || 'Everyone');
       setDueDate(courseToEdit.due_date || '');
+      setContentType(courseToEdit.content_type || '');
+      setContentUrl(courseToEdit.content_url || '');
     } else {
       setTitle('');
       setCourseType('Mandatory');
       setDuration('1 h');
       setAudience('Everyone');
       setDueDate('2026-12-15');
+      setContentType('');
+      setContentUrl('');
     }
     setErrors({});
   }, [courseToEdit, isOpen]);
@@ -97,6 +103,26 @@ export const AddEditCourseModal: React.FC<AddEditCourseModalProps> = ({
       return;
     }
 
+    const trimmedUrl = contentUrl.trim();
+    const hasType = Boolean(contentType);
+    const hasUrl = Boolean(trimmedUrl);
+
+    if (hasType !== hasUrl) {
+      setErrors({ resource: 'Both resource type and resource URL must be provided together, or both cleared.' });
+      return;
+    }
+
+    if (hasUrl) {
+      if (!trimmedUrl.toLowerCase().startsWith('https://')) {
+        setErrors({ resource: 'Resource URL must be an absolute HTTPS address (https://...)' });
+        return;
+      }
+      if (trimmedUrl.length > 2048) {
+        setErrors({ resource: 'Resource URL cannot exceed 2048 characters.' });
+        return;
+      }
+    }
+
     try {
       setIsSubmitting(true);
       await onSave(
@@ -106,12 +132,15 @@ export const AddEditCourseModal: React.FC<AddEditCourseModalProps> = ({
           duration: duration.trim() || '1 h',
           audience,
           due_date: dueDate || null,
+          content_type: hasType ? (contentType as 'document' | 'video' | 'link') : null,
+          content_url: hasUrl ? trimmedUrl : null,
         },
         courseToEdit?.id
       );
       onClose();
-    } catch {
-      setErrors({ title: 'Failed to save course. Please check inputs and try again.' });
+    } catch (err: any) {
+      const serverMessage = err?.response?.data?.message || err?.message || 'Failed to save course. Please check inputs and try again.';
+      setErrors({ resource: serverMessage });
     } finally {
       setIsSubmitting(false);
     }
@@ -239,6 +268,56 @@ export const AddEditCourseModal: React.FC<AddEditCourseModalProps> = ({
                 disabled={isSubmitting}
               />
             </div>
+          </div>
+
+          <div className={styles.resourceSection}>
+            <div className={styles.resourceHeader}>
+              <label className={styles.label}>Learning Resource (Optional)</label>
+              <span className={styles.helperText}>Attach an authorized document, video, or link</span>
+            </div>
+
+            <div className={styles.row2}>
+              <div className={styles.fieldGroup}>
+                <label htmlFor="course-content-type" className={styles.labelSub}>
+                  Resource type
+                </label>
+                <select
+                  id="course-content-type"
+                  className={`${styles.select} ${errors.resource ? styles.inputError : ''}`}
+                  value={contentType}
+                  onChange={(e) => {
+                    setContentType(e.target.value as 'document' | 'video' | 'link' | '');
+                    if (errors.resource) setErrors((prev) => ({ ...prev, resource: undefined }));
+                  }}
+                  disabled={isSubmitting}
+                >
+                  <option value="">None / Remove resource</option>
+                  <option value="document">Document (PDF, Guide)</option>
+                  <option value="video">Video (Stream, Recording)</option>
+                  <option value="link">Link (Web Resource, LMS)</option>
+                </select>
+              </div>
+
+              <div className={styles.fieldGroup}>
+                <label htmlFor="course-content-url" className={styles.labelSub}>
+                  Resource URL (HTTPS)
+                </label>
+                <input
+                  id="course-content-url"
+                  type="url"
+                  className={`${styles.input} ${errors.resource ? styles.inputError : ''}`}
+                  placeholder="https://company.example.com/materials/..."
+                  value={contentUrl}
+                  onChange={(e) => {
+                    setContentUrl(e.target.value);
+                    if (errors.resource) setErrors((prev) => ({ ...prev, resource: undefined }));
+                  }}
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
+
+            {errors.resource && <p className={styles.errorText}>{errors.resource}</p>}
           </div>
 
           <div className={styles.actions}>

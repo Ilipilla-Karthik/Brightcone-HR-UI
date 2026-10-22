@@ -1,19 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Play, Award } from 'lucide-react';
+import { Play, Award, AlertTriangle, AlertCircle, BookOpen } from 'lucide-react';
 import { getMyLearning, updateAssignmentProgress } from '../../services/api';
 import { MyAssignment } from '../../services/types';
+import { useAuth } from '../../services/authContext';
 import CertificateModal from '../../components/kit/CertificateModal';
 import LessonPlayerModal from '../../components/kit/LessonPlayerModal';
 import Toast, { ToastMessage } from '../../components/kit/Toast';
 import styles from './EmployeeLearnPage.module.css';
 
 interface OutletContextType {
-  currentPersona: 'admin' | 'employee';
+  currentPersona?: 'admin' | 'employee';
 }
 
 export const EmployeeLearnPage: React.FC = () => {
-  const { currentPersona } = useOutletContext<OutletContextType>();
+  const context = useOutletContext<OutletContextType>();
+  const currentPersona = context?.currentPersona;
+  const { user } = useAuth();
+
   const [assignments, setAssignments] = useState<MyAssignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,24 +42,49 @@ export const EmployeeLearnPage: React.FC = () => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const learnerName = currentPersona === 'admin' ? 'Ananya Rao' : 'Rahul Varma';
-  const learnerId = currentPersona === 'admin' ? 'BC-1004' : 'BC-1038';
+  const learnerName = user?.name || (currentPersona === 'admin' ? 'Ananya Rao' : 'Rahul Varma');
 
   const loadAssignments = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await getMyLearning(learnerId);
+      // Identity is derived securely from the authenticated session (JWT)
+      const data = await getMyLearning();
       setAssignments(data);
     } catch {
       setError('Unable to load assignments from server. Please retry.');
     } finally {
       setIsLoading(false);
     }
-  }, [learnerId]);
+  }, []);
 
   useEffect(() => {
     loadAssignments();
+
+    // Recompute and refresh when window regains focus or tab becomes visible
+    const handleFocus = () => {
+      loadAssignments();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadAssignments();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Periodic refresh every 60s for long-open pages
+    const interval = setInterval(() => {
+      loadAssignments();
+    }, 60000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
+    };
   }, [loadAssignments]);
 
   const handleUpdateProgress = async (assignmentId: string, newProgress: number): Promise<boolean> => {
@@ -91,25 +120,30 @@ export const EmployeeLearnPage: React.FC = () => {
   return (
     <div data-testid="employeelearnpage">
       <header className={styles.head}>
-        <div className={styles.eyebrow}>Assigned Training</div>
-        <h1 className={styles.title}>Learning</h1>
-        <p className={styles.desc}>
-          Required compliance courses and skills programs assigned to you.
-        </p>
+        <div className={styles.titleArea}>
+          <div className={styles.eyebrow}>Assigned Training</div>
+          <h1 className={styles.title}>Learning</h1>
+          <p className={styles.desc}>
+            Required compliance courses and skills programs assigned to you.
+          </p>
+        </div>
       </header>
 
       {isLoading ? (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--muted)' }}>
-          Loading your learning assignments...
+        <div className={styles.loadingWrap}>
+          <div className={styles.spinner} />
+          <p>Loading your learning assignments...</p>
         </div>
       ) : error ? (
-        <div style={{ textAlign: 'center', padding: '40px 0', color: '#D93D4A' }}>
-          <p>{error}</p>
+        <div className={styles.errorCard} role="alert">
+          <AlertCircle size={28} style={{ color: 'var(--bad, #D93D4A)', marginBottom: 12 }} />
+          <h3 style={{ margin: '0 0 6px 0', fontSize: 16 }}>Unable to load assigned courses</h3>
+          <p style={{ margin: '0 0 16px 0', color: 'var(--muted)', fontSize: 13.5 }}>{error}</p>
           <button
             type="button"
-            className={styles.btnAction}
-            style={{ marginTop: 12, display: 'inline-block', width: 'auto', padding: '8px 18px' }}
+            className={`${styles.btnAction} ${styles.btnPrimary}`}
             onClick={loadAssignments}
+            aria-label="Retry loading assignments"
           >
             Retry
           </button>
@@ -118,25 +152,45 @@ export const EmployeeLearnPage: React.FC = () => {
         <div className={styles.cardsGrid}>
           {assignments.length > 0 ? (
             assignments.map((assignment) => {
-              const isCompleted = assignment.progress >= 100;
+              const isCompleted = assignment.progress >= 100 || assignment.status === 'Completed';
               const isInProgress = assignment.progress > 0 && assignment.progress < 100;
+              
+              // Authoritative backend overdue status with frontend date-only fallback
+              const isOverdue = assignment.is_overdue ?? (
+                assignment.course_type === 'Mandatory' &&
+                !isCompleted &&
+                Boolean(assignment.due_date) &&
+                assignment.due_date! < new Date().toISOString().slice(0, 10)
+              );
 
               return (
-                <div key={assignment.assignment_id} className={styles.courseCard}>
+                <div key={assignment.assignment_id || assignment.course_id} className={styles.courseCard}>
                   <div>
                     <div className={styles.cardTop}>
                       <h3 className={styles.cardTitle}>{assignment.course_title}</h3>
-                      <span
-                        className={`${styles.pill} ${
-                          isCompleted
-                            ? styles.pOk
-                            : isInProgress
-                            ? styles.pInfo
-                            : styles.pMute
-                        }`}
-                      >
-                        {isCompleted ? 'Self-reported complete' : isInProgress ? 'In progress' : 'Not started'}
-                      </span>
+                      <div className={styles.badgeGroup}>
+                        {isOverdue && (
+                          <span
+                            className={`${styles.pill} ${styles.pBad}`}
+                            title="Mandatory course deadline has passed"
+                            data-testid="overdue-badge"
+                          >
+                            <AlertTriangle size={12} className={styles.badgeIcon} />
+                            Overdue · Mandatory
+                          </span>
+                        )}
+                        <span
+                          className={`${styles.pill} ${
+                            isCompleted
+                              ? styles.pOk
+                              : isInProgress
+                              ? styles.pInfo
+                              : styles.pMute
+                          }`}
+                        >
+                          {isCompleted ? 'Completed' : isInProgress ? 'In progress' : 'Not started'}
+                        </span>
+                      </div>
                     </div>
 
                     <p className={styles.cardMeta}>
@@ -152,8 +206,9 @@ export const EmployeeLearnPage: React.FC = () => {
                       aria-valuenow={assignment.progress}
                       aria-valuemin={0}
                       aria-valuemax={100}
+                      aria-label={`Progress for ${assignment.course_title}: ${assignment.progress}%`}
                     >
-                      <span style={{ width: `${assignment.progress}%` }} />
+                      <span style={{ width: `${Math.max(0, Math.min(100, assignment.progress))}%` }} />
                     </div>
 
                     <div className={styles.cardFoot}>
@@ -166,11 +221,19 @@ export const EmployeeLearnPage: React.FC = () => {
                           type="button"
                           className={`${styles.btnAction} ${styles.btnCertificate}`}
                           onClick={() => setCertificateAssignment(assignment)}
-                          aria-label={`View Certificate for ${assignment.course_title}`}
+                          aria-label={`View completion record for ${assignment.course_title}`}
                         >
                           <Award size={15} />
-                          <span>Certificate</span>
+                          <span>Completion record</span>
                         </button>
+                      ) : !assignment.content_url ? (
+                        <span
+                          className={styles.noMaterialTag}
+                          title="Course material has not been added yet."
+                          data-testid="no-material-indicator"
+                        >
+                          Course material has not been added yet.
+                        </span>
                       ) : (
                         <button
                           type="button"
@@ -188,8 +251,14 @@ export const EmployeeLearnPage: React.FC = () => {
               );
             })
           ) : (
-            <div className={styles.emptyCard}>
-              No courses assigned to your profile currently. Check back later or contact your HR administrator.
+            <div className={styles.emptyCard} data-testid="empty-assignments">
+              <div className={styles.emptyIcon}>
+                <BookOpen size={28} />
+              </div>
+              <h3 style={{ margin: '0 0 6px 0', fontSize: 16 }}>No courses assigned</h3>
+              <p style={{ margin: 0, color: 'var(--muted)', fontSize: 13.5 }}>
+                You have no pending compliance courses or skills programs assigned to your profile right now.
+              </p>
             </div>
           )}
         </div>
