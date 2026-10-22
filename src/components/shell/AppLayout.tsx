@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import AppRail from './AppRail';
 import SidebarNav from './SidebarNav';
 import Header from './Header';
@@ -12,6 +12,7 @@ interface AppLayoutProps {
 
 export const AppLayout: React.FC<AppLayoutProps> = ({ currentPersona, onPersonaChange }) => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const location = useLocation();
 
   const toggleMobileNav = () => {
     setMobileNavOpen((prev) => !prev);
@@ -21,11 +22,21 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ currentPersona, onPersonaC
     setMobileNavOpen(false);
   };
 
+  const isPerformance = location.pathname.startsWith('/performance');
+  const accentColor = isPerformance ? '#12A58E' : '#6366F1';
+
   return (
-    <div className={styles.appContainer}>
+    <div
+      className={styles.appContainer}
+      style={{ '--ac': accentColor } as React.CSSProperties}
+    >
       <div className={`${styles.sidebarDrawer} ${mobileNavOpen ? styles.open : ''}`}>
         <AppRail />
-        <SidebarNav currentPersona={currentPersona} onPersonaChange={onPersonaChange} />
+        <SidebarNav
+          currentPersona={currentPersona}
+          onPersonaChange={onPersonaChange}
+          onNavigate={closeMobileNav}
+        />
       </div>
 
       {mobileNavOpen && (
@@ -36,7 +47,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ currentPersona, onPersonaC
         />
       )}
 
-      <div className={styles.mainArea}>
+      <div
+        className={styles.mainArea}
+        style={{ '--ac': accentColor } as React.CSSProperties}
+      >
         <Header onToggleMobileNav={toggleMobileNav} currentPersona={currentPersona} />
         <main className={styles.contentScrollArea} id="main-content">
           <div className={styles.contentWrapper}>

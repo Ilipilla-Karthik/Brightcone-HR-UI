@@ -1,72 +1,150 @@
+import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   Users,
-  Clock,
+  Briefcase,
   CreditCard,
-  UserPlus,
-  BookOpen,
   Receipt,
   FileSignature,
   HeartHandshake,
+  BookOpen,
+  Calendar,
   LayoutGrid,
 } from 'lucide-react';
 import { useAuth } from '../../services/authContext';
 import styles from './AppRail.module.css';
 
-interface RailApp {
+interface RailAppConfig {
   id: string;
   name: string;
-  path: string;
+  color: string;
   icon: React.ReactNode;
+  path?: string;
+  disabled?: boolean;
 }
-
-const RAIL_APPS: RailApp[] = [
-  { id: 'suite', name: 'Suite', path: '/suite', icon: <LayoutGrid size={18} /> },
-  { id: 'people', name: 'People', path: '/performance/admin', icon: <Users size={18} /> },
-  { id: 'time', name: 'Time', path: '/time', icon: <Clock size={18} /> },
-  { id: 'payroll', name: 'Payroll', path: '/payroll', icon: <CreditCard size={18} /> },
-  { id: 'recruit', name: 'Recruit', path: '/recruit', icon: <UserPlus size={18} /> },
-  { id: 'learn', name: 'Learn', path: '/learn/dashboard', icon: <BookOpen size={18} /> },
-  { id: 'expense', name: 'Expense', path: '/expense', icon: <Receipt size={18} /> },
-  { id: 'sign', name: 'Sign', path: '/doc-sign', icon: <FileSignature size={18} /> },
-  { id: 'engage', name: 'Connect', path: '/engagement', icon: <HeartHandshake size={18} /> },
-];
 
 export const AppRail: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
   const isAdmin = user?.role === 'HR_ADMIN' || user?.role === 'ADMIN';
 
+  const apps: RailAppConfig[] = [
+    {
+      id: 'plus',
+      name: 'People Plus',
+      color: '#0B6FDB',
+      icon: <LayoutGrid size={18} />,
+      disabled: true,
+    },
+    {
+      id: 'people',
+      name: 'People',
+      color: '#12A58E',
+      icon: <Users size={18} />,
+      path: isAdmin ? '/performance/admin' : undefined,
+      disabled: !isAdmin,
+    },
+    {
+      id: 'recruit',
+      name: 'Recruit',
+      color: '#7C5CFF',
+      icon: <Briefcase size={18} />,
+      disabled: true,
+    },
+    {
+      id: 'payroll',
+      name: 'Payroll',
+      color: '#0F9F6E',
+      icon: <CreditCard size={18} />,
+      disabled: true,
+    },
+    {
+      id: 'expense',
+      name: 'Expense',
+      color: '#E07A1D',
+      icon: <Receipt size={18} />,
+      disabled: true,
+    },
+    {
+      id: 'sign',
+      name: 'Sign',
+      color: '#D9466F',
+      icon: <FileSignature size={18} />,
+      disabled: true,
+    },
+    {
+      id: 'connect',
+      name: 'Connect',
+      color: '#0BA6CC',
+      icon: <HeartHandshake size={18} />,
+      disabled: true,
+    },
+    {
+      id: 'learn',
+      name: 'Learn',
+      color: '#6366F1',
+      icon: <BookOpen size={18} />,
+      path: isAdmin ? '/learn/dashboard' : '/learn/my-learning',
+      disabled: false,
+    },
+    {
+      id: 'shift',
+      name: 'Shift',
+      color: '#3B82C4',
+      icon: <Calendar size={18} />,
+      disabled: true,
+    },
+  ];
+
   return (
     <nav className={styles.rail} aria-label="Global application rail" data-testid="apprail">
-      <NavLink to="/suite" className={styles.logo} title="Brightcone People Plus">
-        <span>B</span>
+      <NavLink
+        to={isAdmin ? '/learn/dashboard' : '/learn/my-learning'}
+        className={styles.rlogo}
+        title="People Plus home"
+        aria-label="People Plus home"
+      >
+        <img src="/rlogo.png" alt="Brightcone People Plus" />
       </NavLink>
-      {RAIL_APPS.map((app) => {
-        let appPath = app.path;
-        if (app.id === 'people') {
-          appPath = isAdmin ? '/performance/admin' : '/suite';
-        } else if (app.id === 'learn') {
-          appPath = isAdmin ? '/learn/dashboard' : '/learn/my-learning';
-        }
 
-        const isCurrentActive =
-          (app.id === 'learn' && location.pathname.startsWith('/learn')) ||
-          (app.id === 'people' && location.pathname.startsWith('/performance')) ||
-          location.pathname === appPath;
+      <div className={styles.rapps} id="rapps">
+        {apps.map((app) => {
+          const isActive =
+            (app.id === 'learn' && location.pathname.startsWith('/learn')) ||
+            (app.id === 'people' && location.pathname.startsWith('/performance'));
 
-        return (
-          <NavLink
-            key={app.id}
-            to={appPath}
-            className={`${styles.appItem} ${isCurrentActive ? styles.active : ''}`}
-            title={app.name}
-          >
-            <div className={styles.appIconWrap}>{app.icon}</div>
-            <span className={styles.appLabel}>{app.name}</span>
-          </NavLink>
-        );
-      })}
+          if (app.disabled || !app.path) {
+            return (
+              <button
+                key={app.id}
+                type="button"
+                className={`${styles.rapp} ${styles.disabled}`}
+                style={{ '--ac': app.color } as React.CSSProperties}
+                title={`${app.name} (Coming soon)`}
+                aria-disabled="true"
+                disabled
+              >
+                <i>{app.icon}</i>
+                <span>{app.name}</span>
+              </button>
+            );
+          }
+
+          return (
+            <NavLink
+              key={app.id}
+              to={app.path}
+              className={`${styles.rapp} ${isActive ? styles.on : ''}`}
+              style={{ '--ac': app.color } as React.CSSProperties}
+              title={app.name}
+              aria-current={isActive ? 'page' : undefined}
+            >
+              <i>{app.icon}</i>
+              <span>{app.name}</span>
+            </NavLink>
+          );
+        })}
+      </div>
     </nav>
   );
 };

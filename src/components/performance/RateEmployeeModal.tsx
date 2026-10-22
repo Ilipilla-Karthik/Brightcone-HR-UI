@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import axios from 'axios';
 import { CycleReviewItem, RateEmployeePayload } from '../../services/types';
 import { rateEmployee } from '../../services/api';
 import styles from './RateEmployeeModal.module.css';
@@ -82,11 +83,12 @@ export const RateEmployeeModal: React.FC<RateEmployeeModalProps> = ({
       const updated = await rateEmployee(cycleId, review.employee_id, payload);
       onRated(updated);
       onClose();
-    } catch (err: any) {
-      const msg =
-        err.response?.data?.description ||
-        err.response?.data?.error ||
-        'Failed to save rating. Please retry.';
+    } catch (err: unknown) {
+      let msg = 'Failed to save rating. Please retry.';
+      if (axios.isAxiosError(err) && err.response?.data) {
+        const data = err.response.data as { description?: string; error?: string };
+        msg = data.description || data.error || msg;
+      }
       setError(msg);
     } finally {
       setIsSubmitting(false);

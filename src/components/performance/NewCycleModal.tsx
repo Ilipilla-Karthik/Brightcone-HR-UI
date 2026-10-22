@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import axios from 'axios';
 import { CreateCyclePayload, ReviewCycle } from '../../services/types';
 import { createReviewCycle } from '../../services/api';
 import styles from './NewCycleModal.module.css';
@@ -71,11 +72,12 @@ export const NewCycleModal: React.FC<NewCycleModalProps> = ({
       const created = await createReviewCycle(payload);
       onCycleCreated(created);
       onClose();
-    } catch (err: any) {
-      const msg =
-        err.response?.data?.description ||
-        err.response?.data?.error ||
-        'Failed to start review cycle. Please retry.';
+    } catch (err: unknown) {
+      let msg = 'Failed to start review cycle. Please retry.';
+      if (axios.isAxiosError(err) && err.response?.data) {
+        const data = err.response.data as { description?: string; error?: string };
+        msg = data.description || data.error || msg;
+      }
       setError(msg);
     } finally {
       setIsSubmitting(false);

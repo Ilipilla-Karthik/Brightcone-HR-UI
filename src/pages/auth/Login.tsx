@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../../services/authContext';
 import { loginApi } from '../../services/api';
 import styles from './Login.module.css';
@@ -52,8 +53,8 @@ export const Login: React.FC = () => {
       } else {
         setError('Login failed: Invalid server response.');
       }
-    } catch (err: any) {
-      if (err.response && (err.response.status === 401 || err.response.status === 400)) {
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response && (err.response.status === 401 || err.response.status === 400)) {
         setError('That password or email isn’t right. Please verify your credentials.');
       } else {
         setError('Unable to reach authentication service. Please check your network and retry.');

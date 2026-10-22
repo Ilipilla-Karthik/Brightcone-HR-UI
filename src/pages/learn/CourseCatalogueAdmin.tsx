@@ -16,8 +16,13 @@ export const CourseCatalogueAdmin: React.FC = () => {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   const addToast = (type: 'success' | 'error' | 'info', text: string) => {
-    const id = `${Date.now()}-${Math.random()}`;
-    setToasts((prev) => [...prev, { id, type, text }]);
+    setToasts((prev) => {
+      if (prev.some((t) => t.text === text)) {
+        return prev;
+      }
+      const id = `${Date.now()}-${Math.random()}`;
+      return [...prev.slice(-2), { id, type, text }];
+    });
   };
 
   const removeToast = (id: string) => {

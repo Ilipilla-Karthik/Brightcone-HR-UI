@@ -67,21 +67,31 @@ async function runBrowserFlow() {
   // 1A. Direct visit to /performance/admin without token -> should redirect to /login
   console.log('1A. Visiting /performance/admin unauthenticated...');
   await cdpRequest(ws, reqId++, 'Page.navigate', { url: 'http://127.0.0.1:3000/performance/admin' });
-  await new Promise((r) => setTimeout(r, 1500));
-  const unauthLoc = await cdpRequest(ws, reqId++, 'Runtime.evaluate', { expression: 'window.location.pathname' });
-  console.log('Unauthenticated /performance/admin redirected to:', unauthLoc.result.value);
-  if (unauthLoc.result.value !== '/login') {
-    throw new Error(`Expected redirect to /login but got ${unauthLoc.result.value}`);
+  let unauthLocValue = '';
+  for (let poll = 0; poll < 20; poll++) {
+    await new Promise((r) => setTimeout(r, 250));
+    const loc = await cdpRequest(ws, reqId++, 'Runtime.evaluate', { expression: 'window.location.pathname' });
+    unauthLocValue = loc.result?.value;
+    if (unauthLocValue === '/login') break;
+  }
+  console.log('Unauthenticated /performance/admin redirected to:', unauthLocValue);
+  if (unauthLocValue !== '/login') {
+    throw new Error(`Expected redirect to /login but got ${unauthLocValue}`);
   }
 
   // 1B. Direct visit to /learn/dashboard without token -> should redirect to /login
   console.log('1B. Visiting /learn/dashboard unauthenticated...');
   await cdpRequest(ws, reqId++, 'Page.navigate', { url: 'http://127.0.0.1:3000/learn/dashboard' });
-  await new Promise((r) => setTimeout(r, 1500));
-  const unauthLearnLoc = await cdpRequest(ws, reqId++, 'Runtime.evaluate', { expression: 'window.location.pathname' });
-  console.log('Unauthenticated /learn/dashboard redirected to:', unauthLearnLoc.result.value);
-  if (unauthLearnLoc.result.value !== '/login') {
-    throw new Error(`Expected redirect to /login but got ${unauthLearnLoc.result.value}`);
+  let unauthLearnLocValue = '';
+  for (let poll = 0; poll < 20; poll++) {
+    await new Promise((r) => setTimeout(r, 250));
+    const loc = await cdpRequest(ws, reqId++, 'Runtime.evaluate', { expression: 'window.location.pathname' });
+    unauthLearnLocValue = loc.result?.value;
+    if (unauthLearnLocValue === '/login') break;
+  }
+  console.log('Unauthenticated /learn/dashboard redirected to:', unauthLearnLocValue);
+  if (unauthLearnLocValue !== '/login') {
+    throw new Error(`Expected redirect to /login but got ${unauthLearnLocValue}`);
   }
 
   // 1C. Invalid/expired token rejection via 401 interceptor

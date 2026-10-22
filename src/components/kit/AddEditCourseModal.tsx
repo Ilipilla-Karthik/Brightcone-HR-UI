@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import axios from 'axios';
 import { Course, CreateCoursePayload } from '../../services/types';
 import { getDepartments } from '../../services/api';
 import styles from './AddEditCourseModal.module.css';
@@ -138,8 +139,13 @@ export const AddEditCourseModal: React.FC<AddEditCourseModalProps> = ({
         courseToEdit?.id
       );
       onClose();
-    } catch (err: any) {
-      const serverMessage = err?.response?.data?.message || err?.message || 'Failed to save course. Please check inputs and try again.';
+    } catch (err: unknown) {
+      let serverMessage = 'Failed to save course. Please check inputs and try again.';
+      if (axios.isAxiosError(err)) {
+        serverMessage = (err.response?.data as { message?: string })?.message || err.message || serverMessage;
+      } else if (err instanceof Error) {
+        serverMessage = err.message;
+      }
       setErrors({ resource: serverMessage });
     } finally {
       setIsSubmitting(false);

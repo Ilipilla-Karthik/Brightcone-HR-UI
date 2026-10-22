@@ -23,6 +23,7 @@ import {
   remindReview,
   downloadExportRatings,
 } from '../../services/api';
+import axios from 'axios';
 import NewCycleModal from '../../components/performance/NewCycleModal';
 import RateEmployeeModal from '../../components/performance/RateEmployeeModal';
 import styles from './PerformanceAdminPage.module.css';
@@ -64,8 +65,8 @@ export const PerformanceAdminPage: React.FC = () => {
         const active = cycleList.find((c) => c.status === 'Active') || cycleList[0];
         setSelectedCycleId((prev) => (prev && cycleList.some((c) => c.id === prev) ? prev : active.id));
       }
-    } catch (err: any) {
-      if (err.response?.status === 403) {
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.status === 403) {
         setError('Access denied: Administrator privileges required.');
       } else {
         setError('Unable to load review cycles.');
@@ -80,8 +81,8 @@ export const PerformanceAdminPage: React.FC = () => {
     try {
       const data = await getCycleDashboard(cycleId);
       setDashboardData(data);
-    } catch (err: any) {
-      if (err.response?.status === 403) {
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.status === 403) {
         setError('Access denied: Administrator privileges required.');
       } else {
         setError('Failed to load performance review cycle data. Please retry.');
@@ -112,8 +113,11 @@ export const PerformanceAdminPage: React.FC = () => {
       showToast(`Advanced review cycle to ${STAGE_NAMES[updated.stage]}`);
       await loadCycles();
       await loadDashboard(cycle.id);
-    } catch (err: any) {
-      const msg = err.response?.data?.description || 'Failed to advance cycle stage.';
+    } catch (err: unknown) {
+      const msg =
+        axios.isAxiosError(err) && err.response?.data?.description
+          ? String(err.response.data.description)
+          : 'Failed to advance cycle stage.';
       setError(msg);
     } finally {
       setIsAdvancing(false);
@@ -131,7 +135,7 @@ export const PerformanceAdminPage: React.FC = () => {
         showToast(res.reason || res.message || `Reminder skipped for ${employeeName}`);
       }
       await loadDashboard(dashboardData.cycle.id);
-    } catch (err: any) {
+    } catch (_err: unknown) {
       showToast(`Failed to send reminder to ${employeeName}`);
     } finally {
       setRemindingId(null);
