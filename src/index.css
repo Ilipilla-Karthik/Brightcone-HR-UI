@@ -1,15 +1,13 @@
-@charset "UTF-8";
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Figtree:wght@400;500;600;700&display=swap');
+@import './styles/base/tokens.css';
+@import './styles/base/typography.css';
+@import './styles/layout/navigation.css';
+@import './styles/components/cards.css';
+@import './styles/components/tables.css';
+@import './styles/components/modals.css';
+@import './styles/features/recruit.css';
+@import './styles/features/people.css';
 
-:root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color-scheme: light dark;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  min-width: 320px;
-  min-height: 100vh;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

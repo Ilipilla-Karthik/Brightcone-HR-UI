@@ -1,20 +1,21 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './services/authContext';
-import Login from './pages/auth/Login';
-import SuiteDashboard from './pages/suite/SuiteDashboard';
+import { BrowserRouter } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext';
+import { AuthProvider } from './context/AuthContext';
+import { PortalProvider } from './context/PortalContext';
+import { AppRoutes } from './routes/AppRoutes';
 
 export const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/suite" element={<SuiteDashboard />} />
-          <Route path="*" element={<Navigate to="/suite" replace />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+    <BrowserRouter>
+      <ThemeProvider>
+        <AuthProvider>
+          <PortalProvider>
+            <AppRoutes />
+          </PortalProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </BrowserRouter>
   );
 };
 
