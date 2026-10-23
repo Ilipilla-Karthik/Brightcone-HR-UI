@@ -192,15 +192,42 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ role = 'hr_admin' }) => 
     }
 
     // 9. Engagement / Connect Module
-    if (p.startsWith('/engagement')) {
+    if (p.startsWith('/engagement') || p.startsWith('/connect')) {
+      if (role === 'employee') {
+        return [
+          {
+            title: 'COMMUNITY',
+            items: [
+              { label: 'Company feed', to: '/engagement/feed', icon: ic('chat', 15) },
+              { label: 'People directory', to: '/engagement/directory', icon: ic('users', 15) },
+              { label: 'Birthdays & anniversaries', to: '/engagement/celebrations', icon: ic('gift', 15) },
+              { label: 'Company events', to: '/engagement/events', icon: ic('calendar', 15) },
+            ],
+          },
+        ];
+      }
+
       return [
         {
-          title: 'WORKPLACE CONNECT',
+          title: 'OVERVIEW',
           items: [
-            { label: 'Company Feed', to: '/engagement?tab=feed', icon: ic('chat', 15) },
-            { label: 'Company Events', to: '/engagement?tab=events', icon: ic('calendar', 15) },
-            { label: 'Celebrations', to: '/engagement?tab=celebrations', icon: ic('check', 15) },
-            { label: 'HR Helpdesk', to: '/engagement?tab=helpdesk', badge: 3, icon: ic('send', 15) },
+            { label: 'Company feed', to: '/engagement/feed', icon: ic('chat', 15) },
+          ],
+        },
+        {
+          title: 'COMMUNICATE',
+          items: [
+            { label: 'Announcements', to: '/engagement/announcements', icon: ic('mega', 15) },
+            { label: 'People directory', to: '/engagement/directory', icon: ic('users', 15) },
+          ],
+        },
+        {
+          title: 'EMPLOYEE ENGAGEMENT',
+          items: [
+            { label: 'Birthdays & anniversaries', to: '/engagement/celebrations', icon: ic('gift', 15) },
+            { label: 'Company events', to: '/engagement/events', icon: ic('calendar', 15) },
+            { label: 'Employee feedback', to: '/engagement/feedback', icon: ic('chat', 15) },
+            { label: 'Town hall meetings', to: '/engagement/townhall', icon: ic('mega', 15) },
           ],
         },
       ];

@@ -21,6 +21,12 @@ import { RecruitDashboard } from './pages/recruit/RecruitDashboard';
 import { PayrollDashboard } from './pages/payroll/PayrollDashboard';
 import { ExpenseEmployeePage } from './pages/payroll/ExpenseEmployeePage';
 import { CompanyFeedPage } from './pages/engagement/CompanyFeedPage';
+import { AnnouncementsPage } from './pages/engagement/AnnouncementsPage';
+import { DirectoryPage } from './pages/engagement/DirectoryPage';
+import { CelebrationsPage } from './pages/engagement/CelebrationsPage';
+import { CompanyEventsPage } from './pages/engagement/CompanyEventsPage';
+import { FeedbackPage } from './pages/engagement/FeedbackPage';
+import { TownhallPage } from './pages/engagement/TownhallPage';
 import { AttendanceAdmin } from './pages/time/AttendanceAdmin';
 import { AdminDashboard } from './pages/advanced_hr/AdminDashboard';
 
@@ -115,10 +121,18 @@ const AppLayout: React.FC = () => {
               <Route path="/expense/*" element={<ExpenseEmployeePage />} />
               <Route path="/expense" element={<ExpenseEmployeePage />} />
 
-              <Route path="/engagement/*" element={<CompanyFeedPage />} />
+              {/* Engagement & Connect Module */}
               <Route path="/engagement" element={<CompanyFeedPage />} />
-              <Route path="/connect/*" element={<Navigate to="/engagement" replace />} />
+              <Route path="/engagement/feed" element={<CompanyFeedPage />} />
+              <Route path="/engagement/announcements" element={<AnnouncementsPage />} />
+              <Route path="/engagement/directory" element={<DirectoryPage />} />
+              <Route path="/engagement/celebrations" element={<CelebrationsPage />} />
+              <Route path="/engagement/events" element={<CompanyEventsPage />} />
+              <Route path="/engagement/feedback" element={<FeedbackPage />} />
+              <Route path="/engagement/townhall" element={<TownhallPage />} />
+              <Route path="/engagement/*" element={<CompanyFeedPage />} />
               <Route path="/connect" element={<Navigate to="/engagement" replace />} />
+              <Route path="/connect/*" element={<Navigate to="/engagement" replace />} />
 
               <Route path="/time/*" element={<AttendanceAdmin />} />
               <Route path="/time" element={<AttendanceAdmin />} />

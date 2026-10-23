@@ -1,279 +1,175 @@
 import React, { useState } from 'react';
-import { INITIAL_REQUESTS } from './mockData';
-import { SignatureRequest } from './types';
-import { SignModal } from './components/SignModal';
-import { DocumentViewerModal } from './components/DocumentViewerModal';
+import { SignEnvelope } from './types';
+import { INITIAL_SIGN_ENVELOPES } from './mockData';
+import { SignDocumentModal } from './components/SignDocumentModal';
 import { ic } from '../../components/icons';
+import { useAuth } from '../../services/authContext';
 
 export const SignDocumentFlow: React.FC = () => {
-  const [envelopes, setEnvelopes] = useState<SignatureRequest[]>(INITIAL_REQUESTS);
-  const [selectedEnvelope, setSelectedEnvelope] = useState<SignatureRequest | null>(
-    INITIAL_REQUESTS.find((e) => e.status === 'pending') || null
+  const { user } = useAuth();
+  const userName = user?.name || 'Rahul Varma';
+
+  const [envelopes, setEnvelopes] = useState<SignEnvelope[]>(() =>
+    INITIAL_SIGN_ENVELOPES.filter(
+      (g) => g.to === userName || g.to === 'Rahul Varma' || !g.ext
+    )
   );
-  const [isSignModalOpen, setIsSignModalOpen] = useState(false);
-  const [isViewerModalOpen, setIsViewerModalOpen] = useState(false);
+  const [selectedEnvelope, setSelectedEnvelope] = useState<SignEnvelope | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 2800);
   };
 
-  const pendingDocs = envelopes.filter((e) => e.status === 'pending');
-  const signedDocs = envelopes.filter((e) => e.status === 'signed');
+  const openList = envelopes.filter(
+    (g) => g.status === 'Awaiting signature' || g.status === 'Viewed'
+  );
 
-  const handleSignComplete = (envelopeId: string, signatureText: string) => {
-    const timestamp = new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date());
-
+  const handleSigned = (id: string, signatureText: string) => {
     setEnvelopes((prev) =>
-      prev.map((e) =>
-        e.id === envelopeId
+      prev.map((g) =>
+        g.id === id
           ? {
-              ...e,
-              status: 'signed',
-              signedAt: timestamp,
-              signatureText,
-              ipAddress: '192.168.1.108 (Hardware Verified)',
+              ...g,
+              status: 'Completed',
+              signed: new Date().toISOString().slice(0, 10),
             }
-          : e
+          : g
       )
     );
-
-    if (selectedEnvelope?.id === envelopeId) {
-      setSelectedEnvelope((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: 'signed',
-              signedAt: timestamp,
-              signatureText,
-            }
-          : null
-      );
-    }
-
-    showToast('Document successfully signed and cryptographically verified.');
+    showToast(`Signed as "${signatureText}". Your copy is saved here.`);
   };
 
   return (
-    <div className="view pb-12">
-      <div className="head flex items-end justify-between flex-wrap gap-4 mb-4">
-        <div>
-          <h1 className="text-2xl font-bold font-heading text-[var(--text)]">Documents to sign</h1>
-          <p className="text-sm text-[var(--muted)] mt-1">
-            Review and e-sign documents HR sends you. Signed copies stay here.
-          </p>
-        </div>
-        <div className="actions flex gap-2">
-          <span className="pill p-warn">
-            {pendingDocs.length} Document{pendingDocs.length === 1 ? '' : 's'} Pending
-          </span>
-        </div>
-      </div>
-
-      {pendingDocs.length > 0 && (
-        <div
-          className="banner flex items-center gap-3 p-3.5 rounded-xl border mb-6 text-xs"
-          style={{
-            background: 'color-mix(in srgb, #D9466F 10%, var(--surface))',
-            borderColor: 'color-mix(in srgb, #D9466F 35%, transparent)',
-          }}
-        >
-          {ic('pen', 18)}
-          <span className="text-[var(--text)] font-medium">
-            <b style={{ color: '#D9466F' }}>{pendingDocs.length} document{pendingDocs.length > 1 ? 's' : ''}</b> waiting for your signature.
-          </span>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 space-y-4">
-          <div className="card">
-            <h3 className="text-sm font-semibold flex items-center justify-between">
-              <span>Pending Action</span>
-              <span className="pill p-warn">{pendingDocs.length} Action Needed</span>
-            </h3>
-
-            {pendingDocs.length === 0 ? (
-              <div className="text-center py-6 text-muted text-xs">
-                All documents are signed and up to date!
-              </div>
-            ) : (
-              <div className="space-y-3 mt-3">
-                {pendingDocs.map((doc) => {
-                  const isSelected = selectedEnvelope?.id === doc.id;
-                  return (
-                    <div
-                      key={doc.id}
-                      onClick={() => setSelectedEnvelope(doc)}
-                      className={`p-3.5 rounded-xl border cursor-pointer transition-all ${
-                        isSelected
-                          ? 'border-[var(--brand)] bg-[var(--surface-2)] shadow-sm'
-                          : 'border-[var(--line)] bg-[var(--surface)] hover:border-[var(--brand)]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between text-xs text-muted mb-1">
-                        <span className="pill p-info">{doc.category}</span>
-                        <span className="text-[11px] font-mono">{doc.dueDate}</span>
-                      </div>
-                      <strong className="block text-sm text-[var(--text)] font-semibold mt-1">
-                        {doc.title}
-                      </strong>
-                      <div className="text-xs text-muted mt-1 flex items-center justify-between">
-                        <span>From: {doc.sender}</span>
-                        <span>{doc.pagesCount} pages</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="card">
-            <h3 className="text-sm font-semibold">Your Signed Archive ({signedDocs.length})</h3>
-            <div className="space-y-2.5 mt-3 max-h-60 overflow-y-auto pr-1">
-              {signedDocs.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="p-3 rounded-lg border border-[var(--line)] bg-[var(--surface-2)] flex items-center justify-between gap-2 text-xs"
-                >
-                  <div className="min-w-0 flex-1">
-                    <strong className="block truncate text-[var(--text)]">{doc.title}</strong>
-                    <span className="text-[11px] text-muted">Signed {doc.signedAt}</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn ib"
-                    title="Download Copy"
-                    onClick={() => showToast(`Downloaded verified copy of ${doc.envelopeNumber}`)}
-                  >
-                    {ic('download', 14)}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="lg:col-span-2">
-          {selectedEnvelope ? (
-            <div className="card space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--line)]">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="pill p-info">{selectedEnvelope.category}</span>
-                    <span className="text-xs font-mono text-muted">{selectedEnvelope.envelopeNumber}</span>
-                  </div>
-                  <h2 className="text-lg font-bold font-heading mt-1">{selectedEnvelope.title}</h2>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="btn"
-                    onClick={() => setIsViewerModalOpen(true)}
-                  >
-                    Full Screen View
-                  </button>
-                  {selectedEnvelope.status === 'pending' ? (
-                    <button
-                      type="button"
-                      className="btn primary"
-                      style={{ background: '#D9466F', borderColor: '#D9466F' }}
-                      onClick={() => setIsSignModalOpen(true)}
-                    >
-                      {ic('pen', 16)}
-                      Sign Document
-                    </button>
-                  ) : (
-                    <span className="pill p-ok">Signed & Completed</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="docprev">
-                <div className="flex justify-between text-xs text-muted mb-2">
-                  <span>Document Attestation Preview • Page 1 of {selectedEnvelope.pagesCount}</span>
-                  <span>Due by {selectedEnvelope.dueDate}</span>
-                </div>
-                <p className="leading-relaxed">
-                  {selectedEnvelope.description} This contract and associated exhibits represent the full legal commitment between Brightcone Technologies and <strong>{selectedEnvelope.recipient.name}</strong>.
-                </p>
-                <div className="lines">
-                  <i style={{ width: '92%' }} />
-                  <i style={{ width: '84%' }} />
-                  <i style={{ width: '96%' }} />
-                  <i style={{ width: '60%' }} />
-                </div>
-              </div>
-
-              <div className="p-4 rounded-xl border border-[var(--line)] bg-[var(--surface-2)]">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)] mb-3">
-                  Signature Placement Area
-                </h4>
-
-                {selectedEnvelope.status === 'signed' ? (
-                  <div className="sigbox">
-                    <span className="font-script text-3xl text-[var(--ok)]">
-                      {selectedEnvelope.signatureText || selectedEnvelope.recipient.name}
-                    </span>
-                    <small>
-                      Verified e-Signature • Signed on {selectedEnvelope.signedAt} • IP: {selectedEnvelope.ipAddress}
-                    </small>
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => setIsSignModalOpen(true)}
-                    className="sigbox border-2 border-dashed border-[var(--brand)] bg-[var(--surface)] hover:bg-[var(--info-bg)] cursor-pointer transition-all group flex flex-col items-center justify-center py-6"
-                  >
-                    <span className="text-sm font-semibold text-[var(--brand)] group-hover:scale-105 transition-transform flex items-center gap-2">
-                      {ic('pen', 18)}
-                      Click here to place signature
-                    </span>
-                    <small className="text-[11px] text-muted border-0 pt-1">
-                      Sign electronically in compliance with the Electronic Signatures in Global and National Commerce Act.
-                    </small>
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="card empty">
-              <div className="empty-ic">
-                {ic('doc', 24)}
-              </div>
-              <strong>Select a document from the left list to review and sign</strong>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <SignModal
-        envelope={selectedEnvelope}
-        isOpen={isSignModalOpen}
-        onClose={() => setIsSignModalOpen(false)}
-        onSignComplete={handleSignComplete}
-      />
-
-      <DocumentViewerModal
-        envelope={selectedEnvelope}
-        isOpen={isViewerModalOpen}
-        onClose={() => setIsViewerModalOpen(false)}
-        onOpenSign={() => setIsSignModalOpen(true)}
-      />
-
+    <div
+      className="view pb-12"
+      style={{ '--ac': '#D9466F', animation: 'fade .25s ease' } as React.CSSProperties}
+    >
       {toastMessage && (
-        <div className="toast on">
+        <div className="toast on" style={{ position: 'fixed', zIndex: 100 }}>
           {ic('check', 18)}
           <span>{toastMessage}</span>
         </div>
       )}
+
+      {/* Header */}
+      <div className="head">
+        <div>
+          <h1>Documents to sign</h1>
+          <p>Review and e-sign documents HR sends you. Signed copies stay here.</p>
+        </div>
+      </div>
+
+      {/* Open Documents Banner */}
+      {openList.length > 0 && (
+        <div
+          className="banner"
+          style={{
+            background: 'color-mix(in srgb, var(--ac) 9%, var(--surface))',
+            borderColor: 'color-mix(in srgb, var(--ac) 30%, transparent)',
+          }}
+        >
+          {ic('pen', 18)}
+          <span>
+            <b style={{ color: 'var(--ac)' }}>
+              {openList.length} document{openList.length > 1 ? 's' : ''}
+            </b>{' '}
+            waiting for your signature.
+          </span>
+        </div>
+      )}
+
+      {/* Documents Card Table */}
+      <div className="card">
+        <h3>Your documents</h3>
+
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Document</th>
+                <th>Received</th>
+                <th>Sign by</th>
+                <th>Status</th>
+                <th style={{ textAlign: 'right' }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {envelopes.length > 0 ? (
+                envelopes.map((r) => {
+                  const isOpen =
+                    r.status === 'Awaiting signature' || r.status === 'Viewed';
+                  const isDone = r.status === 'Completed';
+
+                  const pillClass =
+                    r.status === 'Completed'
+                      ? 'p-ok'
+                      : r.status === 'Awaiting signature'
+                      ? 'p-warn'
+                      : r.status === 'Viewed'
+                      ? 'p-info'
+                      : 'p-bad';
+
+                  return (
+                    <tr key={r.id}>
+                      <td>
+                        <b>{r.doc}</b>
+                        <div className="muted" style={{ fontSize: '12.5px' }}>
+                          From {r.from}
+                        </div>
+                      </td>
+                      <td>{r.sent}</td>
+                      <td>{r.due}</td>
+                      <td>
+                        <span className={`pill ${pillClass}`}>{r.status}</span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div className="flex items-center justify-end gap-2">
+                          {isOpen && (
+                            <button
+                              type="button"
+                              className="btn sm primary flex items-center gap-1.5"
+                              onClick={() => setSelectedEnvelope(r)}
+                            >
+                              {ic('pen', 14)}
+                              Review & sign
+                            </button>
+                          )}
+                          {isDone && (
+                            <button
+                              type="button"
+                              className="btn sm flex items-center gap-1.5"
+                              onClick={() => showToast('Signed copy downloaded')}
+                            >
+                              {ic('download', 14)}
+                              Signed copy
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan={5}>
+                    <div className="empty">Nothing to sign right now.</div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* E-Sign Modal */}
+      <SignDocumentModal
+        envelope={selectedEnvelope}
+        onClose={() => setSelectedEnvelope(null)}
+        onSigned={handleSigned}
+        currentUser={userName}
+      />
     </div>
   );
 };

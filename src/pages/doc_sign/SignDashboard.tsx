@@ -1,67 +1,90 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { INITIAL_REQUESTS, INITIAL_TEMPLATES } from './mockData';
-import { SignatureRequest, SignatureTemplate } from './types';
+import { SignEnvelope, SignTemplateItem } from './types';
+import { INITIAL_SIGN_ENVELOPES, INITIAL_SIGN_TEMPLATES } from './mockData';
+import { NewSignatureModal } from './components/NewSignatureModal';
 import { ic } from '../../components/icons';
 import * as templateService from '../../services/templateService';
 
 export const SignDashboard: React.FC = () => {
   const navigate = useNavigate();
-  const [requests] = useState<SignatureRequest[]>(INITIAL_REQUESTS);
-  const [templates, setTemplates] = useState<SignatureTemplate[]>(INITIAL_TEMPLATES);
+  const [envelopes, setEnvelopes] = useState<SignEnvelope[]>(INITIAL_SIGN_ENVELOPES);
+  const [templates, setTemplates] = useState<SignTemplateItem[]>(INITIAL_SIGN_TEMPLATES);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isNewOpen, setIsNewOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
-    templateService.getTemplates()
+    templateService
+      .getTemplates()
       .then((data) => {
         if (active && data && data.length > 0) {
-          setTemplates(data);
+          const mapped: SignTemplateItem[] = data.map((t) => ({
+            id: t.id,
+            n: t.title || 'Template',
+            f: t.requiredFields || 4,
+            used: t.usageCount || 10,
+            category: t.category,
+          }));
+          setTemplates(mapped);
         }
       })
       .catch(() => {});
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
+    setTimeout(() => setToastMessage(null), 2800);
   };
 
-  const openEnvelopes = requests.filter(
-    (r) => r.status === 'pending' || r.status === 'viewed' || (r.status as string) === 'Viewed'
+  const openList = envelopes.filter(
+    (g) => g.status === 'Awaiting signature' || g.status === 'Viewed'
+  );
+  const doneList = envelopes.filter((g) => g.status === 'Completed');
+  const declinedList = envelopes.filter(
+    (g) => g.status === 'Declined' || g.status === 'Voided' || g.status === 'Expired'
   );
 
-  const completedCount = requests.filter((r) => r.status === 'signed').length;
-  const awaitingCount = requests.filter((r) => r.status === 'pending').length;
-  const viewedCount = requests.filter((r) => r.status === 'viewed' || (r.status as string) === 'Viewed').length;
-  const declinedCount = requests.filter((r) => r.status === 'declined').length;
-  const totalCount = requests.length;
+  const tat = doneList.length
+    ? (
+        doneList.reduce((acc, g) => {
+          const sent = new Date(g.sent).getTime();
+          const signed = g.signed ? new Date(g.signed).getTime() : sent + 864e5;
+          return acc + (signed - sent) / 864e5;
+        }, 0) / doneList.length
+      ).toFixed(1) + ' days'
+    : '2.5 days';
 
-  const signedRequests = requests.filter((r) => r.status === 'signed');
-  const averageTurnaround = signedRequests.length
-    ? (signedRequests.reduce((acc, r) => {
-        const sent = new Date(r.sentDate).getTime();
-        const signedDateStr = r.signedAt ? r.signedAt.split(',').slice(0, 2).join(',') : r.sentDate;
-        const signedTime = new Date(signedDateStr).getTime();
-        return acc + (signedTime - sent) / 864e5;
-      }, 0) / signedRequests.length).toFixed(1) + ' days'
-    : '1.0 days';
+  const totalCount = envelopes.length;
+  const pct = totalCount ? Math.round((doneList.length / totalCount) * 100) : 0;
+  const maxUsed = Math.max(1, ...templates.map((t) => t.used));
 
-  const completionPercentage = totalCount
-    ? Math.round((completedCount / totalCount) * 100)
-    : 0;
+  const handleRemind = (_id: string, to: string) => {
+    showToast(`Reminder sent to ${to}`);
+  };
 
-  const maxUsed = Math.max(...templates.map((t) => t.usageCount), 1);
-
-  // SVG Donut calculation
-  const radius = 48;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset =
-    circumference - (completionPercentage / 100) * circumference;
+  const handleSend = (newEnv: Omit<SignEnvelope, 'id' | 'sent' | 'status'>) => {
+    const item: SignEnvelope = {
+      ...newEnv,
+      id: `SG-${1043 + envelopes.length}`,
+      sent: new Date().toISOString().slice(0, 10),
+      status: 'Awaiting signature',
+    };
+    setEnvelopes([item, ...envelopes]);
+    setTemplates((prev) =>
+      prev.map((t) => (t.n === newEnv.tpl ? { ...t, used: t.used + 1 } : t))
+    );
+    showToast(`Sent to ${newEnv.to} for signature`);
+  };
 
   return (
-    <div className="view pb-12" style={{ '--ac': '#D9466F', animation: 'fade .25s ease' } as React.CSSProperties}>
+    <div
+      className="view pb-12"
+      style={{ '--ac': '#D9466F', animation: 'fade .25s ease' } as React.CSSProperties}
+    >
       {toastMessage && (
         <div className="toast on" style={{ position: 'fixed', zIndex: 100 }}>
           {ic('check', 18)}
@@ -69,7 +92,7 @@ export const SignDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Hero Banner */}
+      {/* Header Band */}
       <div className="head band">
         <div>
           <span className="eyebrow">Sign</span>
@@ -91,7 +114,7 @@ export const SignDashboard: React.FC = () => {
           <button
             type="button"
             className="btn primary"
-            onClick={() => navigate('/doc-sign/requests')}
+            onClick={() => setIsNewOpen(true)}
           >
             {ic('pen', 16)}
             New signature request
@@ -100,217 +123,179 @@ export const SignDashboard: React.FC = () => {
       </div>
 
       {/* 4 Stat Cards */}
-      <div className="grid g4 mb-6">
+      <div className="grid g4">
         <div className="card stat">
-          <div className="k"><i>{ic('pen', 16)}</i>Awaiting signature</div>
-          <div className="v">{openEnvelopes.length}</div>
-          <div className="d">{viewedCount} opened but not signed</div>
+          <div className="k">
+            <i>{ic('pen', 16)}</i>
+            Awaiting signature
+          </div>
+          <div className="v">{openList.length}</div>
+          <div className="d">
+            {envelopes.filter((g) => g.status === 'Viewed').length} opened but not signed
+          </div>
         </div>
 
         <div className="card stat">
-          <div className="k"><i>{ic('check', 16)}</i>Completed</div>
-          <div className="v">{completedCount}</div>
+          <div className="k">
+            <i>{ic('check', 16)}</i>
+            Completed
+          </div>
+          <div className="v">{doneList.length}</div>
           <div className="d up">Signed and filed</div>
         </div>
 
         <div className="card stat">
-          <div className="k"><i>{ic('clock', 16)}</i>Average turnaround</div>
-          <div className="v">{averageTurnaround}</div>
+          <div className="k">
+            <i>{ic('clock', 16)}</i>
+            Average turnaround
+          </div>
+          <div className="v">{tat}</div>
           <div className="d">From sent to signed</div>
         </div>
 
         <div className="card stat">
-          <div className="k"><i>{ic('x', 16)}</i>Declined or voided</div>
-          <div className="v">{declinedCount}</div>
+          <div className="k">
+            <i>{ic('x', 16)}</i>
+            Declined or voided
+          </div>
+          <div className="v">{declinedList.length}</div>
           <div className="d">Need follow-up</div>
         </div>
       </div>
 
-      {/* Top row: Waiting on others + Envelope status */}
-      <div className="grid g-dash">
-        {/* Card 1: Waiting on others */}
+      {/* Split Grid: Waiting on others + Envelope status */}
+      <div className="grid g-dash mt">
         <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-[var(--text)] m-0">Waiting on others</h3>
+          <h3>
+            Waiting on others
             <button
               type="button"
-              className="link text-xs font-medium text-[var(--brand)] hover:underline"
+              className="link"
               onClick={() => navigate('/doc-sign/requests')}
             >
               All requests
             </button>
-          </div>
+          </h3>
 
-          <div className="list">
-            {openEnvelopes.map((envelope) => {
-              const isOverdue = envelope.id === 'SG-1042' || envelope.id === 'SG-1037';
-              const isViewed = envelope.status === 'viewed' || (envelope.status as string) === 'Viewed';
-
-              return (
-                <div
-                  key={envelope.id}
-                  className="row flex items-center gap-3 py-3 border-t border-[var(--line)] first:border-t-0 first:pt-0"
-                >
-                  <span
-                    className="av flex-none w-9 h-9 rounded-full flex items-center justify-center shadow-xs"
-                    style={{
-                      background: 'color-mix(in srgb, #D9466F 14%, transparent)',
-                      color: '#D9466F',
-                    }}
-                  >
-                    {ic('doc', 16)}
-                  </span>
-
-                  <div className="grow min-w-0 flex-1">
-                    <b className="block text-[13.5px] font-semibold text-[var(--text)] truncate">
-                      {envelope.title}
-                    </b>
-                    <div className="sub text-xs text-[var(--muted)] truncate mt-0.5">
-                      To {envelope.recipient.name}
-                      {envelope.isExternal ? ' (external)' : ''} •{' '}
-                      {isOverdue ? (
-                        <span style={{ color: 'var(--bad)', fontWeight: 600 }}>overdue</span>
-                      ) : (
-                        `due ${envelope.dueDate.replace(', 2026', '')}`
-                      )}
+          {openList.length > 0 ? (
+            <div className="list">
+              {openList.map((g) => {
+                const isLate = g.due < new Date().toISOString().slice(0, 10);
+                return (
+                  <div key={g.id} className="row">
+                    <span
+                      className="av"
+                      style={{
+                        background: 'color-mix(in srgb, var(--ac) 14%, transparent)',
+                        color: 'var(--ac)',
+                      }}
+                    >
+                      {ic('doc', 16)}
+                    </span>
+                    <div className="grow min-w-0">
+                      <b className="truncate block font-semibold">{g.doc}</b>
+                      <div className="sub text-xs text-[var(--muted)] truncate">
+                        To {g.to}
+                        {g.ext ? ' (external)' : ''} ·{' '}
+                        {isLate ? (
+                          <span style={{ color: 'var(--bad)', fontWeight: 600 }}>overdue</span>
+                        ) : (
+                          `due ${g.due}`
+                        )}
+                      </div>
                     </div>
+                    <span className={`pill ${g.status === 'Viewed' ? 'p-info' : 'p-warn'}`}>
+                      {g.status}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn sm"
+                      onClick={() => handleRemind(g.id, g.to)}
+                    >
+                      Remind
+                    </button>
                   </div>
-
-                  {isViewed ? (
-                    <span className="pill p-info text-xs font-semibold px-2.5 py-0.5 rounded-full whitespace-nowrap">
-                      ● Viewed
-                    </span>
-                  ) : (
-                    <span className="pill p-warn text-xs font-semibold px-2.5 py-0.5 rounded-full whitespace-nowrap">
-                      ● Awaiting signature
-                    </span>
-                  )}
-
-                  <button
-                    type="button"
-                    className="btn sm text-xs px-2.5 py-1 border border-[var(--line)] rounded-lg hover:border-[var(--brand)] font-medium transition-colors"
-                    onClick={() =>
-                      showToast(`Reminder sent to ${envelope.recipient.name}`)
-                    }
-                  >
-                    Remind
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="empty">Nothing waiting for a signature.</div>
+          )}
         </div>
 
-        {/* Card 2: Envelope status */}
-        <div className="card flex flex-col justify-between">
-          <h3 className="text-base font-semibold text-[var(--text)] mb-3">Envelope status</h3>
-
-          <div className="flex items-center gap-5 flex-wrap">
-            {/* Donut Chart */}
-            <div className="relative w-32 h-32 flex items-center justify-center flex-none">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-                <circle
-                  cx="60"
-                  cy="60"
-                  r={radius}
-                  fill="none"
-                  stroke="var(--line)"
-                  strokeWidth="12"
-                />
-                <circle
-                  cx="60"
-                  cy="60"
-                  r={radius}
-                  fill="none"
-                  stroke="#D9466F"
-                  strokeWidth="12"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={strokeDashoffset}
-                  strokeLinecap="round"
-                  className="transition-all duration-700 ease-out"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span className="text-2xl font-bold font-heading text-[var(--text)]">
-                  {completionPercentage}%
-                </span>
-              </div>
+        {/* Right: Envelope status & Donut */}
+        <div className="card">
+          <h3>Envelope status</h3>
+          <div style={{ display: 'flex', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div
+              className="donut"
+              style={{ '--p': pct, '--ac': '#D9466F' } as React.CSSProperties}
+              role="img"
+              aria-label={`${pct}%`}
+            >
+              <b>{pct}%</b>
             </div>
-
-            {/* Breakdown List */}
-            <div className="list flex-1 min-w-[140px] space-y-2">
-              <div className="row flex items-center justify-between text-xs py-1 border-t border-[var(--line)] first:border-t-0">
-                <span className="pill p-ok font-semibold px-2 py-0.5 rounded-full">
-                  ● Completed
-                </span>
-                <b className="text-[var(--text)] font-bold text-sm">{completedCount}</b>
+            <div className="list" style={{ flex: 1, minWidth: '150px' }}>
+              <div className="row">
+                <div className="grow">
+                  <span className="pill p-ok">Completed</span>
+                </div>
+                <b>{doneList.length}</b>
               </div>
-
-              <div className="row flex items-center justify-between text-xs py-1 border-t border-[var(--line)]">
-                <span className="pill p-warn font-semibold px-2 py-0.5 rounded-full">
-                  ● Awaiting signature
-                </span>
-                <b className="text-[var(--text)] font-bold text-sm">{awaitingCount}</b>
+              <div className="row">
+                <div className="grow">
+                  <span className="pill p-warn">Awaiting signature</span>
+                </div>
+                <b>{envelopes.filter((g) => g.status === 'Awaiting signature').length}</b>
               </div>
-
-              <div className="row flex items-center justify-between text-xs py-1 border-t border-[var(--line)]">
-                <span className="pill p-info font-semibold px-2 py-0.5 rounded-full">
-                  ● Viewed
-                </span>
-                <b className="text-[var(--text)] font-bold text-sm">{viewedCount}</b>
+              <div className="row">
+                <div className="grow">
+                  <span className="pill p-info">Viewed</span>
+                </div>
+                <b>{envelopes.filter((g) => g.status === 'Viewed').length}</b>
               </div>
-
-              <div className="row flex items-center justify-between text-xs py-1 border-t border-[var(--line)]">
-                <span className="pill p-bad font-semibold px-2 py-0.5 rounded-full">
-                  ● Declined
-                </span>
-                <b className="text-[var(--text)] font-bold text-sm">{declinedCount}</b>
+              <div className="row">
+                <div className="grow">
+                  <span className="pill p-bad">Declined</span>
+                </div>
+                <b>{envelopes.filter((g) => g.status === 'Declined').length}</b>
               </div>
             </div>
           </div>
-
-          <p className="text-xs text-[var(--muted)] mt-4 mb-0">
+          <p className="muted" style={{ fontSize: '12.5px', marginTop: '14px' }}>
             Share of all envelopes that are fully signed.
           </p>
         </div>
       </div>
 
-      {/* Bottom row: Most-used templates */}
-      <div className="mt">
-        <div className="card">
-          <h3 className="text-base font-semibold text-[var(--text)] mb-4">Most-used templates</h3>
-
-          <div className="dept-bars wide2 space-y-3">
-            {templates.map((tpl) => {
-              const pct = (tpl.usageCount / maxUsed) * 100;
-              return (
-                <div
-                  key={tpl.id}
-                  className="r grid grid-cols-[180px_1fr_40px] gap-3 items-center text-xs"
-                >
-                  <span className="text-[13px] font-medium text-[var(--text)] truncate">
-                    {tpl.title}
-                  </span>
-
-                  <div className="bar h-2 bg-[var(--surface-2)] border border-[var(--line)] rounded-full overflow-hidden">
-                    <span
-                      className="block h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${pct}%`,
-                        background: 'linear-gradient(90deg, #D9466F, #F43F5E)',
-                      }}
-                    />
-                  </div>
-
-                  <em className="text-right text-[var(--muted)] font-mono text-xs not-italic">
-                    {tpl.usageCount}
-                  </em>
+      {/* Bottom Card: Most-used templates */}
+      <div className="card mt">
+        <h3>Most-used templates</h3>
+        <div className="dept-bars wide2">
+          {[...templates]
+            .sort((a, b) => b.used - a.used)
+            .map((t) => (
+              <div key={t.n} className="r">
+                <span title={t.n}>{t.n}</span>
+                <div className="bar">
+                  <span
+                    style={{
+                      width: `${Math.max(0, Math.min(100, (t.used / maxUsed) * 100))}%`,
+                    }}
+                  />
                 </div>
-              );
-            })}
-          </div>
+                <em>{t.used}</em>
+              </div>
+            ))}
         </div>
       </div>
+
+      {/* New Signature Request Modal */}
+      <NewSignatureModal
+        isOpen={isNewOpen}
+        onClose={() => setIsNewOpen(false)}
+        onSend={handleSend}
+      />
     </div>
   );
 };
