@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swap');
+@import 'tailwindcss';
+@import './animations.css';
+@import './tokens.css';
+@import './base.css';
+@import './auth-layout.css';
+@import './shared-components.css';
+@import './overlays-and-tables.css';
+@import './design-system-v3.css';
+@import '../people-plus/layout.css';
+@import '../people-plus/responsive.css';
+@import '../people-plus/suite-layout.css';
+@import '../people-plus/suite-responsive.css';
