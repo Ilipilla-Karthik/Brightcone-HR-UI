@@ -8,6 +8,7 @@ import { SidebarNav } from './components/shell/SidebarNav';
 import { CommandPalette } from './components/shell/CommandPalette';
 
 import { SuiteDashboard } from './pages/suite/SuiteDashboard';
+import { EmployeePortalPage } from './pages/portal/EmployeePortalPage';
 import { SignDashboard } from './pages/doc_sign/SignDashboard';
 import { SignatureRequests } from './pages/doc_sign/SignatureRequests';
 import { SignDocumentFlow } from './pages/doc_sign/SignDocumentFlow';
@@ -77,6 +78,8 @@ const AppLayout: React.FC = () => {
               <Route path="/login" element={<Login />} />
               <Route path="/suite" element={<SuiteDashboard />} />
               <Route path="/suite/*" element={<SuiteDashboard />} />
+              <Route path="/portal" element={<EmployeePortalPage />} />
+              <Route path="/portal/*" element={<EmployeePortalPage />} />
 
               {/* DocSign routes */}
               <Route path="/doc-sign" element={<Navigate to="/doc-sign/dashboard" replace />} />
