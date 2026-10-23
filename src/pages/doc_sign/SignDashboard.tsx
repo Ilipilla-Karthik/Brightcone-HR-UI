@@ -1,14 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { INITIAL_REQUESTS, INITIAL_TEMPLATES } from './mockData';
-import { SignatureRequest } from './types';
+import { SignatureRequest, SignatureTemplate } from './types';
 import { ic } from '../../components/icons';
+import * as templateService from '../../services/templateService';
 
 export const SignDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [requests] = useState<SignatureRequest[]>(INITIAL_REQUESTS);
-  const [templates] = useState(INITIAL_TEMPLATES);
+  const [templates, setTemplates] = useState<SignatureTemplate[]>(INITIAL_TEMPLATES);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    templateService.getTemplates()
+      .then((data) => {
+        if (active && data && data.length > 0) {
+          setTemplates(data);
+        }
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
