@@ -6,7 +6,6 @@ import {
   CheckSquare,
   Plus,
   ArrowRight,
-  Download,
   AlertCircle,
   GraduationCap,
   Sparkles,
@@ -26,6 +25,7 @@ import {
 import axios from 'axios';
 import NewCycleModal from '../../components/performance/NewCycleModal';
 import RateEmployeeModal from '../../components/performance/RateEmployeeModal';
+import PerformanceReviewTable from './PerformanceReviewTable';
 import styles from './PerformanceAdminPage.module.css';
 
 const STAGE_NAMES = [
@@ -61,7 +61,6 @@ export const PerformanceAdminPage: React.FC = () => {
       const cycleList = await getReviewCycles();
       setCycles(cycleList);
       if (cycleList.length > 0) {
-        // Default to active cycle if none selected or if selected not in list
         const active = cycleList.find((c) => c.status === 'Active') || cycleList[0];
         setSelectedCycleId((prev) => (prev && cycleList.some((c) => c.id === prev) ? prev : active.id));
       }
@@ -103,39 +102,36 @@ export const PerformanceAdminPage: React.FC = () => {
   }, [selectedCycleId, loadDashboard]);
 
   const handleAdvanceStage = async () => {
-    if (!dashboardData || isAdvancing) return;
-    const { cycle } = dashboardData;
-    if (cycle.stage >= 4) return;
+    if (!dashboardData) return;
+    const current = dashboardData.cycle.stage;
+    if (current >= 4) return;
 
-    setIsAdvancing(true);
+    const nextStageName = STAGE_NAMES[current + 1];
+    const ok = window.confirm(
+      `Advance cycle to Stage ${current + 2}: "${nextStageName}"? This notifies all managers and eligible participants.`
+    );
+    if (!ok) return;
+
     try {
-      const updated = await advanceReviewCycle(cycle.id);
-      showToast(`Advanced review cycle to ${STAGE_NAMES[updated.stage]}`);
+      setIsAdvancing(true);
+      await advanceReviewCycle(dashboardData.cycle.id);
+      showToast(`Review cycle advanced to ${nextStageName}`);
+      await loadDashboard(dashboardData.cycle.id);
       await loadCycles();
-      await loadDashboard(cycle.id);
-    } catch (err: unknown) {
-      const msg =
-        axios.isAxiosError(err) && err.response?.data?.description
-          ? String(err.response.data.description)
-          : 'Failed to advance cycle stage.';
-      setError(msg);
+    } catch {
+      showToast('Failed to advance cycle stage. Please retry.');
     } finally {
       setIsAdvancing(false);
     }
   };
 
   const handleRemind = async (employeeId: string, employeeName: string) => {
-    if (!dashboardData || remindingId) return;
-    setRemindingId(employeeId);
+    if (!dashboardData) return;
     try {
-      const res = await remindReview(dashboardData.cycle.id, employeeId);
-      if (res.status === 'queued') {
-        showToast(`Reminder sent to ${employeeName}`);
-      } else {
-        showToast(res.reason || res.message || `Reminder skipped for ${employeeName}`);
-      }
-      await loadDashboard(dashboardData.cycle.id);
-    } catch (_err: unknown) {
+      setRemindingId(employeeId);
+      await remindReview(dashboardData.cycle.id, employeeId);
+      showToast(`Reminder sent to ${employeeName}`);
+    } catch {
       showToast(`Failed to send reminder to ${employeeName}`);
     } finally {
       setRemindingId(null);
@@ -146,107 +142,67 @@ export const PerformanceAdminPage: React.FC = () => {
     if (!dashboardData) return;
     try {
       await downloadExportRatings(dashboardData.cycle.id);
-      showToast('Ratings distribution exported');
-    } catch (err) {
-      showToast('Failed to export ratings. Please retry.');
-    }
-  };
-
-  const handleRated = (updatedReview: CycleReviewItem) => {
-    showToast(`Rating saved for ${updatedReview.employee_name}`);
-    if (dashboardData) {
-      loadDashboard(dashboardData.cycle.id);
-    }
-  };
-
-  const handleCycleCreated = (newCycle: ReviewCycle) => {
-    showToast(`${newCycle.name} started`);
-    setSelectedCycleId(newCycle.id);
-    loadCycles();
-  };
-
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '—';
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      });
+      showToast('Ratings CSV downloaded');
     } catch {
-      return dateStr;
+      showToast('Export failed. Please check network and retry.');
+    }
+  };
+
+  const handleCycleCreated = async (newCycle: ReviewCycle) => {
+    await loadCycles();
+    setSelectedCycleId(newCycle.id);
+    showToast('New review cycle activated');
+  };
+
+  const handleRated = async () => {
+    if (selectedCycleId) {
+      await loadDashboard(selectedCycleId);
+    }
+    showToast('Employee rating and increment finalized');
+  };
+
+  const formatDate = (isoStr?: string) => {
+    if (!isoStr) return '—';
+    try {
+      const d = new Date(isoStr);
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    } catch {
+      return isoStr;
     }
   };
 
   return (
-    <div className={styles.page} data-testid="performance-admin">
-      {/* Tab Navigation: Performance & Learning Admin */}
-      <div className={styles.tabBar} role="tablist" aria-label="Admin Sections">
+    <div className={styles.container} data-testid="performance-admin-page">
+      {toastMessage && <div className={styles.toast}>{toastMessage}</div>}
+
+      <div className={styles.subnav}>
         <NavLink
-          to="/performance/admin"
-          className={`${styles.tabBtn} ${styles.tabActive}`}
-          role="tab"
-          aria-selected="true"
-        >
-          <BarChart3 size={16} />
-          <span>Performance</span>
-        </NavLink>
-        <NavLink
-          to="/learn/courses"
-          className={styles.tabBtn}
-          role="tab"
-          aria-selected="false"
+          to="/learn/dashboard"
+          className={({ isActive }) =>
+            `${styles.subnavLink} ${isActive ? styles.subnavLinkActive : ''}`
+          }
         >
           <GraduationCap size={16} />
-          <span>Learning Admin</span>
+          <span>Learning & Courses</span>
+        </NavLink>
+        <NavLink
+          to="/performance/admin"
+          className={({ isActive }) =>
+            `${styles.subnavLink} ${isActive ? styles.subnavLinkActive : ''}`
+          }
+        >
+          <Sparkles size={16} />
+          <span>Performance review</span>
         </NavLink>
       </div>
 
-      {toastMessage && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 24,
-            right: 24,
-            zIndex: 9999,
-            background: '#0F172A',
-            color: '#fff',
-            padding: '12px 20px',
-            borderRadius: '10px',
-            fontSize: '13.5px',
-            fontWeight: 500,
-            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.15)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}
-          role="status"
-        >
-          <Sparkles size={16} color="#60A5FA" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
       {error && (
-        <div className={styles.errorBanner} role="alert">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AlertCircle size={18} />
-            <span>{error}</span>
-          </div>
-          <button
-            type="button"
-            className={styles.btnSm}
-            onClick={() => selectedCycleId && loadDashboard(selectedCycleId)}
-            style={{ background: '#fff', border: '1px solid #fecaca', cursor: 'pointer' }}
-          >
-            Retry
-          </button>
+        <div className={styles.alert}>
+          <AlertCircle size={18} />
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Page Header */}
       <div className={styles.head}>
         <div>
           <h1 className={styles.headTitle}>Performance</h1>
@@ -406,113 +362,13 @@ export const PerformanceAdminPage: React.FC = () => {
           </div>
 
           {/* Review Status / Ratings Table */}
-          <div className={styles.tableCard}>
-            <div className={styles.tableHead}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
-                Review status
-              </h3>
-              <button
-                type="button"
-                className={styles.linkBtn}
-                onClick={handleExport}
-                title="Download CSV report of employee ratings"
-              >
-                <Download size={14} />
-                <span>Export ratings</span>
-              </button>
-            </div>
-
-            <div className={styles.tableContainer}>
-              <table className={styles.table} aria-label="Employee Review Status Table">
-                <thead>
-                  <tr>
-                    <th scope="col">Employee</th>
-                    <th scope="col">Manager</th>
-                    <th scope="col">Self-review</th>
-                    <th scope="col">Goals</th>
-                    <th scope="col">Rating</th>
-                    <th scope="col" style={{ textAlign: 'right' }}>
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dashboardData.reviews.length > 0 ? (
-                    dashboardData.reviews.map((r) => {
-                      const isSubmitted = r.self_review_status === 'Submitted';
-                      const initials = r.employee_name
-                        .split(' ')
-                        .map((n) => n[0])
-                        .join('')
-                        .slice(0, 2)
-                        .toUpperCase();
-
-                      return (
-                        <tr key={r.id}>
-                          <td>
-                            <div className={styles.whoCell}>
-                              <div className={styles.avatar}>{initials}</div>
-                              <div>
-                                <p className={styles.empName}>{r.employee_name}</p>
-                                <p className={styles.empDept}>{r.department}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td>{r.manager_name || '—'}</td>
-                          <td>
-                            <span
-                              className={`${styles.pill} ${
-                                isSubmitted ? styles.pOk : styles.pMute
-                              }`}
-                            >
-                              {r.self_review_status}
-                            </span>
-                          </td>
-                          <td>{r.goals_count}</td>
-                          <td>
-                            {r.rating ? (
-                              <b style={{ color: 'var(--text, #0f172a)' }}>{r.rating}</b>
-                            ) : (
-                              <span style={{ color: 'var(--text-muted, #94a3b8)' }}>—</span>
-                            )}
-                          </td>
-                          <td>
-                            <div className={styles.actionCell}>
-                              {!isSubmitted && (
-                                <button
-                                  type="button"
-                                  className={`${styles.btn} ${styles.btnSm}`}
-                                  onClick={() => handleRemind(r.employee_id, r.employee_name)}
-                                  disabled={remindingId === r.employee_id}
-                                  title="Send reminder to submit self-review"
-                                >
-                                  {remindingId === r.employee_id ? 'Sending...' : 'Remind'}
-                                </button>
-                              )}
-                              <button
-                                type="button"
-                                className={`${styles.btn} ${styles.btnSm} ${styles.btnPrimary}`}
-                                onClick={() => setRateModalReview(r)}
-                                title="Set final rating and recommended increment"
-                              >
-                                Rate
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '32px' }}>
-                        No employee reviews found in this cycle.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <PerformanceReviewTable
+            reviews={dashboardData.reviews}
+            onExport={handleExport}
+            onRemind={handleRemind}
+            onRate={(r) => setRateModalReview(r)}
+            remindingId={remindingId}
+          />
         </>
       )}
 
