@@ -72,10 +72,20 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = (demoEmail: string, role: string, firstName: string, lastName: string) => {
+  const handleDemoLogin = async (demoEmail: string, role: string, firstName: string, lastName: string) => {
     setEmail(demoEmail);
-    setPassword('Demo@123');
+    const pass = demoEmail.includes('ananya') ? 'Admin@123' : 'Welcome@123';
+    setPassword(pass);
     setErrorMessage(null);
+    try {
+      const data = await loginApi({ email: demoEmail, password: pass });
+      if (data && data.token) {
+        performLogin(demoEmail, role, firstName, lastName, data.token);
+        return;
+      }
+    } catch {
+      // Fallback
+    }
     performLogin(demoEmail, role, firstName, lastName);
   };
 

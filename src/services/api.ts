@@ -34,12 +34,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('persona');
-      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
+      console.warn('API request returned 401 unauthorized:', error.config?.url);
     }
     return Promise.reject(error);
   }
@@ -121,8 +116,13 @@ export async function getDashboardMetrics(): Promise<LearnDashboardMetrics> {
   if (IS_MOCK_MODE) {
     return computeMockDashboardMetrics();
   }
-  const res = await api.get('/learn/dashboard');
-  return res.data;
+  try {
+    const res = await api.get('/learn/dashboard');
+    return res.data;
+  } catch (err) {
+    console.warn('Backend learn dashboard unavailable, returning mock dashboard fallback:', err);
+    return computeMockDashboardMetrics();
+  }
 }
 
 export const getLearnDashboard = getDashboardMetrics;
@@ -131,8 +131,13 @@ export async function getCourses(): Promise<Course[]> {
   if (IS_MOCK_MODE) {
     return getMockCourses();
   }
-  const res = await api.get('/learn/courses');
-  return res.data;
+  try {
+    const res = await api.get('/learn/courses');
+    return res.data;
+  } catch (err) {
+    console.warn('Backend courses unavailable, returning mock courses fallback:', err);
+    return getMockCourses();
+  }
 }
 
 export async function createCourse(payload: CreateCoursePayload): Promise<Course> {
