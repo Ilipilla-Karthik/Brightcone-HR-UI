@@ -62,32 +62,66 @@ export const Header: React.FC<HeaderProps> = ({
 
   const getBreadcrumb = () => {
     const p = location.pathname;
-    if (p === '/doc-sign/dashboard' || p === '/doc-sign' || p === '/sign' || p === '/doc_sign')
+    if (p.startsWith('/doc-sign') || p.startsWith('/sign') || p.startsWith('/doc_sign')) {
+      if (p.includes('/requests')) return { app: 'Sign', page: 'Signature requests' };
+      if (p.includes('/templates')) return { app: 'Sign', page: 'Templates' };
+      if (p.includes('/handbook')) return { app: 'Sign', page: 'Employee handbook' };
+      if (p.includes('/policies')) return { app: 'Sign', page: 'HR policies' };
+      if (p.includes('/acks')) return { app: 'Sign', page: 'Policy acknowledgements' };
+      if (p.includes('/flow')) return { app: 'Sign', page: 'Documents to sign' };
       return { app: 'Sign', page: 'Sign dashboard' };
-    if (p.startsWith('/doc-sign/requests')) return { app: 'Sign', page: 'Signature requests' };
-    if (p.startsWith('/doc-sign/templates')) return { app: 'Sign', page: 'Templates' };
-    if (p.startsWith('/doc-sign/handbook')) return { app: 'Sign', page: 'Employee handbook' };
-    if (p.startsWith('/doc-sign/policies')) return { app: 'Sign', page: 'HR policies' };
-    if (p.startsWith('/doc-sign/acks')) return { app: 'Sign', page: 'Policy acknowledgements' };
-    if (p.startsWith('/doc-sign/flow')) return { app: 'Sign', page: 'Documents to sign' };
+    }
     if (p.startsWith('/performance')) return { app: 'Performance', page: 'Review cycles' };
-    if (p === '/learn/courses') return { app: 'Learn', page: 'Courses' };
-    if (p === '/learn/my-learning') return { app: 'Learn', page: 'My learning' };
-    if (p.startsWith('/learn')) return { app: 'Learn', page: 'Learn dashboard' };
-    if (p.startsWith('/people')) return { app: 'People', page: 'Directory' };
-    if (p.startsWith('/recruit')) return { app: 'Recruit', page: 'Pipelines' };
-    if (p.startsWith('/payroll')) return { app: 'Payroll', page: 'Runs' };
-    if (p.startsWith('/expense')) return { app: 'Expense', page: 'Claims' };
-    if (p.startsWith('/engagement')) return { app: 'Connect', page: 'Company feed' };
-    if (p.startsWith('/time')) return { app: 'Shift', page: 'Roster' };
-    if (p.startsWith('/advanced-hr')) return { app: 'Advanced HR', page: 'Analytics' };
+    if (p.startsWith('/learn')) {
+      if (p.includes('/courses')) return { app: 'Learn', page: 'Course catalogue' };
+      if (p.includes('/my-learning')) return { app: 'Learn', page: 'My learning' };
+      return { app: 'Learn', page: 'Learn dashboard' };
+    }
+    if (p.startsWith('/people')) {
+      if (p.includes('/profile')) return { app: 'People', page: 'Employee profile' };
+      if (p.includes('/org-chart')) return { app: 'People', page: 'Org structure' };
+      if (p.includes('/leaves')) return { app: 'People', page: 'Leaves & time-off' };
+      if (p.includes('/attendance')) return { app: 'People', page: 'Attendance' };
+      if (p.includes('/assets')) return { app: 'People', page: 'Assets & equipment' };
+      if (p.includes('/documents')) return { app: 'People', page: 'Documents' };
+      return { app: 'People', page: 'Directory' };
+    }
+    if (p.startsWith('/recruit')) {
+      if (p.includes('/candidates')) return { app: 'Recruit', page: 'Candidate tracker' };
+      if (p.includes('/jobs')) return { app: 'Recruit', page: 'Job openings' };
+      if (p.includes('/interviews')) return { app: 'Recruit', page: 'Interview schedule' };
+      if (p.includes('/offers')) return { app: 'Recruit', page: 'Offer letters' };
+      if (p.includes('/referrals')) return { app: 'Recruit', page: 'Referrals' };
+      return { app: 'Recruit', page: 'Talent pipeline' };
+    }
+    if (p.startsWith('/time')) {
+      if (p.includes('/roster')) return { app: 'Shift', page: 'Shift roster' };
+      if (p.includes('/swap')) return { app: 'Shift', page: 'Shift swap' };
+      if (p.includes('/holidays')) return { app: 'Shift', page: 'Holidays' };
+      if (p.includes('/leaves')) return { app: 'Shift', page: 'Leave balance' };
+      return { app: 'Shift', page: 'Attendance roster' };
+    }
+    if (p.startsWith('/payroll')) {
+      if (p.includes('/salary-structure')) return { app: 'Payroll', page: 'Salary structure' };
+      if (p.includes('/payslips')) return { app: 'Payroll', page: 'My payslips' };
+      if (p.includes('/compliance')) return { app: 'Payroll', page: 'Tax & PF compliance' };
+      if (p.includes('/benefits')) return { app: 'Payroll', page: 'Benefits' };
+      return { app: 'Payroll', page: 'Payroll runs' };
+    }
+    if (p.startsWith('/expense')) return { app: 'Expense', page: 'Expense claims' };
+    if (p.startsWith('/engagement')) {
+      if (p.includes('/events')) return { app: 'Connect', page: 'Company events' };
+      if (p.includes('/celebrations')) return { app: 'Connect', page: 'Celebrations' };
+      if (p.includes('/helpdesk')) return { app: 'Connect', page: 'Helpdesk queue' };
+      return { app: 'Connect', page: 'Company feed' };
+    }
     return { app: 'People Plus', page: 'Suite dashboard' };
   };
 
   const crumb = getBreadcrumb();
 
   return (
-    <header className="top flex-none">
+    <header className="top flex-none relative z-50">
       <button
         type="button"
         className="icon-btn"
@@ -168,7 +202,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {isProfileOpen && (
-            <div className="absolute right-0 mt-2 w-64 bg-[var(--surface)] border border-[var(--line)] rounded-2xl shadow-2xl py-2 z-50">
+            <div className="absolute right-0 mt-2 w-64 bg-[var(--surface)] border border-[var(--line)] rounded-2xl shadow-2xl py-2 z-[9999]">
               <div className="px-4 py-3 border-b border-[var(--line)]">
                 <p className="text-xs font-bold text-[var(--text)]">{displayName}</p>
                 <p className="text-[11px] text-[var(--muted)] truncate">{displayEmail}</p>
@@ -184,7 +218,7 @@ export const Header: React.FC<HeaderProps> = ({
                     onToggleRole();
                     setIsProfileOpen(false);
                   }}
-                  className="w-full text-left px-4 py-2.5 text-xs text-[var(--text)] hover:bg-[var(--surface-2)] flex items-center gap-2"
+                  className="w-full text-left px-4 py-2.5 text-xs text-[var(--text)] hover:bg-[var(--surface-2)] flex items-center gap-2 cursor-pointer"
                 >
                   {ic('users', 14)}
                   <span>Switch to {role === 'hr_admin' ? 'Employee View' : 'HR Admin View'}</span>
@@ -194,7 +228,7 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 type="button"
                 onClick={handleLogout}
-                className="w-full text-left px-4 py-2.5 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium"
+                className="w-full text-left px-4 py-2.5 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 font-medium cursor-pointer"
               >
                 {ic('door', 14)}
                 <span>Sign out</span>
@@ -202,6 +236,17 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
         </div>
+
+        {/* Direct, prominent top-right Sign Out button */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-xl transition-all border border-rose-200 dark:border-rose-900/60 shadow-xs cursor-pointer ml-1"
+          title="Sign out of Brightcone"
+        >
+          {ic('door', 14)}
+          <span className="hidden sm:inline">Sign out</span>
+        </button>
       </div>
     </header>
   );

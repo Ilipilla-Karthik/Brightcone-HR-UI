@@ -85,13 +85,128 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ role = 'hr_admin' }) => 
           title: 'PERFORMANCE',
           items: [
             { label: 'Review cycles', to: '/performance/admin', icon: ic('chart', 15) },
-            { label: 'Goals & appraisals', to: '/recruit/goals', icon: ic('check', 15) },
+            { label: 'Goals & appraisals', to: '/recruit?tab=referrals', icon: ic('check', 15) },
           ],
         },
       ];
     }
 
-    // 4. Default Suite Navigation
+    // 4. People Module
+    if (p.startsWith('/people')) {
+      return [
+        {
+          title: 'DIRECTORY & PROFILE',
+          items: [
+            { label: 'All Employees', to: '/people?tab=directory', icon: ic('users', 15) },
+            { label: 'Employee Profile', to: '/people?tab=profile', icon: ic('user', 15) },
+          ],
+        },
+        {
+          title: 'TIME & WORKPLACE',
+          items: [
+            { label: 'Leaves & Balances', to: '/people?tab=leaves', icon: ic('shield', 15) },
+            { label: 'Attendance Records', to: '/people?tab=attendance', icon: ic('clock', 15) },
+            { label: 'Hardware Assets', to: '/people?tab=assets', icon: ic('grid', 15) },
+            { label: 'Employee Documents', to: '/people?tab=documents', icon: ic('book', 15) },
+          ],
+        },
+      ];
+    }
+
+    // 5. Recruit Module
+    if (p.startsWith('/recruit')) {
+      return [
+        {
+          title: 'TALENT PIPELINE',
+          items: [
+            { label: 'Pipeline Funnel', to: '/recruit?tab=pipeline', icon: ic('briefcase', 15) },
+            { label: 'Candidate Tracker', to: '/recruit?tab=candidates', badge: 8, icon: ic('users', 15) },
+            { label: 'Active Job Openings', to: '/recruit?tab=jobs', badge: 4, icon: ic('briefcase', 15) },
+          ],
+        },
+        {
+          title: 'EVALUATION & OFFERS',
+          items: [
+            { label: 'Interview Schedule', to: '/recruit?tab=interviews', badge: 3, icon: ic('clock', 15) },
+            { label: 'Offer Letters', to: '/recruit?tab=offers', icon: ic('send', 15) },
+            { label: 'Employee Referrals', to: '/recruit?tab=referrals', icon: ic('check', 15) },
+          ],
+        },
+      ];
+    }
+
+    // 6. Time & Shift Module
+    if (p.startsWith('/time')) {
+      return [
+        {
+          title: 'SHIFTS & ATTENDANCE',
+          items: [
+            { label: 'Attendance Roster', to: '/time?tab=attendance', icon: ic('clock', 15) },
+            { label: 'Shift Scheduling', to: '/time?tab=roster', icon: ic('grid', 15) },
+            { label: 'Shift Swapping', to: '/time?tab=swap', icon: ic('chat', 15) },
+          ],
+        },
+        {
+          title: 'CALENDAR & LEAVES',
+          items: [
+            { label: 'Holiday Calendar', to: '/time?tab=holidays', icon: ic('calendar', 15) },
+            { label: 'Leave Applications', to: '/time?tab=leaves', icon: ic('shield', 15) },
+          ],
+        },
+      ];
+    }
+
+    // 7. Payroll Module
+    if (p.startsWith('/payroll')) {
+      return [
+        {
+          title: 'PAYROLL OPERATIONS',
+          items: [
+            { label: 'Monthly Runs', to: '/payroll?tab=runs', icon: ic('pay', 15) },
+            { label: 'Salary Structure', to: '/payroll?tab=structure', icon: ic('template', 15) },
+            { label: 'Employee Payslips', to: '/payroll?tab=slips', icon: ic('book', 15) },
+          ],
+        },
+        {
+          title: 'COMPLIANCE & PERKS',
+          items: [
+            { label: 'Statutory Filings (PF/ESI)', to: '/payroll?tab=compliance', icon: ic('shield', 15) },
+            { label: 'Benefits & Allowances', to: '/payroll?tab=benefits', icon: ic('check', 15) },
+          ],
+        },
+      ];
+    }
+
+    // 8. Expense Module
+    if (p.startsWith('/expense')) {
+      return [
+        {
+          title: 'EXPENSE CLAIMS',
+          items: [
+            { label: 'My Expense Claims', to: '/expense?tab=claims', icon: ic('receipt', 15) },
+            { label: 'Approvals Queue', to: '/expense?tab=approvals', badge: 2, icon: ic('check', 15) },
+            { label: 'Office Expenses', to: '/expense?tab=office', icon: ic('grid', 15) },
+          ],
+        },
+      ];
+    }
+
+    // 9. Engagement / Connect Module
+    if (p.startsWith('/engagement')) {
+      return [
+        {
+          title: 'WORKPLACE CONNECT',
+          items: [
+            { label: 'Company Feed', to: '/engagement?tab=feed', icon: ic('chat', 15) },
+            { label: 'Company Events', to: '/engagement?tab=events', icon: ic('calendar', 15) },
+            { label: 'Celebrations', to: '/engagement?tab=celebrations', icon: ic('check', 15) },
+            { label: 'HR Helpdesk', to: '/engagement?tab=helpdesk', badge: 3, icon: ic('send', 15) },
+          ],
+        },
+      ];
+    }
+
+    // 10. Default Suite Navigation
     return [
       {
         title: 'OVERVIEW',
@@ -143,9 +258,13 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ role = 'hr_admin' }) => 
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  className={({ isActive }) =>
-                    `nav ${isActive ? 'active' : ''}`
-                  }
+                  className={({ isActive }) => {
+                    const isItemActive =
+                      isActive ||
+                      (location.pathname + location.search === item.to) ||
+                      (location.search === '' && item.to.includes('?tab=') && item.to.endsWith(item.to.split('?tab=')[1]));
+                    return `nav ${isItemActive ? 'active' : ''}`;
+                  }}
                 >
                   {item.icon}
                   <span>{item.label}</span>
@@ -170,7 +289,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ role = 'hr_admin' }) => 
           </div>
           <button
             type="button"
-            className="p-1 hover:text-red-500 transition-colors"
+            className="p-1 hover:text-red-500 transition-colors cursor-pointer"
             aria-label="Sign out"
             title="Sign out"
             onClick={logout}

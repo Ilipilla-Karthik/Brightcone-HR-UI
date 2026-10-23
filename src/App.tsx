@@ -70,6 +70,7 @@ const AppLayout: React.FC = () => {
               <Route path="/" element={<Navigate to="/suite" replace />} />
               <Route path="/login" element={<Login />} />
               <Route path="/suite" element={<SuiteDashboard />} />
+              <Route path="/suite/*" element={<SuiteDashboard />} />
 
               {/* DocSign routes */}
               <Route path="/doc-sign" element={<Navigate to="/doc-sign/dashboard" replace />} />
@@ -92,16 +93,39 @@ const AppLayout: React.FC = () => {
               <Route path="/learn/dashboard" element={<LearnDashboard />} />
               <Route path="/learn/courses" element={<CourseCatalogueAdmin />} />
               <Route path="/learn/my-learning" element={<EmployeeLearnPage />} />
+              <Route path="/learn/*" element={<Navigate to="/learn/dashboard" replace />} />
               <Route path="/performance" element={<Navigate to="/performance/admin" replace />} />
               <Route path="/performance/admin" element={<PerformanceAdminPage />} />
+              <Route path="/performance/*" element={<Navigate to="/performance/admin" replace />} />
 
-              {/* Core module routes */}
+              {/* Core module routes & aliases */}
+              <Route path="/people/*" element={<PeopleDashboard />} />
               <Route path="/people" element={<PeopleDashboard />} />
+              <Route path="/employees/*" element={<Navigate to="/people" replace />} />
+              <Route path="/employees" element={<Navigate to="/people" replace />} />
+
+              <Route path="/recruit/*" element={<RecruitDashboard />} />
               <Route path="/recruit" element={<RecruitDashboard />} />
+              <Route path="/recruitment/*" element={<Navigate to="/recruit" replace />} />
+              <Route path="/recruitment" element={<Navigate to="/recruit" replace />} />
+
+              <Route path="/payroll/*" element={<PayrollDashboard />} />
               <Route path="/payroll" element={<PayrollDashboard />} />
+
+              <Route path="/expense/*" element={<ExpenseEmployeePage />} />
               <Route path="/expense" element={<ExpenseEmployeePage />} />
+
+              <Route path="/engagement/*" element={<CompanyFeedPage />} />
               <Route path="/engagement" element={<CompanyFeedPage />} />
+              <Route path="/connect/*" element={<Navigate to="/engagement" replace />} />
+              <Route path="/connect" element={<Navigate to="/engagement" replace />} />
+
+              <Route path="/time/*" element={<AttendanceAdmin />} />
               <Route path="/time" element={<AttendanceAdmin />} />
+              <Route path="/shift/*" element={<Navigate to="/time" replace />} />
+              <Route path="/shift" element={<Navigate to="/time" replace />} />
+
+              <Route path="/advanced-hr/*" element={<AdminDashboard />} />
               <Route path="/advanced-hr" element={<AdminDashboard />} />
 
               <Route path="*" element={<Navigate to="/suite" replace />} />

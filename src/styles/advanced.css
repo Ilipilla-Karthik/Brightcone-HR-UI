@@ -22,7 +22,7 @@ body{letter-spacing:-.003em}
 
 .content{background:radial-gradient(1100px 380px at 78% -120px,color-mix(in srgb,var(--ac,var(--brand)) 11%,transparent),transparent 70%),radial-gradient(700px 300px at -10% 0,color-mix(in srgb,var(--brand-2) 6%,transparent),transparent 70%),var(--bg)}
 
-.top{background:color-mix(in srgb,var(--surface) 70%,transparent);backdrop-filter:saturate(1.5) blur(16px);-webkit-backdrop-filter:saturate(1.5) blur(16px)}
+.top{position:relative;z-index:50;background:color-mix(in srgb,var(--surface) 70%,transparent);backdrop-filter:saturate(1.5) blur(16px);-webkit-backdrop-filter:saturate(1.5) blur(16px)}
 
 .cmd{border-radius:12px;transition:border-color .15s,box-shadow .15s}
 
