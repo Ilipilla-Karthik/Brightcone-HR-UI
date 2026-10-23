@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './services/authContext';
+import Login from './pages/auth/Login';
 import AppRail from './components/shell/AppRail';
 import Header from './components/shell/Header';
 import SidebarNav from './components/shell/SidebarNav';
@@ -23,15 +24,27 @@ import AttendanceAdmin from './pages/time/AttendanceAdmin';
 import AdminDashboard from './pages/advanced_hr/AdminDashboard';
 
 const AppLayout: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [role, setRole] = useState<'hr_admin' | 'employee'>(
     user?.role === 'employee' ? 'employee' : 'hr_admin'
   );
   const [isCommandOpen, setIsCommandOpen] = useState(false);
 
+  useEffect(() => {
+    if (user?.role === 'employee') {
+      setRole('employee');
+    } else if (user?.role === 'hr_admin') {
+      setRole('hr_admin');
+    }
+  }, [user]);
+
   const toggleRole = () => {
     setRole((prev) => (prev === 'hr_admin' ? 'employee' : 'hr_admin'));
   };
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
 
   return (
     <>
@@ -49,6 +62,7 @@ const AppLayout: React.FC = () => {
           <main className="content flex-1 min-h-0 overflow-y-auto">
             <Routes>
               <Route path="/" element={<Navigate to="/suite" replace />} />
+              <Route path="/login" element={<Login />} />
               <Route path="/suite" element={<SuiteDashboard />} />
 
               {/* DocSign live routes matching the screenshot options */}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { ic } from '../icons';
+import { useAuth } from '../../services/authContext';
 
 interface SidebarNavProps {
   role: 'hr_admin' | 'employee';
@@ -19,7 +20,8 @@ interface NavSection {
   items: NavItem[];
 }
 
-export const SidebarNav: React.FC<SidebarNavProps> = ({ role, onToggleRole }) => {
+export const SidebarNav: React.FC<SidebarNavProps> = ({ role, onToggleRole: _onToggleRole }) => {
+  const { user, logout } = useAuth();
   const location = useLocation();
 
   const isDocSign =
@@ -221,16 +223,18 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ role, onToggleRole }) =>
       {/* Profile Card Footer */}
       <div className="side-foot">
         <div className="agent-card side-user">
-          <span className="av" style={{ background: '#7C5CFF' }}>AR</span>
-          <div>
-            <b>Ananya Rao</b>
-            <span>ananya.rao@brightcone.ai</span>
+          <span className="av" style={{ background: '#7C5CFF' }}>
+            {user ? `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase() : 'AR'}
+          </span>
+          <div className="min-w-0 flex-1">
+            <b className="truncate block">{user ? `${user.firstName} ${user.lastName}` : 'Ananya Rao'}</b>
+            <span className="truncate block">{user?.email || 'ananya.rao@brightcone.ai'}</span>
           </div>
           <button
             type="button"
             aria-label="Sign out"
             title="Sign out"
-            onClick={onToggleRole}
+            onClick={logout}
           >
             {ic('logout', 16)}
           </button>

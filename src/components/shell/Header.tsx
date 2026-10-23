@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/authContext';
 import { ic } from '../icons';
@@ -11,13 +11,34 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenCommand,
-  role: _role,
-  onToggleRole: _onToggleRole,
+  role = 'hr_admin',
+  onToggleRole,
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    };
+    if (isProfileOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isProfileOpen]);
+
+  const displayName = user ? `${user.firstName} ${user.lastName}` : (role === 'employee' ? 'Rahul Varma' : 'Ananya Rao');
+  const displayEmail = user?.email || (role === 'employee' ? 'rahul.varma@brightcone.ai' : 'ananya.rao@brightcone.ai');
+  const roleTitle = role === 'employee' ? 'Senior Engineer' : 'People Ops Lead';
+  const userInitials = displayName.split(' ').map((n) => n[0]).join('').toUpperCase();
 
   const toggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light';
@@ -143,16 +164,72 @@ export const Header: React.FC<HeaderProps> = ({
         <span className="dot" />
       </button>
 
-      {/* User Info */}
-      <div className="me" id="me">
-        <span className="av" style={{ background: '#7C5CFF' }}>AR</span>
-        <div>
-          Ananya Rao<br />
-          <span>People Ops Lead</span>
+      {/* User Info with Profile Dropdown */}
+      <div className="relative">
+        <div
+          className="me cursor-pointer select-none"
+          id="me"
+          onClick={() => setIsProfileOpen((prev) => !prev)}
+          role="button"
+          tabIndex={0}
+          aria-haspopup="true"
+          aria-expanded={isProfileOpen}
+          title="Account menu"
+        >
+          <span className="av" style={{ background: '#7C5CFF' }}>{userInitials}</span>
+          <div>
+            {displayName}<br />
+            <span>{roleTitle}</span>
+          </div>
         </div>
+
+        {isProfileOpen && (
+          <div
+            ref={menuRef}
+            className="absolute right-0 mt-2 w-64 bg-[var(--surface)] border border-[var(--line)] rounded-xl shadow-xl z-50 py-2 text-sm text-[var(--text)]"
+          >
+            <div className="px-4 py-3 border-b border-[var(--line)]">
+              <div className="font-semibold text-sm">{displayName}</div>
+              <div className="text-xs text-[var(--muted)] truncate">{displayEmail}</div>
+              <span className="inline-block mt-2 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--brand-2)]/20 text-[var(--brand-2)]">
+                {role === 'employee' ? 'Employee' : 'HR Admin'}
+              </span>
+            </div>
+
+            <div className="py-1">
+              {onToggleRole && (
+                <button
+                  type="button"
+                  className="w-full text-left px-4 py-2 hover:bg-[var(--surface-2)] flex items-center gap-2 text-xs"
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    onToggleRole();
+                  }}
+                >
+                  {ic('swap', 14)}
+                  <span>{role === 'employee' ? 'Switch to HR Admin view' : 'Switch to Employee view'}</span>
+                </button>
+              )}
+            </div>
+
+            <div className="border-t border-[var(--line)] pt-1">
+              <button
+                type="button"
+                className="w-full text-left px-4 py-2 hover:bg-[var(--bad-bg)] text-[#EF4444] flex items-center gap-2 text-xs font-semibold cursor-pointer"
+                onClick={() => {
+                  setIsProfileOpen(false);
+                  logout();
+                }}
+              >
+                {ic('logout', 16)}
+                <span>Sign out</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Logout */}
+      {/* Logout Button */}
       <button
         type="button"
         className="icon-btn"
