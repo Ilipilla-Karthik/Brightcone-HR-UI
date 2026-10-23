@@ -7,6 +7,7 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,11 +37,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       try {
         return JSON.parse(stored);
       } catch {
-        // fallback to default
+        // fallback
       }
     }
     return DEFAULT_HR_ADMIN;
   });
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const login = (newToken: string, newUser: User) => {
     localStorage.removeItem('bc_logged_out');
@@ -54,12 +57,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('bc_logged_out', 'true');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('persona');
     setToken(null);
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        login,
+        logout,
+        isAuthenticated: !!token,
+        isLoading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

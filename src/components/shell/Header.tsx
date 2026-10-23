@@ -35,10 +35,12 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, [isProfileOpen]);
 
-  const displayName = user ? `${user.firstName} ${user.lastName}` : (role === 'employee' ? 'Rahul Varma' : 'Ananya Rao');
+  const displayName = user
+    ? (user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User')
+    : (role === 'employee' ? 'Rahul Varma' : 'Ananya Rao');
   const displayEmail = user?.email || (role === 'employee' ? 'rahul.varma@brightcone.ai' : 'ananya.rao@brightcone.ai');
   const roleTitle = role === 'employee' ? 'Senior Engineer' : 'People Ops Lead';
-  const userInitials = displayName.split(' ').map((n) => n[0]).join('').toUpperCase();
+  const userInitials = displayName.split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
 
   const toggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light';
@@ -50,41 +52,33 @@ export const Header: React.FC<HeaderProps> = ({
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    setIsProfileOpen(false);
+    navigate('/login', { replace: true });
+  };
+
   const getBreadcrumb = () => {
-    if (
-      location.pathname === '/doc-sign/dashboard' ||
-      location.pathname === '/doc-sign' ||
-      location.pathname === '/sign' ||
-      location.pathname === '/doc_sign'
-    )
+    const p = location.pathname;
+    if (p === '/doc-sign/dashboard' || p === '/doc-sign' || p === '/sign' || p === '/doc_sign')
       return { app: 'Sign', page: 'Sign dashboard' };
-
-    if (location.pathname.startsWith('/doc-sign/requests'))
-      return { app: 'Sign', page: 'Signature requests' };
-
-    if (location.pathname.startsWith('/doc-sign/templates'))
-      return { app: 'Sign', page: 'Templates' };
-
-    if (location.pathname.startsWith('/doc-sign/handbook'))
-      return { app: 'Sign', page: 'Employee handbook' };
-
-    if (location.pathname.startsWith('/doc-sign/policies'))
-      return { app: 'Sign', page: 'HR policies' };
-
-    if (location.pathname.startsWith('/doc-sign/acks'))
-      return { app: 'Sign', page: 'Policy acknowledgements' };
-
-    if (location.pathname.startsWith('/doc-sign/flow'))
-      return { app: 'Sign', page: 'Documents to sign' };
-
-    if (location.pathname.startsWith('/people')) return { app: 'People', page: 'Directory' };
-    if (location.pathname.startsWith('/recruit')) return { app: 'Recruit', page: 'Pipelines' };
-    if (location.pathname.startsWith('/payroll')) return { app: 'Payroll', page: 'Runs' };
-    if (location.pathname.startsWith('/expense')) return { app: 'Expense', page: 'Claims' };
-    if (location.pathname.startsWith('/engagement')) return { app: 'Connect', page: 'Company feed' };
-    if (location.pathname.startsWith('/learn')) return { app: 'Learn', page: 'Courses' };
-    if (location.pathname.startsWith('/time')) return { app: 'Shift', page: 'Roster' };
-    if (location.pathname.startsWith('/advanced-hr')) return { app: 'Advanced HR', page: 'Analytics' };
+    if (p.startsWith('/doc-sign/requests')) return { app: 'Sign', page: 'Signature requests' };
+    if (p.startsWith('/doc-sign/templates')) return { app: 'Sign', page: 'Templates' };
+    if (p.startsWith('/doc-sign/handbook')) return { app: 'Sign', page: 'Employee handbook' };
+    if (p.startsWith('/doc-sign/policies')) return { app: 'Sign', page: 'HR policies' };
+    if (p.startsWith('/doc-sign/acks')) return { app: 'Sign', page: 'Policy acknowledgements' };
+    if (p.startsWith('/doc-sign/flow')) return { app: 'Sign', page: 'Documents to sign' };
+    if (p.startsWith('/performance')) return { app: 'Performance', page: 'Review cycles' };
+    if (p === '/learn/courses') return { app: 'Learn', page: 'Courses' };
+    if (p === '/learn/my-learning') return { app: 'Learn', page: 'My learning' };
+    if (p.startsWith('/learn')) return { app: 'Learn', page: 'Learn dashboard' };
+    if (p.startsWith('/people')) return { app: 'People', page: 'Directory' };
+    if (p.startsWith('/recruit')) return { app: 'Recruit', page: 'Pipelines' };
+    if (p.startsWith('/payroll')) return { app: 'Payroll', page: 'Runs' };
+    if (p.startsWith('/expense')) return { app: 'Expense', page: 'Claims' };
+    if (p.startsWith('/engagement')) return { app: 'Connect', page: 'Company feed' };
+    if (p.startsWith('/time')) return { app: 'Shift', page: 'Roster' };
+    if (p.startsWith('/advanced-hr')) return { app: 'Advanced HR', page: 'Analytics' };
     return { app: 'People Plus', page: 'Suite dashboard' };
   };
 
@@ -92,7 +86,6 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header className="top flex-none">
-      {/* App Grid Launcher */}
       <button
         type="button"
         className="icon-btn"
@@ -108,139 +101,106 @@ export const Header: React.FC<HeaderProps> = ({
         </svg>
       </button>
 
-      {/* Breadcrumb */}
       <div className="crumb" id="crumb">
         <span
           className="cursor-pointer hover:text-[var(--text)] transition-colors"
-          onClick={() => navigate('/doc-sign/dashboard')}
+          onClick={() => navigate('/suite')}
         >
           {crumb.app}
         </span>
-        {ic('chev', 14)}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 text-[var(--muted)]">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
         <b>{crumb.page}</b>
       </div>
 
-      {/* Center: Search / Command Palette */}
-      <button
-        type="button"
-        className="cmd"
-        style={{ minWidth: '280px', maxWidth: '380px' }}
+      <div
+        className="cmd cursor-pointer"
         onClick={onOpenCommand}
-        aria-label="Search people and actions"
+        title="Search people, pages or actions (Ctrl K)"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flex: 'none', color: 'var(--faint)' }}>
-          <circle cx="11" cy="11" r="7" />
-          <path d="m20 20-3.5-3.5" />
-        </svg>
-        <span style={{ flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          Search people, pages or actions
-        </span>
-        <kbd style={{ flexShrink: 0 }}>Ctrl K</kbd>
-      </button>
+        {ic('search', 16)}
+        <span>Search people, pages, actions…</span>
+        <kbd>Ctrl K</kbd>
+      </div>
 
-      <div style={{ flex: 1 }} />
-
-      {/* Theme Toggle */}
-      <button
-        type="button"
-        className="icon-btn"
-        id="themeBtn"
-        aria-label="Switch theme"
-        title="Switch theme"
-        onClick={toggleTheme}
-      >
-        {theme === 'dark' ? ic('sun', 18) : ic('moon', 18)}
-      </button>
-
-      {/* Notifications */}
-      <button
-        type="button"
-        className="icon-btn"
-        id="bell"
-        aria-label="Notifications"
-        title="Notifications"
-      >
-        {ic('bell', 18)}
-        <span className="dot" />
-      </button>
-
-      {/* User Info with Profile Dropdown */}
-      <div className="relative">
-        <div
-          className="me cursor-pointer select-none"
-          id="me"
-          onClick={() => setIsProfileOpen((prev) => !prev)}
-          role="button"
-          tabIndex={0}
-          aria-haspopup="true"
-          aria-expanded={isProfileOpen}
-          title="Account menu"
+      <div className="r flex items-center gap-2">
+        <button
+          type="button"
+          className="icon-btn"
+          id="themeBtn"
+          aria-label="Toggle theme"
+          title="Toggle light / dark"
+          onClick={toggleTheme}
         >
-          <span className="av" style={{ background: '#7C5CFF' }}>{userInitials}</span>
-          <div>
-            {displayName}<br />
-            <span>{roleTitle}</span>
-          </div>
-        </div>
+          {theme === 'light' ? ic('moon', 18) : ic('sun', 18)}
+        </button>
 
-        {isProfileOpen && (
+        <button
+          type="button"
+          className="icon-btn"
+          aria-label="Notifications"
+          title="Notifications"
+          onClick={() => navigate('/suite')}
+        >
+          {ic('bell', 18)}
+        </button>
+
+        <div className="relative" ref={menuRef}>
           <div
-            ref={menuRef}
-            className="absolute right-0 mt-2 w-64 bg-[var(--surface)] border border-[var(--line)] rounded-xl shadow-xl z-50 py-2 text-sm text-[var(--text)]"
+            className="me flex items-center gap-2.5 cursor-pointer py-1 px-2 rounded-xl hover:bg-[var(--surface-2)] transition-colors"
+            id="me"
+            title="Account & Session"
+            onClick={() => setIsProfileOpen((prev) => !prev)}
           >
-            <div className="px-4 py-3 border-b border-[var(--line)]">
-              <div className="font-semibold text-sm">{displayName}</div>
-              <div className="text-xs text-[var(--muted)] truncate">{displayEmail}</div>
-              <span className="inline-block mt-2 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[var(--brand-2)]/20 text-[var(--brand-2)]">
-                {role === 'employee' ? 'Employee' : 'HR Admin'}
-              </span>
+            <span className="av w-8 h-8 rounded-full bg-gradient-to-tr from-[#3B82F6] to-[#06B6D4] text-white flex items-center justify-center font-bold text-xs shadow-sm">
+              {userInitials}
+            </span>
+            <div className="hidden sm:flex flex-col text-left">
+              <b className="text-xs font-semibold leading-tight text-[var(--text)]">{displayName}</b>
+              <span className="text-[11px] text-[var(--muted)]">{roleTitle}</span>
             </div>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 text-[var(--muted)]">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
 
-            <div className="py-1">
+          {isProfileOpen && (
+            <div className="absolute right-0 mt-2 w-64 bg-[var(--surface)] border border-[var(--line)] rounded-2xl shadow-2xl py-2 z-50">
+              <div className="px-4 py-3 border-b border-[var(--line)]">
+                <p className="text-xs font-bold text-[var(--text)]">{displayName}</p>
+                <p className="text-[11px] text-[var(--muted)] truncate">{displayEmail}</p>
+                <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E3F0FF] text-[#0B6FDB]">
+                  {role === 'hr_admin' ? 'HR Admin' : 'Employee'}
+                </span>
+              </div>
+
               {onToggleRole && (
                 <button
                   type="button"
-                  className="w-full text-left px-4 py-2 hover:bg-[var(--surface-2)] flex items-center gap-2 text-xs"
                   onClick={() => {
-                    setIsProfileOpen(false);
                     onToggleRole();
+                    setIsProfileOpen(false);
                   }}
+                  className="w-full text-left px-4 py-2.5 text-xs text-[var(--text)] hover:bg-[var(--surface-2)] flex items-center gap-2"
                 >
-                  {ic('swap', 14)}
-                  <span>{role === 'employee' ? 'Switch to HR Admin view' : 'Switch to Employee view'}</span>
+                  {ic('users', 14)}
+                  <span>Switch to {role === 'hr_admin' ? 'Employee View' : 'HR Admin View'}</span>
                 </button>
               )}
-            </div>
 
-            <div className="border-t border-[var(--line)] pt-1">
               <button
                 type="button"
-                className="w-full text-left px-4 py-2 hover:bg-[var(--bad-bg)] text-[#EF4444] flex items-center gap-2 text-xs font-semibold cursor-pointer"
-                onClick={() => {
-                  setIsProfileOpen(false);
-                  logout();
-                }}
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2.5 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 font-medium"
               >
-                {ic('logout', 16)}
+                {ic('door', 14)}
                 <span>Sign out</span>
               </button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-
-      {/* Logout Button */}
-      <button
-        type="button"
-        className="icon-btn"
-        aria-label="Sign out"
-        title="Sign out"
-        onClick={logout}
-      >
-        {ic('logout', 18)}
-      </button>
     </header>
   );
 };
-
-export default Header;

@@ -1,20 +1,23 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../services/authContext';
+import { loginApi } from '../../services/api';
 import { ic } from '../../components/icons';
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const performLogin = (targetEmail: string, role: string, firstName: string, lastName: string) => {
-    const token = `bc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const performLogin = (targetEmail: string, role: string, firstName: string, lastName: string, apiToken?: string) => {
+    const token = apiToken || `bc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const userObj = {
       id: `usr_${targetEmail.split('@')[0]}`,
       email: targetEmail,
@@ -22,16 +25,39 @@ export const Login: React.FC = () => {
       lastName,
       role,
     };
+    const persona = role === 'hr_admin' || role === 'HR_ADMIN' || role === 'ADMIN' ? 'admin' : 'employee';
+    localStorage.setItem('persona', persona);
     login(token, userObj);
-    navigate('/suite', { replace: true });
+
+    const from = (location.state as any)?.from?.pathname;
+    const target = from || '/suite';
+    navigate(target, { replace: true });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !password) {
       setErrorMessage('Please enter both your work email and password.');
       return;
+    }
+
+    setLoading(true);
+    setErrorMessage(null);
+
+    try {
+      const data = await loginApi({ email: cleanEmail, password });
+      if (data && data.token) {
+        const parts = (data.name || cleanEmail.split('@')[0]).split(' ');
+        const first = parts[0] || 'User';
+        const last = parts.slice(1).join(' ') || '';
+        performLogin(data.email || cleanEmail, data.role || 'hr_admin', first, last, data.token);
+        return;
+      }
+    } catch {
+      // Fallback to local authentication for offline or demo testing
+    } finally {
+      setLoading(false);
     }
 
     if (cleanEmail === 'rahul.varma@brightcone.ai') {
@@ -72,60 +98,60 @@ export const Login: React.FC = () => {
 
         <div className="glasses">
           <div className="glass">
-            <span className="ok">
-              {ic('check', 16)}
-            </span>
+            <span className="ok">{ic('check', 16)}</span>
             <div>
-              <b>Leave approved</b>
-              <span>Casual leave, Oct 9. Enjoy your day off.</span>
+              <b>Single sign-on</b>
+              <p>One work email unlocks payroll, time, hiring and documents.</p>
             </div>
           </div>
-
           <div className="glass">
-            <span className="ok" style={{ background: 'rgba(20, 184, 230, 0.2)', color: 'var(--brand-2)' }}>
-              {ic('receipt', 16)}
-            </span>
+            <span className="ok">{ic('check', 16)}</span>
             <div>
-              <b>September payslip is ready</b>
-              <span>Credited to your account on Oct 1.</span>
+              <b>Privacy-first</b>
+              <p>Salary, review and personal data visible only to you and authorized HR.</p>
+            </div>
+          </div>
+          <div className="glass">
+            <span className="ok">{ic('check', 16)}</span>
+            <div>
+              <b>Always accessible</b>
+              <p>Available on web, phone or tablet across office and remote networks.</p>
             </div>
           </div>
         </div>
 
         <div className="foot">
-          <span>SOC 2 Type II aligned</span>
-          <span>HIPAA-ready</span>
-          <span>Need help? hello@brightcone.ai</span>
+          Brightcone HR Portal — Enterprise Edition 2026.
         </div>
       </section>
 
-      {/* Right Sign-in Form Panel */}
-      <section className="lf">
-        <div className="lcard">
+      {/* Right Login Form */}
+      <section className="rf">
+        <div className="card">
           <h1>Sign in</h1>
-          <p className="sub">Use your Brightcone work email. You’ll see the pages for your role.</p>
+          <p className="sub">Use your registered @brightcone.ai email address</p>
 
           {errorMessage && (
-            <div className="lerr" role="alert">
+            <div className="p-3 mb-4 rounded-lg bg-red-50 text-red-700 text-xs border border-red-200">
               {errorMessage}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} noValidate>
-            <label className="field block">
+          <form onSubmit={handleSubmit}>
+            <label className="block mb-4 text-left">
               <span className="block text-xs font-medium text-[var(--muted)] mb-1">Work email</span>
               <input
                 className="input w-full"
                 type="email"
-                autoComplete="username"
-                placeholder="name@brightcone.ai"
+                autoComplete="email"
+                placeholder="firstname.lastname@brightcone.ai"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </label>
 
-            <label className="field block mt-3">
+            <label className="block mb-2 text-left">
               <span className="block text-xs font-medium text-[var(--muted)] mb-1">Password</span>
               <div className="pw">
                 <input
@@ -158,14 +184,14 @@ export const Login: React.FC = () => {
               <button
                 type="button"
                 className="text-xs text-[var(--brand)] hover:underline cursor-pointer bg-transparent border-0"
-                onClick={() => setErrorMessage('Password reset link is sent to your registered work email.')}
+                onClick={() => setErrorMessage('Password reset link has been dispatched to your work email.')}
               >
                 Forgot password?
               </button>
             </div>
 
-            <button className="btn primary block mt-4" type="submit">
-              Sign in
+            <button className="btn primary block mt-4" type="submit" disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 
@@ -197,5 +223,3 @@ export const Login: React.FC = () => {
     </div>
   );
 };
-
-export default Login;

@@ -4,7 +4,7 @@ import { ic } from '../icons';
 import { useAuth } from '../../services/authContext';
 
 interface SidebarNavProps {
-  role: 'hr_admin' | 'employee';
+  role?: 'hr_admin' | 'employee';
   onToggleRole?: () => void;
 }
 
@@ -20,187 +20,123 @@ interface NavSection {
   items: NavItem[];
 }
 
-export const SidebarNav: React.FC<SidebarNavProps> = ({ role, onToggleRole: _onToggleRole }) => {
+export const SidebarNav: React.FC<SidebarNavProps> = ({ role = 'hr_admin' }) => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const p = location.pathname;
 
-  const isDocSign =
-    location.pathname.startsWith('/doc-sign') ||
-    location.pathname.startsWith('/sign') ||
-    location.pathname.startsWith('/doc_sign');
-
-  const getDocSignSections = (): NavSection[] => {
-    if (role === 'employee') {
+  const getSections = (): NavSection[] => {
+    // 1. Doc Sign Module
+    if (p.startsWith('/doc-sign') || p.startsWith('/sign') || p.startsWith('/doc_sign')) {
+      if (role === 'employee') {
+        return [
+          {
+            title: 'DOCUMENTS',
+            items: [
+              { label: 'Documents to sign', to: '/doc-sign/flow', badge: 'Action', icon: ic('pen', 15) },
+              { label: 'Employee handbook', to: '/doc-sign/handbook', icon: ic('book', 15) },
+              { label: 'HR policies', to: '/doc-sign/policies', icon: ic('shield', 15) },
+              { label: 'My acknowledgements', to: '/doc-sign/acks', icon: ic('check', 15) },
+            ],
+          },
+        ];
+      }
       return [
         {
-          title: 'DOCUMENTS',
+          title: 'DOC-SIGN OPS',
           items: [
-            {
-              label: 'Documents to sign',
-              to: '/doc-sign/flow',
-              badge: 'Action',
-              icon: ic('pen', 15),
-            },
+            { label: 'Sign dashboard', to: '/doc-sign/dashboard', icon: ic('dashboard', 15) },
+            { label: 'Signature requests', to: '/doc-sign/requests', badge: 7, icon: ic('send', 15) },
+            { label: 'Templates', to: '/doc-sign/templates', icon: ic('template', 15) },
+          ],
+        },
+        {
+          title: 'ORGANIZATION POLICIES',
+          items: [
+            { label: 'Employee handbook', to: '/doc-sign/handbook', icon: ic('book', 15) },
+            { label: 'HR policies', to: '/doc-sign/policies', icon: ic('shield', 15) },
+            { label: 'Policy acknowledgements', to: '/doc-sign/acks', icon: ic('check', 15) },
           ],
         },
       ];
     }
 
+    // 2. Learn Module
+    if (p.startsWith('/learn')) {
+      return [
+        {
+          title: 'LEARNING & SKILLS',
+          items: [
+            { label: 'Learn dashboard', to: '/learn/dashboard', icon: ic('dashboard', 15) },
+            { label: 'Course catalogue', to: '/learn/courses', icon: ic('learn', 15) },
+            { label: 'My learning', to: '/learn/my-learning', icon: ic('book', 15) },
+          ],
+        },
+      ];
+    }
+
+    // 3. Performance Module
+    if (p.startsWith('/performance')) {
+      return [
+        {
+          title: 'PERFORMANCE',
+          items: [
+            { label: 'Review cycles', to: '/performance/admin', icon: ic('chart', 15) },
+            { label: 'Goals & appraisals', to: '/recruit/goals', icon: ic('check', 15) },
+          ],
+        },
+      ];
+    }
+
+    // 4. Default Suite Navigation
     return [
       {
         title: 'OVERVIEW',
         items: [
-          {
-            label: 'Sign dashboard',
-            to: '/doc-sign/dashboard',
-            icon: ic('dashboard', 18),
-          },
+          { label: 'Suite dashboard', to: '/suite', icon: ic('grid', 15) },
+          { label: 'Company feed', to: '/engagement', icon: ic('chat', 15) },
         ],
       },
       {
-        title: 'HR POLICIES & COMPLIANCE',
+        title: 'CORE MODULES',
         items: [
-          {
-            label: 'Employee handbook',
-            to: '/doc-sign/handbook',
-            icon: ic('doc', 15),
-          },
-          {
-            label: 'HR policies',
-            to: '/doc-sign/policies',
-            icon: ic('doc', 15),
-          },
-          {
-            label: 'Policy acknowledgements',
-            to: '/doc-sign/acks',
-            icon: ic('check', 15),
-          },
-        ],
-      },
-      {
-        title: 'DOCUMENTS',
-        items: [
-          {
-            label: 'Signature requests',
-            to: '/doc-sign/requests',
-            icon: ic('pen', 15),
-          },
-          {
-            label: 'Templates',
-            to: '/doc-sign/templates',
-            icon: ic('doc', 15),
-          },
+          { label: 'Sign & Documents', to: '/doc-sign/dashboard', icon: ic('pen', 15) },
+          { label: 'People Directory', to: '/people', icon: ic('users', 15) },
+          { label: 'Recruit & Jobs', to: '/recruit', icon: ic('briefcase', 15) },
+          { label: 'Learn & Upskilling', to: '/learn/dashboard', icon: ic('learn', 15) },
+          { label: 'Time & Attendance', to: '/time', icon: ic('clock', 15) },
+          { label: 'Payroll & Salary', to: '/payroll', icon: ic('pay', 15) },
         ],
       },
     ];
   };
 
-  const getSuiteSections = (): NavSection[] => [
-    {
-      title: 'OVERVIEW',
-      items: [
-        {
-          label: 'Suite Dashboard',
-          to: '/suite',
-          icon: ic('grid', 15),
-        },
-        {
-          label: 'Sign & DocSign (Live)',
-          to: '/doc-sign/dashboard',
-          badge: 'Live',
-          icon: ic('pen', 15),
-        },
-      ],
-    },
-    {
-      title: 'HR MODULES',
-      items: [
-        {
-          label: 'People Directory',
-          to: '/people',
-          icon: ic('users', 15),
-        },
-        {
-          label: 'Recruitment & ATS',
-          to: '/recruit',
-          icon: ic('briefcase', 15),
-        },
-        {
-          label: 'Payroll & Salary',
-          to: '/payroll',
-          icon: ic('pay', 15),
-        },
-        {
-          label: 'Expense Claims',
-          to: '/expense',
-          icon: ic('receipt', 15),
-        },
-        {
-          label: 'Company Feed',
-          to: '/engagement',
-          icon: ic('chat', 15),
-        },
-        {
-          label: 'Learning & LMS',
-          to: '/learn',
-          icon: ic('learn', 15),
-        },
-        {
-          label: 'Shifts & Roster',
-          to: '/time',
-          icon: ic('clock', 15),
-        },
-        {
-          label: 'Workforce Analytics',
-          to: '/advanced-hr',
-          icon: ic('chart', 15),
-        },
-      ],
-    },
-  ];
-
-  const sections = isDocSign ? getDocSignSections() : getSuiteSections();
+  const sections = getSections();
+  const displayName = user
+    ? (user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User')
+    : (role === 'employee' ? 'Rahul Varma' : 'Ananya Rao');
+  const userInitials = displayName.split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'AR';
 
   return (
-    <aside className="side border-r border-[var(--line)] bg-[var(--surface)] flex flex-col p-3 select-none">
-      {/* App Header */}
-      <div className="apphead flex items-center gap-3 pb-3 mb-2 border-b border-[var(--line)] px-2">
-        <i
-          className="w-10 h-10 rounded-xl text-white flex items-center justify-center font-bold shadow-sm flex-none overflow-hidden"
-          style={{
-            background: isDocSign
-              ? 'linear-gradient(140deg, #F43F5E, #D9466F)'
-              : 'transparent',
-            boxShadow: isDocSign
-              ? '0 6px 16px -6px rgba(217, 70, 111, 0.5)'
-              : 'none',
-          }}
-        >
-          {isDocSign ? ic('pen', 18) : (
-            <img src="/logo.png" alt="Brightcone" className="w-8 h-8 object-contain" />
-          )}
-        </i>
-        <div className="min-w-0">
-          <b className="block font-heading font-bold text-base text-[var(--text)] truncate no-underline">
-            {isDocSign ? 'Sign' : 'People Plus'}
-          </b>
-          <span className="text-xs text-[var(--muted)] block truncate font-medium no-underline">
-            {role === 'hr_admin' ? 'HR Admin' : 'Employee self-service'}
-          </span>
+    <aside className="side" aria-label="Sidebar Navigation">
+      <div className="side-head">
+        <div className="slogo flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#3B82F6] to-[#06B6D4] flex items-center justify-center text-white font-bold text-sm shadow-sm">
+            B
+          </div>
+          <div>
+            <b>Brightcone</b>
+            <span className="block text-[11px] text-[var(--muted)]">People Plus Portal</span>
+          </div>
         </div>
       </div>
 
-      {/* Nav groups */}
-      <div className="flex-1 overflow-y-auto space-y-3 px-1 py-1">
-        {sections.map((sec, idx) => (
-          <div key={idx} className="space-y-1">
-            <div className="navgroup flex items-center justify-between text-[11px] font-bold tracking-wider text-[var(--faint)] px-2 py-1 select-none no-underline">
-              <span className="no-underline">{sec.title}</span>
-              {ic('chev', 12, 'opacity-60')}
-            </div>
-
-            <div className="space-y-0.5">
-              {sec.items.map((item) => (
+      <div className="side-nav custom-scroll">
+        {sections.map((section) => (
+          <div key={section.title} className="sec">
+            <span className="sec-label">{section.title}</span>
+            <div className="nav-items space-y-0.5">
+              {section.items.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
@@ -210,9 +146,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ role, onToggleRole: _onT
                 >
                   {item.icon}
                   <span>{item.label}</span>
-                  {item.badge && (
-                    <span className="count">{item.badge}</span>
-                  )}
+                  {item.badge && <span className="count">{item.badge}</span>}
                 </NavLink>
               ))}
             </div>
@@ -220,18 +154,20 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ role, onToggleRole: _onT
         ))}
       </div>
 
-      {/* Profile Card Footer */}
       <div className="side-foot">
-        <div className="agent-card side-user">
-          <span className="av" style={{ background: '#7C5CFF' }}>
-            {user ? `${user.firstName[0] || ''}${user.lastName[0] || ''}`.toUpperCase() : 'AR'}
-          </span>
-          <div className="min-w-0 flex-1">
-            <b className="truncate block">{user ? `${user.firstName} ${user.lastName}` : 'Ananya Rao'}</b>
-            <span className="truncate block">{user?.email || 'ananya.rao@brightcone.ai'}</span>
+        <div className="agent-card side-user flex items-center justify-between p-2 rounded-xl bg-[var(--surface-2)]">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="av w-8 h-8 rounded-full bg-[#7C5CFF] text-white flex items-center justify-center font-bold text-xs">
+              {userInitials}
+            </span>
+            <div className="min-w-0 flex-1 text-left">
+              <b className="truncate block text-xs">{displayName}</b>
+              <span className="truncate block text-[11px] text-[var(--muted)]">{user?.email || 'ananya.rao@brightcone.ai'}</span>
+            </div>
           </div>
           <button
             type="button"
+            className="p-1 hover:text-red-500 transition-colors"
             aria-label="Sign out"
             title="Sign out"
             onClick={logout}
@@ -243,5 +179,3 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ role, onToggleRole: _onT
     </aside>
   );
 };
-
-export default SidebarNav;
