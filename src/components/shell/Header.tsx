@@ -7,6 +7,8 @@ interface HeaderProps {
   onOpenCommand?: () => void;
   role?: 'hr_admin' | 'employee';
   onToggleRole?: () => void;
+  onToggleMobileNav?: () => void;
+  currentPersona?: 'admin' | 'employee';
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -204,3 +206,5 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+
+export default Header;

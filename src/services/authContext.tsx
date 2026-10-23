@@ -43,7 +43,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return DEFAULT_HR_ADMIN;
   });
 
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading] = useState<boolean>(false);
 
   const login = (newToken: string, newUser: User) => {
     localStorage.removeItem('bc_logged_out');

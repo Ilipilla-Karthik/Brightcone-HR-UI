@@ -6,6 +6,9 @@ import { useAuth } from '../../services/authContext';
 interface SidebarNavProps {
   role?: 'hr_admin' | 'employee';
   onToggleRole?: () => void;
+  currentPersona?: 'admin' | 'employee';
+  onPersonaChange?: (persona: 'admin' | 'employee') => void;
+  onNavigate?: () => void;
 }
 
 interface NavItem {
@@ -179,3 +182,5 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ role = 'hr_admin' }) => 
     </aside>
   );
 };
+
+export default SidebarNav;
