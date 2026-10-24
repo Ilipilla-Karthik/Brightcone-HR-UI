@@ -30,6 +30,12 @@ export const Login: React.FC = () => {
     }
   };
 
+  const fillDemo = (demoEmail: string, pass: string) => {
+    setEmail(demoEmail);
+    setPassword(pass);
+    setMsg(null);
+  };
+
   const performLogin = (
     targetEmail: string,
     rawRole: string,
@@ -302,23 +308,26 @@ export const Login: React.FC = () => {
               </button>
 
               <div className="demo">
-                <p>Demo accounts. Click one to enter the portal directly:</p>
+                <p>Demo accounts. Click one to fill it in.</p>
                 <button
                   type="button"
-                  onClick={() => performLogin('ananya.rao@brightcone.ai', 'hr_admin', 'Ananya', 'Rao')}
-                  title="Sign in directly as HR Admin"
+                  onClick={() => fillDemo('ananya.rao@brightcone.ai', 'Admin@123')}
+                  title="Fill HR Admin credentials"
                 >
                   <b>HR Admin</b>
-                  <span>ananya.rao@brightcone.ai (Admin@123)</span>
+                  <span>ananya.rao@brightcone.ai, Admin@123</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => performLogin('rahul.varma@brightcone.ai', 'employee', 'Rahul', 'Varma')}
-                  title="Sign in directly as Employee"
+                  onClick={() => fillDemo('rahul.varma@brightcone.ai', 'Welcome@123')}
+                  title="Fill Employee credentials"
                 >
                   <b>Employee</b>
-                  <span>rahul.varma@brightcone.ai (Welcome@123)</span>
+                  <span>rahul.varma@brightcone.ai, Welcome@123</span>
                 </button>
+                <p style={{ margin: '8px 0 0' }}>
+                  Clicking fills the credentials into the fields above. Then click Sign in to submit.
+                </p>
               </div>
             </div>
           )}

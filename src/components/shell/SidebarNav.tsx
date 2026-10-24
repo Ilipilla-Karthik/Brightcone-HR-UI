@@ -72,7 +72,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
           ],
         },
         {
-          title: 'ORGANIZATION POLICIES',
+          title: 'HR POLICIES & COMPLIANCE',
           items: [
             { label: 'Employee handbook', to: '/doc-sign/handbook', icon: ic('book', 15) },
             { label: 'HR policies', to: '/doc-sign/policies', icon: ic('shield', 15) },
