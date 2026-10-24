@@ -1,8 +1,3 @@
-/* =========================================================
-   BRIGHTCONE PEOPLE PLUS — LOGIN PAGE DESIGN
-   Matches design_reference/Brightcone People Plus.html
-   ========================================================= */
-
 .login {
   position: fixed;
   inset: 0;
@@ -14,8 +9,6 @@
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
-
-/* Left Hero Brand Panel */
 .lp {
   position: relative;
   overflow: hidden;
@@ -26,17 +19,14 @@
   flex-direction: column;
   min-height: 100%;
 }
-
 :global([data-theme="dark"]) .lp {
   background: #040A1A;
 }
-
 @media (prefers-color-scheme: dark) {
   :global(:root:not([data-theme="light"])) .lp {
     background: #040A1A;
   }
 }
-
 .lp::before {
   content: "";
   position: absolute;
@@ -49,7 +39,6 @@
   opacity: 0.5;
   pointer-events: none;
 }
-
 .lp::after {
   content: "";
   position: absolute;
@@ -61,19 +50,16 @@
   -webkit-mask-image: linear-gradient(180deg, #000000 10%, transparent 85%);
   pointer-events: none;
 }
-
 .lp > * {
   position: relative;
   z-index: 1;
 }
-
 .lpLogo {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 24px;
 }
-
 .lpLogoBadge {
   width: 38px;
   height: 38px;
@@ -86,7 +72,6 @@
   color: #ffffff;
   box-shadow: 0 4px 14px rgba(11, 111, 219, 0.4);
 }
-
 .lpLogoText {
   font-family: Sora, sans-serif;
   font-size: 20px;
@@ -94,7 +79,6 @@
   color: #ffffff;
   letter-spacing: -0.02em;
 }
-
 .lpH2 {
   font-family: Sora, sans-serif;
   font-size: clamp(30px, 3.4vw, 44px);
@@ -105,13 +89,11 @@
   max-width: 16ch;
   color: #ffffff;
 }
-
 .lpTag {
   font: 500 14px Sora, sans-serif;
   color: var(--brand-2);
   margin-bottom: 14px;
 }
-
 .lpLede {
   color: #C9D3EE;
   max-width: 42ch;
@@ -119,7 +101,6 @@
   font-size: 16px;
   line-height: 1.5;
 }
-
 .lapps {
   display: flex;
   flex-wrap: wrap;
@@ -127,7 +108,6 @@
   margin: 0 0 28px;
   max-width: 470px;
 }
-
 .lapps span {
   display: inline-flex;
   align-items: center;
@@ -139,20 +119,17 @@
   font-size: 12.5px;
   color: #DCE4F7;
 }
-
 .lapps i {
   width: 8px;
   height: 8px;
   border-radius: 50%;
 }
-
 .glasses {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-bottom: auto;
 }
-
 .glass {
   background: rgba(255, 255, 255, 0.07);
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -166,22 +143,18 @@
   font-size: 13.5px;
   max-width: 340px;
 }
-
 .glasses .glass:nth-child(2) {
   margin-left: 36px;
 }
-
 .glass b {
   display: block;
   font-size: 14px;
   color: #ffffff;
 }
-
 .glass span {
   color: #C9D3EE;
   font-size: 12.5px;
 }
-
 .glassOk {
   width: 30px;
   height: 30px;
@@ -192,7 +165,6 @@
   color: #4BE0A5;
   flex: none;
 }
-
 .lpFoot {
   margin-top: 36px;
   color: #93A0C4;
@@ -201,8 +173,6 @@
   gap: 18px;
   flex-wrap: wrap;
 }
-
-/* Right Form Panel */
 .lf {
   display: flex;
   align-items: center;
@@ -211,12 +181,10 @@
   position: relative;
   background: var(--bg);
 }
-
 .lcard {
   width: 100%;
   max-width: 400px;
 }
-
 .lcard h1 {
   font-family: Sora, sans-serif;
   font-size: 26px;
@@ -225,14 +193,12 @@
   color: var(--text);
   letter-spacing: -0.015em;
 }
-
 .sub {
   color: var(--muted);
   margin: 0 0 26px;
   font-size: 14px;
   line-height: 1.45;
 }
-
 .field {
   margin-bottom: 16px;
   display: block;
@@ -240,7 +206,6 @@
   font-weight: 500;
   color: var(--text);
 }
-
 .input {
   width: 100%;
   padding: 11px 13px;
@@ -254,20 +219,16 @@
   box-sizing: border-box;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-
 .input:focus {
   border-color: var(--brand);
   box-shadow: 0 0 0 3px rgba(11, 111, 219, 0.15);
 }
-
 .pw {
   position: relative;
 }
-
 .pw .input {
   padding-right: 64px;
 }
-
 .pw button {
   position: absolute;
   right: 6px;
@@ -282,7 +243,6 @@
   padding: 6px 8px;
   margin-top: 3px;
 }
-
 .lrow {
   display: flex;
   justify-content: space-between;
@@ -292,7 +252,6 @@
   gap: 10px;
   color: var(--text);
 }
-
 .lrow label {
   display: flex;
   gap: 8px;
@@ -300,13 +259,11 @@
   cursor: pointer;
   font-size: 13.5px;
 }
-
 .lrow input[type="checkbox"] {
   accent-color: var(--brand);
   width: 16px;
   height: 16px;
 }
-
 .link {
   border: 0;
   background: none;
@@ -316,11 +273,9 @@
   padding: 0;
   text-decoration: none;
 }
-
 .link:hover {
   text-decoration: underline;
 }
-
 .lerr {
   background: var(--bad-bg);
   color: var(--bad);
@@ -332,7 +287,6 @@
   font-weight: 500;
   line-height: 1.4;
 }
-
 .lok {
   background: var(--ok-bg);
   color: var(--ok);
@@ -344,7 +298,6 @@
   font-weight: 500;
   line-height: 1.4;
 }
-
 .btnBlock {
   width: 100%;
   justify-content: center;
@@ -358,22 +311,18 @@
   transition: all 0.15s ease;
   box-sizing: border-box;
 }
-
 .btnPrimary {
   background: var(--brand);
   color: #ffffff;
   border: none;
 }
-
 .btnPrimary:hover:not(:disabled) {
   opacity: 0.94;
 }
-
 .btnPrimary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
-
 .or {
   display: flex;
   align-items: center;
@@ -382,7 +331,6 @@
   font-size: 13px;
   margin: 18px 0;
 }
-
 .or::before,
 .or::after {
   content: "";
@@ -390,18 +338,15 @@
   height: 1px;
   background: var(--line);
 }
-
 .btnSecondary {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--line);
   gap: 10px;
 }
-
 .btnSecondary:hover {
   border-color: var(--brand);
 }
-
 @media (max-width: 900px) {
   .login {
     grid-template-columns: 1fr;
