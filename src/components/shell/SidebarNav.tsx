@@ -33,32 +33,24 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
   const location = useLocation();
   const p = location.pathname;
 
-  const activeRole: 'hr_admin' | 'employee' =
-    currentPersona ? (currentPersona === 'admin' ? 'hr_admin' : 'employee') : role;
+  // Bulletproof role determination based strictly on logged-in user and portal state
+  const isEmployee =
+    user?.role?.toLowerCase()?.includes('employee') ||
+    user?.email?.toLowerCase()?.includes('rahul') ||
+    role === 'employee' ||
+    currentPersona === 'employee';
 
-  const appInfo = (() => {
-    if (p.startsWith('/doc-sign') || p.startsWith('/sign') || p.startsWith('/doc_sign')) {
-      return { name: 'Sign', color: '#D9466F', icon: ic('pen', 20) };
-    }
-    if (p.startsWith('/engagement') || p.startsWith('/connect')) {
-      return { name: 'Connect', color: '#0BA6CC', icon: ic('chat', 20) };
-    }
-    if (p.startsWith('/people') || p.startsWith('/employees')) {
-      return { name: 'People', color: '#12A58E', icon: ic('users', 20) };
-    }
-    if (p.startsWith('/recruit') || p.startsWith('/recruitment')) {
-      return { name: 'Recruit', color: '#7C5CFF', icon: ic('briefcase', 20) };
-    }
-    if (p.startsWith('/payroll')) return { name: 'Payroll', color: '#0F9F6E', icon: ic('pay', 20) };
-    if (p.startsWith('/expense')) return { name: 'Expense', color: '#E07A1D', icon: ic('receipt', 20) };
-    if (p.startsWith('/learn')) return { name: 'Learn', color: '#6366F1', icon: ic('learn', 20) };
-    if (p.startsWith('/time')) return { name: 'Shift', color: '#3B82C4', icon: ic('clock', 20) };
-    return { name: 'People Plus', color: '#0B87FF', icon: ic('grid', 20) };
-  })();
+  const activeRole: 'hr_admin' | 'employee' = isEmployee ? 'employee' : 'hr_admin';
+
+  // Only two apps in scope: Sign and Connect
+  const isSign = p.startsWith('/doc-sign') || p.startsWith('/sign') || p.startsWith('/doc_sign');
+  const appInfo = isSign
+    ? { name: 'Sign', color: '#D9466F', icon: ic('pen', 20) }
+    : { name: 'Connect', color: '#0BA6CC', icon: ic('chat', 20) };
 
   const getSections = (): NavSection[] => {
     // 1. Sign Module
-    if (p.startsWith('/doc-sign') || p.startsWith('/sign') || p.startsWith('/doc_sign')) {
+    if (isSign) {
       if (activeRole === 'employee') {
         return [
           {
@@ -91,86 +83,13 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
     }
 
     // 2. Connect Module
-    if (p.startsWith('/engagement') || p.startsWith('/connect')) {
-      if (activeRole === 'employee') {
-        return [
-          {
-            title: 'COMMUNITY',
-            items: [
-              { label: 'Feed', to: '/engagement/feed', icon: ic('chat', 15) },
-              { label: 'Directory', to: '/engagement/directory', icon: ic('users', 15) },
-            ],
-          },
-        ];
-      }
-      return [
-        {
-          title: 'OVERVIEW',
-          items: [{ label: 'Feed', to: '/engagement/feed', icon: ic('chat', 15) }],
-        },
-        {
-          title: 'COMMUNICATE',
-          items: [
-            { label: 'Announcements', to: '/engagement/announcements', icon: ic('mega', 15) },
-            { label: 'Directory', to: '/engagement/directory', icon: ic('users', 15) },
-          ],
-        },
-        {
-          title: 'EMPLOYEE ENGAGEMENT',
-          items: [
-            { label: 'Events', to: '/engagement/events', icon: ic('calendar', 15) },
-            { label: 'Feedback', to: '/engagement/feedback', icon: ic('chat', 15) },
-            { label: 'Town halls', to: '/engagement/townhall', icon: ic('mega', 15) },
-            { label: 'Celebrations', to: '/engagement/celebrations', icon: ic('gift', 15) },
-          ],
-        },
-      ];
-    }
-
-    // 3. Other modules
-    if (p.startsWith('/learn')) {
-      return [
-        {
-          title: activeRole === 'employee' ? 'LEARNING' : 'CATALOGUE',
-          items: [
-            { label: activeRole === 'employee' ? 'My learning' : 'Courses', to: activeRole === 'employee' ? '/learn/my-learning' : '/learn/courses', icon: ic('learn', 15) },
-            ...(activeRole === 'hr_admin' ? [{ label: 'Learn dashboard', to: '/learn/dashboard', icon: ic('dashboard', 15) }] : []),
-          ],
-        },
-      ];
-    }
-
-    if (p.startsWith('/people')) {
-      return [
-        {
-          title: activeRole === 'employee' ? 'ME' : 'WORKFORCE',
-          items: [
-            { label: activeRole === 'employee' ? 'My profile' : 'All Employees', to: '/people', icon: ic('users', 15) },
-          ],
-        },
-      ];
-    }
-
-    // Default People Plus Suite
     if (activeRole === 'employee') {
       return [
         {
-          title: 'OVERVIEW',
-          items: [
-            { label: 'My dashboard', to: '/portal', icon: ic('home', 15) },
-          ],
-        },
-        {
-          title: 'DOCUMENTS',
-          items: [
-            { label: 'Documents to sign', to: '/doc-sign/flow', icon: ic('pen', 15) },
-          ],
-        },
-        {
           title: 'COMMUNITY',
           items: [
-            { label: 'Company feed', to: '/engagement/feed', icon: ic('chat', 15) },
-            { label: 'People directory', to: '/engagement/directory', icon: ic('users', 15) },
+            { label: 'Feed', to: '/engagement/feed', icon: ic('chat', 15) },
+            { label: 'Directory', to: '/engagement/directory', icon: ic('users', 15) },
           ],
         },
       ];
@@ -179,31 +98,35 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
     return [
       {
         title: 'OVERVIEW',
+        items: [{ label: 'Feed', to: '/engagement/feed', icon: ic('chat', 15) }],
+      },
+      {
+        title: 'COMMUNICATE',
         items: [
-          { label: 'Suite dashboard', to: '/suite', icon: ic('dashboard', 15) },
-          { label: 'Company feed', to: '/engagement/feed', icon: ic('chat', 15) },
+          { label: 'Announcements', to: '/engagement/announcements', icon: ic('mega', 15) },
+          { label: 'Directory', to: '/engagement/directory', icon: ic('users', 15) },
         ],
       },
       {
-        title: 'CORE APPS',
+        title: 'EMPLOYEE ENGAGEMENT',
         items: [
-          { label: 'Sign & Documents', to: '/doc-sign/dashboard', icon: ic('pen', 15) },
-          { label: 'People Directory', to: '/engagement/directory', icon: ic('users', 15) },
+          { label: 'Events', to: '/engagement/events', icon: ic('calendar', 15) },
+          { label: 'Feedback', to: '/engagement/feedback', icon: ic('chat', 15) },
+          { label: 'Town halls', to: '/engagement/townhall', icon: ic('mega', 15) },
+          { label: 'Celebrations', to: '/engagement/celebrations', icon: ic('gift', 15) },
         ],
       },
     ];
   };
 
   const sections = getSections();
-  const displayName = user
-    ? (user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User')
-    : (activeRole === 'employee' ? 'Rahul Varma' : 'Ananya Rao');
-  const displayEmail = user?.email || (activeRole === 'employee' ? 'rahul.varma@brightcone.ai' : 'ananya.rao@brightcone.ai');
-  const userInitials = displayName.split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2) || (activeRole === 'employee' ? 'RV' : 'AR');
+  const displayName = activeRole === 'employee' ? 'Rahul Varma' : 'Ananya Rao';
+  const displayEmail = activeRole === 'employee' ? 'rahul.varma@brightcone.ai' : 'ananya.rao@brightcone.ai';
+  const userInitials = activeRole === 'employee' ? 'RV' : 'AR';
 
   return (
     <aside className="side" aria-label="Sidebar Navigation" style={{ '--ac': appInfo.color } as React.CSSProperties}>
-      {/* HTML Prototype App Header with App Icon and Portal Subtitle */}
+      {/* App Header with App Icon and Portal Subtitle */}
       <div className="apphead flex items-center gap-3 pb-4 mb-2 border-b border-[var(--line)]">
         <i
           className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md transition-all"
@@ -237,7 +160,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
                   className={({ isActive }) => {
                     const isItemActive =
                       isActive ||
-                      (location.pathname + location.search === item.to) ||
+                      location.pathname + location.search === item.to ||
                       (location.search === '' && item.to.includes('?tab=') && item.to.endsWith(item.to.split('?tab=')[1]));
                     return `nav flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                       isItemActive
@@ -268,7 +191,7 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
         ))}
       </nav>
 
-      {/* HTML Prototype Side User Footer */}
+      {/* Side User Footer */}
       <div className="side-foot pt-3 border-t border-[var(--line)] mt-auto">
         <div className="side-user flex items-center justify-between p-2 rounded-xl bg-[var(--surface-2)]">
           <div className="flex items-center gap-2.5 min-w-0">

@@ -32,25 +32,34 @@ export const Login: React.FC = () => {
 
   const performLogin = (
     targetEmail: string,
-    role: string,
+    rawRole: string,
     firstName: string,
     lastName: string,
     apiToken?: string
   ) => {
+    const isEmp =
+      rawRole?.toLowerCase()?.includes('employee') ||
+      targetEmail.toLowerCase().includes('rahul');
+    const normalizedRole: 'hr_admin' | 'employee' = isEmp ? 'employee' : 'hr_admin';
+
     const token = apiToken || `bc_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const userObj = {
       id: `usr_${targetEmail.split('@')[0]}`,
       email: targetEmail,
       firstName,
       lastName,
-      role,
+      role: normalizedRole,
+      name: `${firstName} ${lastName}`.trim(),
     };
-    const persona = role === 'hr_admin' || role === 'HR_ADMIN' || role === 'ADMIN' ? 'admin' : 'employee';
+    const persona = isEmp ? 'employee' : 'admin';
+    localStorage.removeItem('bc_logged_out');
     localStorage.setItem('persona', persona);
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(userObj));
     login(token, userObj);
 
     const from = (location.state as any)?.from?.pathname;
-    const target = from || (persona === 'admin' ? '/suite' : '/engagement/feed');
+    const target = from || (isEmp ? '/doc-sign/flow' : '/doc-sign/dashboard');
     navigate(target, { replace: true });
   };
 
@@ -77,7 +86,8 @@ export const Login: React.FC = () => {
         const parts = (data.name || cleanEmail.split('@')[0]).split(' ');
         const first = parts[0] || 'User';
         const last = parts.slice(1).join(' ') || '';
-        performLogin(data.email || cleanEmail, data.role || 'hr_admin', first, last, data.token);
+        const role = data.role || (cleanEmail.includes('ananya') ? 'hr_admin' : 'employee');
+        performLogin(data.email || cleanEmail, role, first, last, data.token);
         return;
       }
     } catch {
@@ -111,15 +121,9 @@ export const Login: React.FC = () => {
     });
   };
 
-  const fillDemo = (demoEmail: string, pass: string) => {
-    setEmail(demoEmail);
-    setPassword(pass);
-    setMsg(null);
-  };
-
   return (
     <div className="login" id="login">
-      {/* Left Marketing / Product Panel */}
+      {/* Left Marketing Panel - Strictly Sign and Connect */}
       <section className="lp" aria-hidden="false">
         <img
           className="lp-logo"
@@ -127,21 +131,14 @@ export const Login: React.FC = () => {
           alt="brightcone.ai, Clarity. Focus. Impact"
         />
         <h2>Everything about work at Brightcone, in one place.</h2>
-        <div className="tag">Brightcone People Plus</div>
+        <div className="tag">Sign & Connect</div>
         <p className="lede">
-          Employees apply for leave, download payslips and raise requests. HR runs payroll, approvals and hiring from one inbox.
+          Send and e-sign documents with legally binding audit trails, and stay connected with company feed, celebrations, and directory.
         </p>
 
         <div className="lapps">
-          <span><i style={{ background: '#12A58E' }} />People</span>
-          <span><i style={{ background: '#7C5CFF' }} />Recruit</span>
-          <span><i style={{ background: '#0F9F6E' }} />Payroll</span>
-          <span><i style={{ background: '#E07A1D' }} />Expense</span>
           <span><i style={{ background: '#D9466F' }} />Sign</span>
           <span><i style={{ background: '#0BA6CC' }} />Connect</span>
-          <span><i style={{ background: '#6366F1' }} />Learn</span>
-          <span><i style={{ background: '#3B82C4' }} />Shift</span>
-          <span><i style={{ background: '#0B87FF' }} />People Plus</span>
         </div>
 
         <div className="glasses">
@@ -152,27 +149,26 @@ export const Login: React.FC = () => {
               </svg>
             </span>
             <div>
-              <b>Leave approved</b>
-              <span>Casual leave, Oct 9. Enjoy your day off.</span>
+              <b>Document signed</b>
+              <span>Offer letter SG-1042 successfully signed.</span>
             </div>
           </div>
           <div className="glass">
-            <span className="ok" style={{ background: 'rgba(20,184,230,.2)', color: 'var(--brand-2)' }}>
+            <span className="ok" style={{ background: 'rgba(11,166,204,.2)', color: '#0BA6CC' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="2" y="6" width="20" height="13" rx="2" />
-                <circle cx="12" cy="12.5" r="2.5" />
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </span>
             <div>
-              <b>September payslip is ready</b>
-              <span>Credited to your account on Oct 1.</span>
+              <b>New company announcement</b>
+              <span>Town hall meeting scheduled for Friday 4 PM.</span>
             </div>
           </div>
         </div>
 
         <div className="foot">
           <span>SOC 2 Type II aligned</span>
-          <span>HIPAA-ready</span>
+          <span>E-Signature Compliant</span>
           <span>Need help? hello@brightcone.ai</span>
         </div>
       </section>
@@ -226,7 +222,7 @@ export const Login: React.FC = () => {
           ) : (
             <div>
               <h1>Sign in</h1>
-              <p className="sub">Use your Brightcone work email. You’ll see the pages for your role.</p>
+              <p className="sub">Use your Brightcone work email to enter your portal.</p>
               <form onSubmit={handleSignIn} noValidate>
                 <label className="field">
                   Work email
@@ -306,24 +302,23 @@ export const Login: React.FC = () => {
               </button>
 
               <div className="demo">
-                <p>Demo accounts. Click one to fill it in.</p>
+                <p>Demo accounts. Click one to enter the portal directly:</p>
                 <button
                   type="button"
-                  onClick={() => fillDemo('ananya.rao@brightcone.ai', 'Admin@123')}
+                  onClick={() => performLogin('ananya.rao@brightcone.ai', 'hr_admin', 'Ananya', 'Rao')}
+                  title="Sign in directly as HR Admin"
                 >
                   <b>HR Admin</b>
-                  <span>ananya.rao@brightcone.ai, Admin@123</span>
+                  <span>ananya.rao@brightcone.ai (Admin@123)</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => fillDemo('rahul.varma@brightcone.ai', 'Welcome@123')}
+                  onClick={() => performLogin('rahul.varma@brightcone.ai', 'employee', 'Rahul', 'Varma')}
+                  title="Sign in directly as Employee"
                 >
                   <b>Employee</b>
-                  <span>rahul.varma@brightcone.ai, Welcome@123</span>
+                  <span>rahul.varma@brightcone.ai (Welcome@123)</span>
                 </button>
-                <p style={{ margin: '8px 0 0' }}>
-                  Any employee can sign in as firstname.lastname@brightcone.ai with Welcome@123.
-                </p>
               </div>
             </div>
           )}

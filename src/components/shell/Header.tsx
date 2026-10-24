@@ -24,8 +24,14 @@ export const Header: React.FC<HeaderProps> = ({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const activeRole: 'hr_admin' | 'employee' =
-    currentPersona ? (currentPersona === 'admin' ? 'hr_admin' : 'employee') : (user?.role === 'employee' ? 'employee' : role);
+  // Strictly determined by login user state
+  const isEmployee =
+    user?.role?.toLowerCase()?.includes('employee') ||
+    user?.email?.toLowerCase()?.includes('rahul') ||
+    role === 'employee' ||
+    currentPersona === 'employee';
+
+  const activeRole: 'hr_admin' | 'employee' = isEmployee ? 'employee' : 'hr_admin';
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -41,13 +47,8 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, [isProfileOpen]);
 
-  const displayName =
-    activeRole === 'employee'
-      ? (user?.role === 'employee' && (user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim())) || 'Rahul Varma'
-      : (user?.role === 'hr_admin' && (user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim())) || 'Ananya Rao';
-
-  const displayEmail =
-    activeRole === 'employee' ? 'rahul.varma@brightcone.ai' : 'ananya.rao@brightcone.ai';
+  const displayName = activeRole === 'employee' ? 'Rahul Varma' : 'Ananya Rao';
+  const displayEmail = activeRole === 'employee' ? 'rahul.varma@brightcone.ai' : 'ananya.rao@brightcone.ai';
   const roleTitle = activeRole === 'employee' ? 'Backend Engineer' : 'People Ops Lead';
   const userInitials = activeRole === 'employee' ? 'RV' : 'AR';
   const avatarBg = activeRole === 'employee' ? 'bg-[#00966D]' : 'bg-[#0B6FDB]';
@@ -79,35 +80,17 @@ export const Header: React.FC<HeaderProps> = ({
       if (p.includes('/flow')) return { app: 'Sign', page: 'Documents to sign' };
       return { app: 'Sign', page: activeRole === 'employee' ? 'Documents to sign' : 'Sign dashboard' };
     }
-    if (p.startsWith('/performance')) return { app: 'Performance', page: 'Review cycles' };
-    if (p.startsWith('/learn')) {
-      if (p.includes('/courses')) return { app: 'Learn', page: 'Course catalogue' };
-      if (p.includes('/my-learning')) return { app: 'Learn', page: 'My learning' };
-      return { app: 'Learn', page: 'Learn dashboard' };
-    }
-    if (p.startsWith('/people')) {
-      if (p.includes('/profile')) return { app: 'People', page: 'Employee profile' };
-      if (p.includes('/org-chart')) return { app: 'People', page: 'Org structure' };
-      return { app: 'People', page: 'People directory' };
-    }
-    if (p.startsWith('/recruit')) return { app: 'Recruit', page: 'Pipeline & jobs' };
-    if (p.startsWith('/time')) return { app: 'Shift', page: 'Attendance roster' };
-    if (p.startsWith('/payroll')) return { app: 'Payroll', page: 'Payroll runs' };
-    if (p.startsWith('/expense')) return { app: 'Expense', page: 'Expense claims' };
-    if (p.startsWith('/engagement') || p.startsWith('/connect')) {
-      if (p.includes('/announcements')) return { app: 'Connect', page: 'Announcements' };
-      if (p.includes('/directory')) return { app: 'Connect', page: 'People directory' };
-      if (p.includes('/events')) return { app: 'Connect', page: 'Company events' };
-      if (p.includes('/celebrations')) return { app: 'Connect', page: 'Celebrations' };
-      if (p.includes('/feedback')) return { app: 'Connect', page: 'Employee feedback' };
-      if (p.includes('/townhall')) return { app: 'Connect', page: 'Town hall meetings' };
-      return { app: 'Connect', page: 'Company feed' };
-    }
-    return { app: 'People Plus', page: activeRole === 'employee' ? 'My dashboard' : 'Suite dashboard' };
+    if (p.includes('/announcements')) return { app: 'Connect', page: 'Announcements' };
+    if (p.includes('/directory')) return { app: 'Connect', page: 'People directory' };
+    if (p.includes('/events')) return { app: 'Connect', page: 'Company events' };
+    if (p.includes('/celebrations')) return { app: 'Connect', page: 'Celebrations' };
+    if (p.includes('/feedback')) return { app: 'Connect', page: 'Employee feedback' };
+    if (p.includes('/townhall')) return { app: 'Connect', page: 'Town hall meetings' };
+    return { app: 'Connect', page: 'Company feed' };
   };
 
   const crumb = getBreadcrumb();
-  const homePath = activeRole === 'employee' ? '/engagement/feed' : '/suite';
+  const homePath = activeRole === 'employee' ? '/doc-sign/flow' : '/doc-sign/dashboard';
 
   return (
     <header className="top flex items-center h-16 px-6 border-b border-[var(--line)] bg-[var(--surface,#fff)] relative z-50">

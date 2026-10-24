@@ -27,14 +27,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ currentPersona, onPersonaC
   const getAccentColor = () => {
     const p = location.pathname;
     if (p.startsWith('/doc-sign') || p.startsWith('/sign') || p.startsWith('/doc_sign')) return '#D9466F';
-    if (p.startsWith('/engagement') || p.startsWith('/connect')) return '#0BA6CC';
-    if (p.startsWith('/people')) return '#12A58E';
-    if (p.startsWith('/recruit')) return '#7C5CFF';
-    if (p.startsWith('/payroll')) return '#0F9F6E';
-    if (p.startsWith('/expense')) return '#E07A1D';
-    if (p.startsWith('/learn')) return '#6366F1';
-    if (p.startsWith('/time')) return '#3B82C4';
-    return '#0B87FF';
+    return '#0BA6CC';
   };
 
   const accentColor = getAccentColor();
