@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { INITIAL_POLICIES } from './mockData';
 import { PolicyRecord } from './types';
 import { ic } from '../../components/icons';
 
@@ -15,7 +14,7 @@ const CATEGORIES = [
 ];
 
 export const HRPoliciesPage: React.FC = () => {
-  const [policies, setPolicies] = useState<PolicyRecord[]>(INITIAL_POLICIES);
+  const [policies, setPolicies] = useState<PolicyRecord[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');

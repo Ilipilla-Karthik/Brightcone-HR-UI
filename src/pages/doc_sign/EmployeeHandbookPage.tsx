@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { INITIAL_HANDBOOKS } from './mockData';
 import { HandbookRecord } from './types';
 import { ic } from '../../components/icons';
 
 export const EmployeeHandbookPage: React.FC = () => {
-  const [records, setRecords] = useState<HandbookRecord[]>(INITIAL_HANDBOOKS);
+  const [records, setRecords] = useState<HandbookRecord[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showArchived, setShowArchived] = useState(false);

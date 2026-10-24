@@ -1,10 +1,15 @@
+const STANDARD_POLICIES = [
+  { id: 'POL-01', name: 'Code of Conduct', version: '2.0' },
+  { id: 'POL-02', name: 'Information Security & Acceptable Use', version: '3.2' },
+  { id: 'POL-03', name: 'POSH Policy', version: '1.1' },
+  { id: 'POL-04', name: 'Remote Work & Expense Policy', version: '4.0' },
+];
 import React, { useState } from 'react';
-import { INITIAL_POLICY_ACKS, INITIAL_POLICIES } from './mockData';
 import { PolicyAckRecord } from './types';
 import { ic } from '../../components/icons';
 
 export const PolicyAcknowledgementsPage: React.FC = () => {
-  const [acks, setAcks] = useState<PolicyAckRecord[]>(INITIAL_POLICY_ACKS);
+  const [acks, setAcks] = useState<PolicyAckRecord[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showArchived, setShowArchived] = useState(false);
@@ -108,12 +113,12 @@ export const PolicyAcknowledgementsPage: React.FC = () => {
 
   const handleSendAllBatch = (e: React.FormEvent) => {
     e.preventDefault();
-    const mockStaff = [
-      { name: 'Karthik Subramanian', email: 'karthik.s@brightcone.ai', dept: 'Engineering' },
-      { name: 'Pooja Hegde', email: 'pooja.h@brightcone.ai', dept: 'Product' },
-      { name: 'Amitabh Sen', email: 'amitabh.s@brightcone.ai', dept: 'Data Science' },
+    const staffList = [
+      { name: 'Rahul Varma', email: 'rahul.varma@brightcone.ai', dept: 'Engineering' },
+      { name: 'Priya Menon', email: 'priya.menon@brightcone.ai', dept: 'Engineering' },
+      { name: 'Divya Kulkarni', email: 'divya.kulkarni@brightcone.ai', dept: 'Engineering' },
     ];
-    const newItems: PolicyAckRecord[] = mockStaff.map((st, i) => ({
+    const newItems: PolicyAckRecord[] = staffList.map((st, i) => ({
       id: `ACK-${200 + acks.length + i + 1}`,
       policyId: 'BATCH',
       policyName: batchPolicy,
@@ -284,7 +289,7 @@ export const PolicyAcknowledgementsPage: React.FC = () => {
               <label className="block"><span className="font-semibold text-[var(--muted)] block mb-1">Policy or handbook *</span>
                 <select className="input w-full" value={formPolicy} onChange={(e) => setFormPolicy(e.target.value)}>
                   <option value="Employee Handbook v4.0">Employee Handbook v4.0 (HB-4.0)</option>
-                  {INITIAL_POLICIES.map((p) => <option key={p.id} value={`${p.name} v${p.version}`}>{p.name} v${p.version} ({p.id})</option>)}
+                  {STANDARD_POLICIES.map((p) => <option key={p.id} value={`${p.name} v${p.version}`}>{p.name} v${p.version} ({p.id})</option>)}
                 </select>
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -320,7 +325,7 @@ export const PolicyAcknowledgementsPage: React.FC = () => {
               <label className="block"><span className="font-semibold text-[var(--muted)] block mb-1">Select policy / handbook</span>
                 <select className="input w-full" value={batchPolicy} onChange={(e) => setBatchPolicy(e.target.value)}>
                   <option value="Employee Handbook v4.0">Employee Handbook v4.0 (HB-4.0)</option>
-                  {INITIAL_POLICIES.map((p) => <option key={p.id} value={`${p.name} v${p.version}`}>{p.name} v${p.version}</option>)}
+                  {STANDARD_POLICIES.map((p) => <option key={p.id} value={`${p.name} v${p.version}`}>{p.name} v${p.version}</option>)}
                 </select>
               </label>
               <label className="block"><span className="font-semibold text-[var(--muted)] block mb-1">Due date</span><input className="input w-full" type="date" value={batchDue} onChange={(e) => setBatchDue(e.target.value)} required /></label>
