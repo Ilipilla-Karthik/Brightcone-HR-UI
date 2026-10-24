@@ -6,9 +6,10 @@ import { useAuth } from '../../services/authContext';
 interface SidebarNavProps {
   role?: 'hr_admin' | 'employee';
   onToggleRole?: () => void;
+  onNavigate?: () => void;
   currentPersona?: 'admin' | 'employee';
   onPersonaChange?: (persona: 'admin' | 'employee') => void;
-  onNavigate?: () => void;
+  onSwitchRole?: (role: 'hr_admin' | 'employee') => void;
 }
 
 interface NavItem {
@@ -23,33 +24,58 @@ interface NavSection {
   items: NavItem[];
 }
 
-export const SidebarNav: React.FC<SidebarNavProps> = ({ role = 'hr_admin' }) => {
+export const SidebarNav: React.FC<SidebarNavProps> = ({
+  role = 'hr_admin',
+  currentPersona,
+  onNavigate,
+}) => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const p = location.pathname;
 
-  const getSections = (): NavSection[] => {
-    // 1. Doc Sign Module
+  const activeRole: 'hr_admin' | 'employee' =
+    currentPersona ? (currentPersona === 'admin' ? 'hr_admin' : 'employee') : role;
+
+  const appInfo = (() => {
     if (p.startsWith('/doc-sign') || p.startsWith('/sign') || p.startsWith('/doc_sign')) {
-      if (role === 'employee') {
+      return { name: 'Sign', color: '#D9466F', icon: ic('pen', 20) };
+    }
+    if (p.startsWith('/engagement') || p.startsWith('/connect')) {
+      return { name: 'Connect', color: '#0BA6CC', icon: ic('chat', 20) };
+    }
+    if (p.startsWith('/people') || p.startsWith('/employees')) {
+      return { name: 'People', color: '#12A58E', icon: ic('users', 20) };
+    }
+    if (p.startsWith('/recruit') || p.startsWith('/recruitment')) {
+      return { name: 'Recruit', color: '#7C5CFF', icon: ic('briefcase', 20) };
+    }
+    if (p.startsWith('/payroll')) return { name: 'Payroll', color: '#0F9F6E', icon: ic('pay', 20) };
+    if (p.startsWith('/expense')) return { name: 'Expense', color: '#E07A1D', icon: ic('receipt', 20) };
+    if (p.startsWith('/learn')) return { name: 'Learn', color: '#6366F1', icon: ic('learn', 20) };
+    if (p.startsWith('/time')) return { name: 'Shift', color: '#3B82C4', icon: ic('clock', 20) };
+    return { name: 'People Plus', color: '#0B87FF', icon: ic('grid', 20) };
+  })();
+
+  const getSections = (): NavSection[] => {
+    // 1. Sign Module
+    if (p.startsWith('/doc-sign') || p.startsWith('/sign') || p.startsWith('/doc_sign')) {
+      if (activeRole === 'employee') {
         return [
           {
             title: 'DOCUMENTS',
-            items: [
-              { label: 'Documents to sign', to: '/doc-sign/flow', badge: 'Action', icon: ic('pen', 15) },
-              { label: 'Employee handbook', to: '/doc-sign/handbook', icon: ic('book', 15) },
-              { label: 'HR policies', to: '/doc-sign/policies', icon: ic('shield', 15) },
-              { label: 'My acknowledgements', to: '/doc-sign/acks', icon: ic('check', 15) },
-            ],
+            items: [{ label: 'My documents', to: '/doc-sign/flow', badge: 'Action', icon: ic('pen', 15) }],
           },
         ];
       }
       return [
         {
-          title: 'DOC-SIGN OPS',
+          title: 'OVERVIEW',
+          items: [{ label: 'Dashboard', to: '/doc-sign/dashboard', icon: ic('dashboard', 15) }],
+        },
+        {
+          title: 'DOCUMENTS',
           items: [
-            { label: 'Sign dashboard', to: '/doc-sign/dashboard', icon: ic('dashboard', 15) },
-            { label: 'Signature requests', to: '/doc-sign/requests', badge: 7, icon: ic('send', 15) },
+            { label: 'Documents', to: '/doc-sign/requests', badge: 4, icon: ic('pen', 15) },
             { label: 'Templates', to: '/doc-sign/templates', icon: ic('template', 15) },
           ],
         },
@@ -64,193 +90,105 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ role = 'hr_admin' }) => 
       ];
     }
 
-    // 2. Learn Module
-    if (p.startsWith('/learn')) {
-      return [
-        {
-          title: 'LEARNING & SKILLS',
-          items: [
-            { label: 'Learn dashboard', to: '/learn/dashboard', icon: ic('dashboard', 15) },
-            { label: 'Course catalogue', to: '/learn/courses', icon: ic('learn', 15) },
-            { label: 'My learning', to: '/learn/my-learning', icon: ic('book', 15) },
-          ],
-        },
-      ];
-    }
-
-    // 3. Performance Module
-    if (p.startsWith('/performance')) {
-      return [
-        {
-          title: 'PERFORMANCE',
-          items: [
-            { label: 'Review cycles', to: '/performance/admin', icon: ic('chart', 15) },
-            { label: 'Goals & appraisals', to: '/recruit?tab=referrals', icon: ic('check', 15) },
-          ],
-        },
-      ];
-    }
-
-    // 4. People Module
-    if (p.startsWith('/people')) {
-      return [
-        {
-          title: 'DIRECTORY & PROFILE',
-          items: [
-            { label: 'All Employees', to: '/people?tab=directory', icon: ic('users', 15) },
-            { label: 'Employee Profile', to: '/people?tab=profile', icon: ic('user', 15) },
-          ],
-        },
-        {
-          title: 'TIME & WORKPLACE',
-          items: [
-            { label: 'Leaves & Balances', to: '/people?tab=leaves', icon: ic('shield', 15) },
-            { label: 'Attendance Records', to: '/people?tab=attendance', icon: ic('clock', 15) },
-            { label: 'Hardware Assets', to: '/people?tab=assets', icon: ic('grid', 15) },
-            { label: 'Employee Documents', to: '/people?tab=documents', icon: ic('book', 15) },
-          ],
-        },
-      ];
-    }
-
-    // 5. Recruit Module
-    if (p.startsWith('/recruit')) {
-      return [
-        {
-          title: 'TALENT PIPELINE',
-          items: [
-            { label: 'Pipeline Funnel', to: '/recruit?tab=pipeline', icon: ic('briefcase', 15) },
-            { label: 'Candidate Tracker', to: '/recruit?tab=candidates', badge: 8, icon: ic('users', 15) },
-            { label: 'Active Job Openings', to: '/recruit?tab=jobs', badge: 4, icon: ic('briefcase', 15) },
-          ],
-        },
-        {
-          title: 'EVALUATION & OFFERS',
-          items: [
-            { label: 'Interview Schedule', to: '/recruit?tab=interviews', badge: 3, icon: ic('clock', 15) },
-            { label: 'Offer Letters', to: '/recruit?tab=offers', icon: ic('send', 15) },
-            { label: 'Employee Referrals', to: '/recruit?tab=referrals', icon: ic('check', 15) },
-          ],
-        },
-      ];
-    }
-
-    // 6. Time & Shift Module
-    if (p.startsWith('/time')) {
-      return [
-        {
-          title: 'SHIFTS & ATTENDANCE',
-          items: [
-            { label: 'Attendance Roster', to: '/time?tab=attendance', icon: ic('clock', 15) },
-            { label: 'Shift Scheduling', to: '/time?tab=roster', icon: ic('grid', 15) },
-            { label: 'Shift Swapping', to: '/time?tab=swap', icon: ic('chat', 15) },
-          ],
-        },
-        {
-          title: 'CALENDAR & LEAVES',
-          items: [
-            { label: 'Holiday Calendar', to: '/time?tab=holidays', icon: ic('calendar', 15) },
-            { label: 'Leave Applications', to: '/time?tab=leaves', icon: ic('shield', 15) },
-          ],
-        },
-      ];
-    }
-
-    // 7. Payroll Module
-    if (p.startsWith('/payroll')) {
-      return [
-        {
-          title: 'PAYROLL OPERATIONS',
-          items: [
-            { label: 'Monthly Runs', to: '/payroll?tab=runs', icon: ic('pay', 15) },
-            { label: 'Salary Structure', to: '/payroll?tab=structure', icon: ic('template', 15) },
-            { label: 'Employee Payslips', to: '/payroll?tab=slips', icon: ic('book', 15) },
-          ],
-        },
-        {
-          title: 'COMPLIANCE & PERKS',
-          items: [
-            { label: 'Statutory Filings (PF/ESI)', to: '/payroll?tab=compliance', icon: ic('shield', 15) },
-            { label: 'Benefits & Allowances', to: '/payroll?tab=benefits', icon: ic('check', 15) },
-          ],
-        },
-      ];
-    }
-
-    // 8. Expense Module
-    if (p.startsWith('/expense')) {
-      return [
-        {
-          title: 'EXPENSE CLAIMS',
-          items: [
-            { label: 'My Expense Claims', to: '/expense?tab=claims', icon: ic('receipt', 15) },
-            { label: 'Approvals Queue', to: '/expense?tab=approvals', badge: 2, icon: ic('check', 15) },
-            { label: 'Office Expenses', to: '/expense?tab=office', icon: ic('grid', 15) },
-          ],
-        },
-      ];
-    }
-
-    // 9. Engagement / Connect Module
+    // 2. Connect Module
     if (p.startsWith('/engagement') || p.startsWith('/connect')) {
-      if (role === 'employee') {
+      if (activeRole === 'employee') {
         return [
           {
             title: 'COMMUNITY',
             items: [
-              { label: 'Company feed', to: '/engagement/feed', icon: ic('chat', 15) },
-              { label: 'People directory', to: '/engagement/directory', icon: ic('users', 15) },
-              { label: 'Birthdays & anniversaries', to: '/engagement/celebrations', icon: ic('gift', 15) },
-              { label: 'Company events', to: '/engagement/events', icon: ic('calendar', 15) },
+              { label: 'Feed', to: '/engagement/feed', icon: ic('chat', 15) },
+              { label: 'Directory', to: '/engagement/directory', icon: ic('users', 15) },
             ],
           },
         ];
       }
-
       return [
         {
           title: 'OVERVIEW',
-          items: [
-            { label: 'Company feed', to: '/engagement/feed', icon: ic('chat', 15) },
-          ],
+          items: [{ label: 'Feed', to: '/engagement/feed', icon: ic('chat', 15) }],
         },
         {
           title: 'COMMUNICATE',
           items: [
             { label: 'Announcements', to: '/engagement/announcements', icon: ic('mega', 15) },
-            { label: 'People directory', to: '/engagement/directory', icon: ic('users', 15) },
+            { label: 'Directory', to: '/engagement/directory', icon: ic('users', 15) },
           ],
         },
         {
           title: 'EMPLOYEE ENGAGEMENT',
           items: [
-            { label: 'Birthdays & anniversaries', to: '/engagement/celebrations', icon: ic('gift', 15) },
-            { label: 'Company events', to: '/engagement/events', icon: ic('calendar', 15) },
-            { label: 'Employee feedback', to: '/engagement/feedback', icon: ic('chat', 15) },
-            { label: 'Town hall meetings', to: '/engagement/townhall', icon: ic('mega', 15) },
+            { label: 'Events', to: '/engagement/events', icon: ic('calendar', 15) },
+            { label: 'Feedback', to: '/engagement/feedback', icon: ic('chat', 15) },
+            { label: 'Town halls', to: '/engagement/townhall', icon: ic('mega', 15) },
+            { label: 'Celebrations', to: '/engagement/celebrations', icon: ic('gift', 15) },
           ],
         },
       ];
     }
 
-    // 10. Default Suite Navigation
+    // 3. Other modules
+    if (p.startsWith('/learn')) {
+      return [
+        {
+          title: activeRole === 'employee' ? 'LEARNING' : 'CATALOGUE',
+          items: [
+            { label: activeRole === 'employee' ? 'My learning' : 'Courses', to: activeRole === 'employee' ? '/learn/my-learning' : '/learn/courses', icon: ic('learn', 15) },
+            ...(activeRole === 'hr_admin' ? [{ label: 'Learn dashboard', to: '/learn/dashboard', icon: ic('dashboard', 15) }] : []),
+          ],
+        },
+      ];
+    }
+
+    if (p.startsWith('/people')) {
+      return [
+        {
+          title: activeRole === 'employee' ? 'ME' : 'WORKFORCE',
+          items: [
+            { label: activeRole === 'employee' ? 'My profile' : 'All Employees', to: '/people', icon: ic('users', 15) },
+          ],
+        },
+      ];
+    }
+
+    // Default People Plus Suite
+    if (activeRole === 'employee') {
+      return [
+        {
+          title: 'OVERVIEW',
+          items: [
+            { label: 'My dashboard', to: '/portal', icon: ic('home', 15) },
+          ],
+        },
+        {
+          title: 'DOCUMENTS',
+          items: [
+            { label: 'Documents to sign', to: '/doc-sign/flow', icon: ic('pen', 15) },
+          ],
+        },
+        {
+          title: 'COMMUNITY',
+          items: [
+            { label: 'Company feed', to: '/engagement/feed', icon: ic('chat', 15) },
+            { label: 'People directory', to: '/engagement/directory', icon: ic('users', 15) },
+          ],
+        },
+      ];
+    }
+
     return [
       {
         title: 'OVERVIEW',
         items: [
-          { label: 'Suite dashboard', to: '/suite', icon: ic('grid', 15) },
-          { label: 'Company feed', to: '/engagement', icon: ic('chat', 15) },
+          { label: 'Suite dashboard', to: '/suite', icon: ic('dashboard', 15) },
+          { label: 'Company feed', to: '/engagement/feed', icon: ic('chat', 15) },
         ],
       },
       {
-        title: 'CORE MODULES',
+        title: 'CORE APPS',
         items: [
           { label: 'Sign & Documents', to: '/doc-sign/dashboard', icon: ic('pen', 15) },
-          { label: 'People Directory', to: '/people', icon: ic('users', 15) },
-          { label: 'Recruit & Jobs', to: '/recruit', icon: ic('briefcase', 15) },
-          { label: 'Learn & Upskilling', to: '/learn/dashboard', icon: ic('learn', 15) },
-          { label: 'Time & Attendance', to: '/time', icon: ic('clock', 15) },
-          { label: 'Payroll & Salary', to: '/payroll', icon: ic('pay', 15) },
+          { label: 'People Directory', to: '/engagement/directory', icon: ic('users', 15) },
         ],
       },
     ];
@@ -259,64 +197,95 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({ role = 'hr_admin' }) => 
   const sections = getSections();
   const displayName = user
     ? (user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User')
-    : (role === 'employee' ? 'Rahul Varma' : 'Ananya Rao');
-  const userInitials = displayName.split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'AR';
+    : (activeRole === 'employee' ? 'Rahul Varma' : 'Ananya Rao');
+  const displayEmail = user?.email || (activeRole === 'employee' ? 'rahul.varma@brightcone.ai' : 'ananya.rao@brightcone.ai');
+  const userInitials = displayName.split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2) || (activeRole === 'employee' ? 'RV' : 'AR');
 
   return (
-    <aside className="side" aria-label="Sidebar Navigation">
-      <div className="side-head">
-        <div className="slogo flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#3B82F6] to-[#06B6D4] flex items-center justify-center text-white font-bold text-sm shadow-sm">
-            B
-          </div>
-          <div>
-            <b>Brightcone</b>
-            <span className="block text-[11px] text-[var(--muted)]">People Plus Portal</span>
-          </div>
+    <aside className="side" aria-label="Sidebar Navigation" style={{ '--ac': appInfo.color } as React.CSSProperties}>
+      {/* HTML Prototype App Header with App Icon and Portal Subtitle */}
+      <div className="apphead flex items-center gap-3 pb-4 mb-2 border-b border-[var(--line)]">
+        <i
+          className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md transition-all"
+          style={{ background: appInfo.color }}
+        >
+          {appInfo.icon}
+        </i>
+        <div className="min-w-0 flex-1 text-left">
+          <b className="font-['Sora'] text-[16px] font-semibold tracking-tight text-[var(--text)] block truncate">
+            {appInfo.name}
+          </b>
+          <span className="text-xs text-[var(--muted)] block">
+            {activeRole === 'hr_admin' ? 'HR Admin' : 'Employee self-service'}
+          </span>
         </div>
       </div>
 
-      <div className="side-nav custom-scroll">
+      {/* Navigation Sections */}
+      <nav id="nav" className="side-nav flex-1 overflow-y-auto custom-scroll space-y-4">
         {sections.map((section) => (
           <div key={section.title} className="sec">
-            <span className="sec-label">{section.title}</span>
-            <div className="nav-items space-y-0.5">
+            <span className="navgroup text-[11px] font-bold uppercase tracking-wider text-[var(--faint)] px-2.5 py-1 block">
+              {section.title}
+            </span>
+            <div className="nav-items space-y-0.5 mt-1">
               {section.items.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  onClick={onNavigate}
                   className={({ isActive }) => {
                     const isItemActive =
                       isActive ||
                       (location.pathname + location.search === item.to) ||
                       (location.search === '' && item.to.includes('?tab=') && item.to.endsWith(item.to.split('?tab=')[1]));
-                    return `nav ${isItemActive ? 'active' : ''}`;
+                    return `nav flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                      isItemActive
+                        ? 'active font-semibold text-[var(--text)]'
+                        : 'text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]'
+                    }`;
                   }}
+                  style={({ isActive }) =>
+                    isActive
+                      ? ({
+                          background: `color-mix(in srgb, ${appInfo.color} 14%, transparent)`,
+                          color: appInfo.color,
+                        } as React.CSSProperties)
+                      : {}
+                  }
                 >
-                  {item.icon}
-                  <span>{item.label}</span>
-                  {item.badge && <span className="count">{item.badge}</span>}
+                  <span className="shrink-0">{item.icon}</span>
+                  <span className="truncate">{item.label}</span>
+                  {item.badge && (
+                    <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-[var(--bad)] text-white">
+                      {item.badge}
+                    </span>
+                  )}
                 </NavLink>
               ))}
             </div>
           </div>
         ))}
-      </div>
+      </nav>
 
-      <div className="side-foot">
-        <div className="agent-card side-user flex items-center justify-between p-2 rounded-xl bg-[var(--surface-2)]">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="av w-8 h-8 rounded-full bg-[#7C5CFF] text-white flex items-center justify-center font-bold text-xs">
+      {/* HTML Prototype Side User Footer */}
+      <div className="side-foot pt-3 border-t border-[var(--line)] mt-auto">
+        <div className="side-user flex items-center justify-between p-2 rounded-xl bg-[var(--surface-2)]">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span
+              className="av w-8 h-8 rounded-full text-white flex items-center justify-center font-bold text-xs shrink-0"
+              style={{ background: appInfo.color }}
+            >
               {userInitials}
             </span>
             <div className="min-w-0 flex-1 text-left">
-              <b className="truncate block text-xs">{displayName}</b>
-              <span className="truncate block text-[11px] text-[var(--muted)]">{user?.email || 'ananya.rao@brightcone.ai'}</span>
+              <b className="truncate block text-xs text-[var(--text)] font-semibold">{displayName}</b>
+              <span className="truncate block text-[11px] text-[var(--muted)]">{displayEmail}</span>
             </div>
           </div>
           <button
             type="button"
-            className="p-1 hover:text-red-500 transition-colors cursor-pointer"
+            className="p-1.5 text-[var(--muted)] hover:text-red-500 rounded-lg hover:bg-[var(--surface)] transition-colors cursor-pointer"
             aria-label="Sign out"
             title="Sign out"
             onClick={logout}

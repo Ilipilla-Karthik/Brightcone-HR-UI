@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './services/authContext';
 import { Login } from './pages/auth/Login';
 import { AppRail } from './components/shell/AppRail';
@@ -37,7 +37,9 @@ import EmployeeLearnPage from './pages/learn/EmployeeLearnPage';
 import PerformanceAdminPage from './pages/performance/PerformanceAdminPage';
 
 const AppLayout: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, switchUserRole } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [role, setRole] = useState<'hr_admin' | 'employee'>(
     user?.role === 'employee' ? 'employee' : 'hr_admin'
   );
@@ -51,9 +53,42 @@ const AppLayout: React.FC = () => {
     }
   }, [user]);
 
-  const toggleRole = () => {
-    setRole((prev) => (prev === 'hr_admin' ? 'employee' : 'hr_admin'));
+  const handleSwitchRole = (newRole: 'hr_admin' | 'employee') => {
+    setRole(newRole);
+    switchUserRole(newRole);
+    const p = location.pathname;
+    if (p.startsWith('/doc-sign') || p.startsWith('/sign') || p.startsWith('/doc_sign')) {
+      if (newRole === 'employee') {
+        navigate('/doc-sign/flow');
+      } else {
+        navigate('/doc-sign/dashboard');
+      }
+    } else if (p.startsWith('/portal') || p.startsWith('/suite')) {
+      if (newRole === 'employee') {
+        navigate('/portal');
+      } else {
+        navigate('/suite');
+      }
+    } else if (p.startsWith('/engagement') || p.startsWith('/connect')) {
+      if (newRole === 'employee' && !p.includes('/feed') && !p.includes('/directory')) {
+        navigate('/engagement/feed');
+      }
+    }
   };
+
+  const getAccentColor = (pathname: string) => {
+    if (pathname.startsWith('/doc-sign') || pathname.startsWith('/sign') || pathname.startsWith('/doc_sign')) return '#D9466F';
+    if (pathname.startsWith('/engagement') || pathname.startsWith('/connect')) return '#0BA6CC';
+    if (pathname.startsWith('/people')) return '#12A58E';
+    if (pathname.startsWith('/recruit')) return '#7C5CFF';
+    if (pathname.startsWith('/payroll')) return '#0F9F6E';
+    if (pathname.startsWith('/expense')) return '#E07A1D';
+    if (pathname.startsWith('/learn')) return '#6366F1';
+    if (pathname.startsWith('/time')) return '#3B82C4';
+    return '#0B87FF';
+  };
+
+  const accentColor = getAccentColor(location.pathname);
 
   if (!isAuthenticated) {
     return <Login />;
@@ -61,20 +96,23 @@ const AppLayout: React.FC = () => {
 
   return (
     <>
-      <div className="app h-screen overflow-hidden bg-[var(--bg)] text-[var(--text)]">
-        <AppRail />
-        <SidebarNav role={role} onToggleRole={toggleRole} />
+      <div
+        className="app h-screen overflow-hidden bg-[var(--bg)] text-[var(--text)]"
+        style={{ '--ac': accentColor } as React.CSSProperties}
+      >
+        <AppRail role={role} />
+        <SidebarNav role={role} onSwitchRole={handleSwitchRole} />
 
         <div className="main flex flex-col min-w-0 h-full overflow-hidden">
           <Header
             role={role}
-            onToggleRole={toggleRole}
+            onSwitchRole={handleSwitchRole}
             onOpenCommand={() => setIsCommandOpen(true)}
           />
 
           <main className="content flex-1 min-h-0 overflow-y-auto">
             <Routes>
-              <Route path="/" element={<Navigate to="/suite" replace />} />
+              <Route path="/" element={<Navigate to={role === 'employee' ? '/portal' : '/suite'} replace />} />
               <Route path="/login" element={<Login />} />
               <Route path="/suite" element={<SuiteDashboard />} />
               <Route path="/suite/*" element={<SuiteDashboard />} />
@@ -82,7 +120,7 @@ const AppLayout: React.FC = () => {
               <Route path="/portal/*" element={<EmployeePortalPage />} />
 
               {/* DocSign routes */}
-              <Route path="/doc-sign" element={<Navigate to="/doc-sign/dashboard" replace />} />
+              <Route path="/doc-sign" element={<Navigate to={role === 'employee' ? '/doc-sign/flow' : '/doc-sign/dashboard'} replace />} />
               <Route path="/doc-sign/dashboard" element={<SignDashboard />} />
               <Route path="/doc-sign/handbook" element={<EmployeeHandbookPage />} />
               <Route path="/doc-sign/policies" element={<HRPoliciesPage />} />
@@ -92,10 +130,10 @@ const AppLayout: React.FC = () => {
               <Route path="/doc-sign/flow" element={<SignDocumentFlow />} />
 
               {/* Route aliases */}
-              <Route path="/sign" element={<Navigate to="/doc-sign/dashboard" replace />} />
-              <Route path="/sign/*" element={<Navigate to="/doc-sign/dashboard" replace />} />
-              <Route path="/doc_sign" element={<Navigate to="/doc-sign/dashboard" replace />} />
-              <Route path="/doc_sign/*" element={<Navigate to="/doc-sign/dashboard" replace />} />
+              <Route path="/sign" element={<Navigate to={role === 'employee' ? '/doc-sign/flow' : '/doc-sign/dashboard'} replace />} />
+              <Route path="/sign/*" element={<Navigate to={role === 'employee' ? '/doc-sign/flow' : '/doc-sign/dashboard'} replace />} />
+              <Route path="/doc_sign" element={<Navigate to={role === 'employee' ? '/doc-sign/flow' : '/doc-sign/dashboard'} replace />} />
+              <Route path="/doc_sign/*" element={<Navigate to={role === 'employee' ? '/doc-sign/flow' : '/doc-sign/dashboard'} replace />} />
 
               {/* Learn & Performance routes */}
               <Route path="/learn" element={<Navigate to="/learn/dashboard" replace />} />
@@ -145,7 +183,7 @@ const AppLayout: React.FC = () => {
               <Route path="/advanced-hr/*" element={<AdminDashboard />} />
               <Route path="/advanced-hr" element={<AdminDashboard />} />
 
-              <Route path="*" element={<Navigate to="/suite" replace />} />
+              <Route path="*" element={<Navigate to={role === 'employee' ? '/portal' : '/suite'} replace />} />
             </Routes>
           </main>
         </div>

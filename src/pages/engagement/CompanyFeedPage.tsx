@@ -13,7 +13,7 @@ import {
   fetchConnectCelebrations,
   fetchConnectGroups,
 } from '../../services/signConnectApi';
-import { mapPostFromApi, mapAnnouncementFromPost } from './apiMapper';
+import { mapPostFromApi, mapAnnouncementFromPost, mapCelebrationFromApi } from './apiMapper';
 
 const getInitials = (name: string) => {
   return name
@@ -66,14 +66,7 @@ export const CompanyFeedPage: React.FC = () => {
     fetchConnectCelebrations()
       .then((data) => {
         if (data) {
-          const mapped = data.map((c, i) => ({
-            id: `c_${i}`,
-            n: c.name,
-            t: c.type || 'Birthday',
-            d: c.date || 'Today',
-            detail: c.detail || '',
-          }));
-          setCelebrations(mapped);
+          setCelebrations(data.map(mapCelebrationFromApi));
         }
       })
       .catch(() => {});

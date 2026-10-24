@@ -3,17 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { ic } from '../../../components/icons';
 import { GroupItem, AnnouncementItem, CelebrationItem } from '../types';
 
-const getInitials = (name: string) => {
-  return name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+const getInitials = (name?: string) => {
+  if (!name) return 'TM';
+  return (
+    name
+      .split(' ')
+      .filter(Boolean)
+      .map((n) => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() || 'TM'
+  );
 };
 
-const getAvatarColor = (name: string) => {
+const getAvatarColor = (name?: string) => {
   const colors = ['#0B6FDB', '#12A58E', '#7C5CFF', '#D9466F', '#E07A1D', '#0BA6CC', '#6366F1'];
+  if (!name) return colors[0];
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return colors[Math.abs(hash) % colors.length];
@@ -46,26 +51,32 @@ export const FeedSidebarWidgets: React.FC<FeedSidebarWidgetsProps> = ({
       <div className="card">
         <h3>Celebrations this month</h3>
         <div className="list">
-          {celebrations.slice(0, 4).map((c) => (
-            <div key={c.id} className="row">
-              <span className="av" style={{ backgroundColor: getAvatarColor(c.name) }}>
-                {getInitials(c.name)}
-              </span>
-              <div className="grow">
-                <b>{c.name}</b>
-                <div className="sub">
-                  {c.occasion} · {c.date} ({c.milestone})
+          {celebrations.slice(0, 4).map((c) => {
+            const cName = c.name || (c as any).n || 'Team Member';
+            const cOccasion = c.occasion || (c as any).t || 'Celebration';
+            const cDate = c.date || (c as any).d || 'Today';
+            const cMilestone = c.milestone || (c as any).detail || '';
+            return (
+              <div key={c.id} className="row">
+                <span className="av" style={{ backgroundColor: getAvatarColor(cName) }}>
+                  {getInitials(cName)}
+                </span>
+                <div className="grow">
+                  <b>{cName}</b>
+                  <div className="sub">
+                    {cOccasion} · {cDate} {cMilestone ? `(${cMilestone})` : ''}
+                  </div>
                 </div>
+                <button
+                  type="button"
+                  className="btn sm"
+                  onClick={() => onWish(cName, cOccasion)}
+                >
+                  Wish
+                </button>
               </div>
-              <button
-                type="button"
-                className="btn sm"
-                onClick={() => onWish(c.name, c.occasion)}
-              >
-                Wish
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

@@ -7,14 +7,18 @@ interface HeaderProps {
   onOpenCommand?: () => void;
   role?: 'hr_admin' | 'employee';
   onToggleRole?: () => void;
+  onSwitchRole?: (role: 'hr_admin' | 'employee') => void;
   onToggleMobileNav?: () => void;
   currentPersona?: 'admin' | 'employee';
+  onPersonaChange?: (persona: 'admin' | 'employee') => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenCommand,
   role = 'hr_admin',
-  onToggleRole,
+  onSwitchRole,
+  currentPersona,
+  onPersonaChange,
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -22,6 +26,9 @@ export const Header: React.FC<HeaderProps> = ({
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const activeRole: 'hr_admin' | 'employee' =
+    currentPersona ? (currentPersona === 'admin' ? 'hr_admin' : 'employee') : role;
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -37,12 +44,15 @@ export const Header: React.FC<HeaderProps> = ({
     };
   }, [isProfileOpen]);
 
-  const displayName = user
-    ? (user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User')
-    : (role === 'employee' ? 'Rahul Varma' : 'Ananya Rao');
-  const displayEmail = user?.email || (role === 'employee' ? 'rahul.varma@brightcone.ai' : 'ananya.rao@brightcone.ai');
-  const roleTitle = role === 'employee' ? 'Senior Engineer' : 'People Ops Lead';
-  const userInitials = displayName.split(' ').filter(Boolean).map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'U';
+  const displayName =
+    activeRole === 'employee'
+      ? (user?.role === 'employee' && (user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim())) || 'Rahul Varma'
+      : (user?.role === 'hr_admin' && (user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim())) || 'Ananya Rao';
+
+  const displayEmail =
+    activeRole === 'employee' ? 'rahul.varma@brightcone.ai' : 'ananya.rao@brightcone.ai';
+  const roleTitle = activeRole === 'employee' ? 'Senior Engineer' : 'People Ops Lead';
+  const userInitials = activeRole === 'employee' ? 'RV' : 'AR';
 
   const toggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light';
@@ -60,6 +70,12 @@ export const Header: React.FC<HeaderProps> = ({
     navigate('/login', { replace: true });
   };
 
+  const handleRoleSelect = (targetRole: 'hr_admin' | 'employee') => {
+    if (targetRole === activeRole) return;
+    if (onSwitchRole) onSwitchRole(targetRole);
+    if (onPersonaChange) onPersonaChange(targetRole === 'hr_admin' ? 'admin' : 'employee');
+  };
+
   const getBreadcrumb = () => {
     const p = location.pathname;
     if (p.startsWith('/doc-sign') || p.startsWith('/sign') || p.startsWith('/doc_sign')) {
@@ -69,7 +85,7 @@ export const Header: React.FC<HeaderProps> = ({
       if (p.includes('/policies')) return { app: 'Sign', page: 'HR policies' };
       if (p.includes('/acks')) return { app: 'Sign', page: 'Policy acknowledgements' };
       if (p.includes('/flow')) return { app: 'Sign', page: 'Documents to sign' };
-      return { app: 'Sign', page: 'Sign dashboard' };
+      return { app: 'Sign', page: activeRole === 'employee' ? 'Documents to sign' : 'Sign dashboard' };
     }
     if (p.startsWith('/performance')) return { app: 'Performance', page: 'Review cycles' };
     if (p.startsWith('/learn')) {
@@ -80,45 +96,26 @@ export const Header: React.FC<HeaderProps> = ({
     if (p.startsWith('/people')) {
       if (p.includes('/profile')) return { app: 'People', page: 'Employee profile' };
       if (p.includes('/org-chart')) return { app: 'People', page: 'Org structure' };
-      if (p.includes('/leaves')) return { app: 'People', page: 'Leaves & time-off' };
-      if (p.includes('/attendance')) return { app: 'People', page: 'Attendance' };
-      if (p.includes('/assets')) return { app: 'People', page: 'Assets & equipment' };
-      if (p.includes('/documents')) return { app: 'People', page: 'Documents' };
       return { app: 'People', page: 'Directory' };
     }
-    if (p.startsWith('/recruit')) {
-      if (p.includes('/candidates')) return { app: 'Recruit', page: 'Candidate tracker' };
-      if (p.includes('/jobs')) return { app: 'Recruit', page: 'Job openings' };
-      if (p.includes('/interviews')) return { app: 'Recruit', page: 'Interview schedule' };
-      if (p.includes('/offers')) return { app: 'Recruit', page: 'Offer letters' };
-      if (p.includes('/referrals')) return { app: 'Recruit', page: 'Referrals' };
-      return { app: 'Recruit', page: 'Talent pipeline' };
-    }
-    if (p.startsWith('/time')) {
-      if (p.includes('/roster')) return { app: 'Shift', page: 'Shift roster' };
-      if (p.includes('/swap')) return { app: 'Shift', page: 'Shift swap' };
-      if (p.includes('/holidays')) return { app: 'Shift', page: 'Holidays' };
-      if (p.includes('/leaves')) return { app: 'Shift', page: 'Leave balance' };
-      return { app: 'Shift', page: 'Attendance roster' };
-    }
-    if (p.startsWith('/payroll')) {
-      if (p.includes('/salary-structure')) return { app: 'Payroll', page: 'Salary structure' };
-      if (p.includes('/payslips')) return { app: 'Payroll', page: 'My payslips' };
-      if (p.includes('/compliance')) return { app: 'Payroll', page: 'Tax & PF compliance' };
-      if (p.includes('/benefits')) return { app: 'Payroll', page: 'Benefits' };
-      return { app: 'Payroll', page: 'Payroll runs' };
-    }
+    if (p.startsWith('/recruit')) return { app: 'Recruit', page: 'Pipeline & jobs' };
+    if (p.startsWith('/time')) return { app: 'Shift', page: 'Attendance roster' };
+    if (p.startsWith('/payroll')) return { app: 'Payroll', page: 'Payroll runs' };
     if (p.startsWith('/expense')) return { app: 'Expense', page: 'Expense claims' };
-    if (p.startsWith('/engagement')) {
+    if (p.startsWith('/engagement') || p.startsWith('/connect')) {
+      if (p.includes('/announcements')) return { app: 'Connect', page: 'Announcements' };
+      if (p.includes('/directory')) return { app: 'Connect', page: 'People directory' };
       if (p.includes('/events')) return { app: 'Connect', page: 'Company events' };
       if (p.includes('/celebrations')) return { app: 'Connect', page: 'Celebrations' };
-      if (p.includes('/helpdesk')) return { app: 'Connect', page: 'Helpdesk queue' };
+      if (p.includes('/feedback')) return { app: 'Connect', page: 'Employee feedback' };
+      if (p.includes('/townhall')) return { app: 'Connect', page: 'Town hall meetings' };
       return { app: 'Connect', page: 'Company feed' };
     }
-    return { app: 'People Plus', page: 'Suite dashboard' };
+    return { app: 'People Plus', page: activeRole === 'employee' ? 'My dashboard' : 'Suite dashboard' };
   };
 
   const crumb = getBreadcrumb();
+  const homePath = activeRole === 'employee' ? '/portal' : '/suite';
 
   return (
     <header className="top flex-none relative z-50">
@@ -127,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
         className="icon-btn"
         aria-label="All apps"
         title="All apps"
-        onClick={() => navigate('/suite')}
+        onClick={() => navigate(homePath)}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="3" y="3" width="7" height="7" rx="1.5" />
@@ -140,7 +137,7 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="crumb" id="crumb">
         <span
           className="cursor-pointer hover:text-[var(--text)] transition-colors"
-          onClick={() => navigate('/suite')}
+          onClick={() => navigate(homePath)}
         >
           {crumb.app}
         </span>
@@ -160,6 +157,43 @@ export const Header: React.FC<HeaderProps> = ({
         <kbd>Ctrl K</kbd>
       </div>
 
+      <div style={{ flex: 1 }} />
+
+      {/* Prominent Portal Switcher Pill in Top Nav */}
+      <div className="flex items-center bg-[var(--surface-2)] border border-[var(--line)] rounded-full p-0.5 text-xs font-semibold shadow-inner mr-1">
+        <button
+          type="button"
+          onClick={() => handleRoleSelect('hr_admin')}
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition-all cursor-pointer ${
+            activeRole === 'hr_admin'
+              ? 'bg-[var(--ac,#D9466F)] text-white shadow-xs font-bold'
+              : 'text-[var(--muted)] hover:text-[var(--text)]'
+          }`}
+          title="Switch to HR Admin Portal"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <span>HR Admin</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => handleRoleSelect('employee')}
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition-all cursor-pointer ${
+            activeRole === 'employee'
+              ? 'bg-[var(--ac,#D9466F)] text-white shadow-xs font-bold'
+              : 'text-[var(--muted)] hover:text-[var(--text)]'
+          }`}
+          title="Switch to Employee Portal"
+        >
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <circle cx="12" cy="7" r="4" />
+            <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
+          </svg>
+          <span>Employee</span>
+        </button>
+      </div>
+
       <div className="r flex items-center gap-2">
         <button
           type="button"
@@ -174,12 +208,15 @@ export const Header: React.FC<HeaderProps> = ({
 
         <button
           type="button"
-          className="icon-btn"
+          className="icon-btn relative"
           aria-label="Notifications"
           title="Notifications"
-          onClick={() => navigate('/suite')}
+          onClick={() => navigate(homePath)}
         >
           {ic('bell', 18)}
+          {activeRole === 'hr_admin' && (
+            <span className="dot absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--bad,#E53E3E)]" />
+          )}
         </button>
 
         <div className="relative" ref={menuRef}>
@@ -207,23 +244,21 @@ export const Header: React.FC<HeaderProps> = ({
                 <p className="text-xs font-bold text-[var(--text)]">{displayName}</p>
                 <p className="text-[11px] text-[var(--muted)] truncate">{displayEmail}</p>
                 <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E3F0FF] text-[#0B6FDB]">
-                  {role === 'hr_admin' ? 'HR Admin' : 'Employee'}
+                  {activeRole === 'hr_admin' ? 'HR Admin' : 'Employee self-service'}
                 </span>
               </div>
 
-              {onToggleRole && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onToggleRole();
-                    setIsProfileOpen(false);
-                  }}
-                  className="w-full text-left px-4 py-2.5 text-xs text-[var(--text)] hover:bg-[var(--surface-2)] flex items-center gap-2 cursor-pointer"
-                >
-                  {ic('users', 14)}
-                  <span>Switch to {role === 'hr_admin' ? 'Employee View' : 'HR Admin View'}</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  handleRoleSelect(activeRole === 'hr_admin' ? 'employee' : 'hr_admin');
+                  setIsProfileOpen(false);
+                }}
+                className="w-full text-left px-4 py-2.5 text-xs text-[var(--text)] hover:bg-[var(--surface-2)] flex items-center gap-2 cursor-pointer"
+              >
+                {ic('users', 14)}
+                <span>Switch to {activeRole === 'hr_admin' ? 'Employee View' : 'HR Admin View'}</span>
+              </button>
 
               <button
                 type="button"
@@ -237,7 +272,6 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </div>
 
-        {/* Direct, prominent top-right Sign Out button */}
         <button
           type="button"
           onClick={handleLogout}

@@ -6,6 +6,7 @@ interface AuthContextType {
   token: string | null;
   login: (token: string, user: User) => void;
   logout: () => void;
+  switchUserRole: (role: 'hr_admin' | 'employee') => void;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -18,6 +19,14 @@ const DEFAULT_HR_ADMIN: User = {
   firstName: 'Ananya',
   lastName: 'Rao',
   role: 'hr_admin',
+};
+
+const DEFAULT_EMPLOYEE: User = {
+  id: 'usr-rahul',
+  email: 'rahul.varma@brightcone.ai',
+  firstName: 'Rahul',
+  lastName: 'Varma',
+  role: 'employee',
 };
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -62,6 +71,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setUser(null);
   };
 
+  const switchUserRole = (newRole: 'hr_admin' | 'employee') => {
+    const newUser = newRole === 'employee' ? DEFAULT_EMPLOYEE : DEFAULT_HR_ADMIN;
+    localStorage.removeItem('bc_logged_out');
+    localStorage.setItem('user', JSON.stringify(newUser));
+    localStorage.setItem('persona', newRole === 'employee' ? 'employee' : 'admin');
+    setUser(newUser);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -69,6 +86,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         token,
         login,
         logout,
+        switchUserRole,
         isAuthenticated: !!token,
         isLoading,
       }}
