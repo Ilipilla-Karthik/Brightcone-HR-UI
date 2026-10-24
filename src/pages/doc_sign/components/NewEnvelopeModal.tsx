@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { DocumentCategory, SignatureRequest } from '../types';
-import { INITIAL_TEMPLATES } from '../mockData';
+import React, { useState, useEffect } from 'react';
+import { DocumentCategory, SignatureRequest, SignatureTemplate } from '../types';
+import * as templateService from '../../../services/templateService';
 import { ic } from '../../../components/icons';
 
 interface NewEnvelopeModalProps {
@@ -14,6 +14,7 @@ export const NewEnvelopeModal: React.FC<NewEnvelopeModalProps> = ({
   onClose,
   onSubmit,
 }) => {
+  const [templates, setTemplates] = useState<SignatureTemplate[]>([]);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<DocumentCategory>('Offers');
   const [recipientName, setRecipientName] = useState('');
@@ -23,10 +24,21 @@ export const NewEnvelopeModal: React.FC<NewEnvelopeModalProps> = ({
   const [dueDate, setDueDate] = useState('Oct 28, 2026');
   const [description, setDescription] = useState('');
 
+  useEffect(() => {
+    if (isOpen) {
+      templateService
+        .getTemplates()
+        .then((tpls) => {
+          if (tpls) setTemplates(tpls);
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleTemplateSelect = (tplId: string) => {
-    const tpl = INITIAL_TEMPLATES.find((t) => t.id === tplId);
+    const tpl = templates.find((t) => t.id === tplId);
     if (tpl) {
       setTitle(tpl.title);
       setCategory(tpl.category);
@@ -90,7 +102,7 @@ export const NewEnvelopeModal: React.FC<NewEnvelopeModalProps> = ({
               defaultValue=""
             >
               <option value="">-- Select a predefined template --</option>
-              {INITIAL_TEMPLATES.map((t) => (
+              {templates.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.title} ({t.category})
                 </option>

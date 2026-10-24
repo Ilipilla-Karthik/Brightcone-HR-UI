@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ic } from '../../components/icons';
 import { CelebrationItem } from './types';
-import { INITIAL_CELEBRATIONS } from './mockData';
+import { fetchConnectCelebrations } from '../../services/signConnectApi';
+import { mapCelebrationFromApi } from './apiMapper';
 
 const getInitials = (name: string) => {
   return name
@@ -20,7 +21,15 @@ const getAvatarColor = (name: string) => {
 };
 
 export const CelebrationsPage: React.FC = () => {
-  const [celebrations] = useState<CelebrationItem[]>(INITIAL_CELEBRATIONS);
+  const [celebrations, setCelebrations] = useState<CelebrationItem[]>([]);
+
+  useEffect(() => {
+    fetchConnectCelebrations()
+      .then((data) => {
+        if (data) setCelebrations(data.map(mapCelebrationFromApi));
+      })
+      .catch(() => {});
+  }, []);
   const [filterType, setFilterType] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [toastMsg, setToastMsg] = useState('');

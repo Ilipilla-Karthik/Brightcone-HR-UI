@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ic } from '../../../components/icons';
 import { FeedbackItem } from '../types';
-import { INITIAL_DIRECTORY_EMPLOYEES } from '../mockData';
+import { fetchConnectDirectory } from '../../../services/signConnectApi';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -16,14 +16,33 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
   onSave,
   editItem,
 }) => {
+  const [employees, setEmployees] = useState<Array<{ id: string; name: string }>>([]);
   const [anon, setAnon] = useState<'Yes' | 'No'>('No');
-  const [emp, setEmp] = useState(INITIAL_DIRECTORY_EMPLOYEES[6]?.name || '');
+  const [emp, setEmp] = useState('Rahul Varma');
   const [cat, setCat] = useState<FeedbackItem['cat']>('Workplace');
   const [rating, setRating] = useState('4');
   const [text, setText] = useState('');
-  const [owner, setOwner] = useState(INITIAL_DIRECTORY_EMPLOYEES[1]?.name || '');
+  const [owner, setOwner] = useState('Ananya Rao');
   const [action, setAction] = useState('');
   const [status, setStatus] = useState<FeedbackItem['status']>('Pending');
+
+  useEffect(() => {
+    fetchConnectDirectory()
+      .then((data) => {
+        if (data && data.length > 0) {
+          const mapped = data.map((e: any) => ({
+            id: e.employee_code || String(e.id),
+            name: e.full_name || '',
+          }));
+          setEmployees(mapped);
+          if (!editItem && mapped.length > 0) {
+            setEmp(mapped[0].name);
+            setOwner(mapped.find((m: any) => m.name.includes('Ananya'))?.name || mapped[0].name);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [editItem]);
 
   useEffect(() => {
     if (editItem) {
@@ -37,11 +56,9 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
       setStatus(editItem.status);
     } else {
       setAnon('No');
-      setEmp(INITIAL_DIRECTORY_EMPLOYEES[6]?.name || '');
       setCat('Workplace');
       setRating('4');
       setText('');
-      setOwner(INITIAL_DIRECTORY_EMPLOYEES[1]?.name || '');
       setAction('');
       setStatus('Pending');
     }
@@ -97,7 +114,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
                   value={emp}
                   onChange={(e) => setEmp(e.target.value)}
                 >
-                  {INITIAL_DIRECTORY_EMPLOYEES.map((e) => (
+                  {employees.map((e) => (
                     <option key={e.id} value={e.name}>
                       {e.name}
                     </option>
@@ -168,7 +185,7 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({
                 value={owner}
                 onChange={(e) => setOwner(e.target.value)}
               >
-                {INITIAL_DIRECTORY_EMPLOYEES.map((e) => (
+                {employees.map((e) => (
                   <option key={e.id} value={e.name}>
                     {e.name}
                   </option>

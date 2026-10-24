@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ic } from '../../../components/icons';
 import { TownhallItem } from '../types';
-import { INITIAL_DIRECTORY_EMPLOYEES } from '../mockData';
+import { fetchConnectDirectory } from '../../../services/signConnectApi';
 
 interface TownhallModalProps {
   isOpen: boolean;
@@ -16,11 +16,12 @@ export const TownhallModal: React.FC<TownhallModalProps> = ({
   onSave,
   editItem,
 }) => {
+  const [employees, setEmployees] = useState<Array<{ id: string; name: string }>>([]);
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [mode, setMode] = useState<TownhallItem['mode']>('Hybrid');
-  const [host, setHost] = useState(INITIAL_DIRECTORY_EMPLOYEES[0]?.name || '');
+  const [host, setHost] = useState('Naresh Vemparala');
   const [agenda, setAgenda] = useState('');
   const [att, setAtt] = useState<number | ''>('');
   const [status, setStatus] = useState<TownhallItem['status']>('Scheduled');
@@ -28,12 +29,29 @@ export const TownhallModal: React.FC<TownhallModalProps> = ({
   const [actions, setActions] = useState('');
 
   useEffect(() => {
+    fetchConnectDirectory()
+      .then((data) => {
+        if (data && data.length > 0) {
+          const mapped = data.map((e: any) => ({
+            id: e.employee_code || String(e.id),
+            name: e.full_name || '',
+          }));
+          setEmployees(mapped);
+          if (!editItem && mapped.length > 0) {
+            setHost(mapped[0].name);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
     if (editItem) {
       setTitle(editItem.title);
       setDate(editItem.date);
       setTime(editItem.time || '');
       setMode(editItem.mode || 'Hybrid');
-      setHost(editItem.host || INITIAL_DIRECTORY_EMPLOYEES[0]?.name || '');
+      setHost(editItem.host || (employees[0]?.name || 'Naresh Vemparala'));
       setAgenda(editItem.agenda || '');
       setAtt(editItem.att ?? '');
       setStatus(editItem.status);
@@ -44,14 +62,14 @@ export const TownhallModal: React.FC<TownhallModalProps> = ({
       setDate(new Date().toISOString().slice(0, 10));
       setTime('16:00');
       setMode('Hybrid');
-      setHost(INITIAL_DIRECTORY_EMPLOYEES[0]?.name || '');
+      setHost(employees[0]?.name || 'Naresh Vemparala');
       setAgenda('');
       setAtt('');
       setStatus('Scheduled');
       setMinutes('');
       setActions('');
     }
-  }, [editItem, isOpen]);
+  }, [editItem, isOpen, employees]);
 
   if (!isOpen) return null;
 
@@ -142,7 +160,7 @@ export const TownhallModal: React.FC<TownhallModalProps> = ({
                 value={host}
                 onChange={(e) => setHost(e.target.value)}
               >
-                {INITIAL_DIRECTORY_EMPLOYEES.map((e) => (
+                {employees.map((e) => (
                   <option key={e.id} value={e.name}>
                     {e.name}
                   </option>

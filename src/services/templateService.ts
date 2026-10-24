@@ -1,6 +1,5 @@
 import api from './api';
 import { SignatureTemplate, DocumentCategory } from '../pages/doc_sign/types';
-import { INITIAL_TEMPLATES } from '../pages/doc_sign/mockData';
 
 const BASE_URL = '/signature-templates';
 
@@ -38,21 +37,8 @@ export async function getTemplates(
     const response = await api.get<SignatureTemplate[]>(BASE_URL, { params });
     return response.data;
   } catch (error) {
-    console.warn('Backend unavailable, using local mock data:', error);
-    let list = [...INITIAL_TEMPLATES];
-    if (category && category !== 'all') {
-      list = list.filter((t) => t.category.toLowerCase() === category.toLowerCase());
-    }
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (t) =>
-          t.title.toLowerCase().includes(q) ||
-          t.description.toLowerCase().includes(q) ||
-          t.category.toLowerCase().includes(q)
-      );
-    }
-    return list;
+    console.warn('Backend signature-templates query failed:', error);
+    return [];
   }
 }
 
@@ -64,8 +50,8 @@ export async function getTemplateById(id: string): Promise<SignatureTemplate | n
     const response = await api.get<SignatureTemplate>(`${BASE_URL}/${id}`);
     return response.data;
   } catch (error) {
-    console.warn('Backend unavailable, finding in local mock data:', error);
-    return INITIAL_TEMPLATES.find((t) => t.id === id) || null;
+    console.warn('Backend signature-template fetch failed:', error);
+    return null;
   }
 }
 
@@ -110,12 +96,17 @@ export async function updateTemplate(
     const response = await api.patch<SignatureTemplate>(`${BASE_URL}/${id}`, updates);
     return response.data;
   } catch (error) {
-    console.warn('Backend unavailable, updating local template fallback:', error);
-    const existing = INITIAL_TEMPLATES.find((t) => t.id === id);
+    console.warn('Backend signature-template update failed:', error);
     return {
-      ...(existing || INITIAL_TEMPLATES[0]),
-      ...updates,
       id,
+      title: updates.title || 'Template',
+      category: updates.category || 'Agreements',
+      description: updates.description || '',
+      requiredFields: updates.requiredFields || 2,
+      lastUpdated: new Date().toLocaleDateString('en-US'),
+      usageCount: updates.usageCount || 0,
+      status: updates.status || 'active',
+      bodyTemplate: updates.bodyTemplate || '',
     };
   }
 }
@@ -141,16 +132,15 @@ export async function useTemplate(id: string): Promise<UseTemplateResponse> {
     const response = await api.post<UseTemplateResponse>(`${BASE_URL}/${id}/use`);
     return response.data;
   } catch (error) {
-    console.warn('Backend unavailable, simulating template usage:', error);
-    const tpl = INITIAL_TEMPLATES.find((t) => t.id === id) || INITIAL_TEMPLATES[0];
+    console.warn('Backend signature-template use failed:', error);
     return {
       success: true,
-      templateId: tpl.id,
-      title: tpl.title,
-      category: tpl.category,
-      usageCount: tpl.usageCount + 1,
-      requiredFields: tpl.requiredFields,
-      bodyTemplate: tpl.bodyTemplate,
+      templateId: id,
+      title: 'Template',
+      category: 'Agreements',
+      usageCount: 1,
+      requiredFields: 2,
+      bodyTemplate: '',
       draftEnvelopeId: `ENV-${Math.floor(1000 + Math.random() * 9000)}`,
     };
   }

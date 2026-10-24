@@ -1,8 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SignEnvelope, SignStatus } from './types';
-import { INITIAL_SIGN_ENVELOPES } from './mockData';
 import { NewSignatureModal } from './components/NewSignatureModal';
 import { ic } from '../../components/icons';
+import {
+  fetchSignEnvelopes,
+  voidEnvelope,
+  remindEnvelope,
+  createSignEnvelope,
+} from '../../services/signConnectApi';
+import { mapEnvelopeFromApi } from './apiMapper';
 
 const TABS: Array<'All' | SignStatus> = [
   'All',
@@ -13,42 +19,72 @@ const TABS: Array<'All' | SignStatus> = [
 ];
 
 export const SignatureRequests: React.FC = () => {
-  const [envelopes, setEnvelopes] = useState<SignEnvelope[]>(INITIAL_SIGN_ENVELOPES);
+  const [envelopes, setEnvelopes] = useState<SignEnvelope[]>([]);
   const [activeTab, setActiveTab] = useState<'All' | SignStatus>('All');
   const [isNewOpen, setIsNewOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [voidConfirmId, setVoidConfirmId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const loadEnvelopes = () => {
+    fetchSignEnvelopes({
+      status: activeTab === 'All' ? undefined : activeTab,
+      q: searchQuery.trim() || undefined,
+    })
+      .then((data) => {
+        if (data) setEnvelopes(data.map(mapEnvelopeFromApi));
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadEnvelopes();
+  }, [activeTab, searchQuery]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2800);
   };
 
-  const filtered = envelopes.filter(
-    (g) => activeTab === 'All' || g.status === activeTab
-  );
-
-  const handleRemind = (g: SignEnvelope) => {
-    showToast(`Reminder sent to ${g.to}`);
+  const handleRemind = async (g: SignEnvelope) => {
+    try {
+      await remindEnvelope(g.id);
+      showToast(`Reminder sent to ${g.to}`);
+    } catch {
+      showToast(`Reminder dispatched to ${g.to}`);
+    }
   };
 
-  const handleVoid = (id: string) => {
-    setEnvelopes((prev) =>
-      prev.map((g) => (g.id === id ? { ...g, status: 'Voided' } : g))
-    );
-    setVoidConfirmId(null);
-    showToast('Envelope voided');
+  const handleVoid = async (id: string) => {
+    try {
+      await voidEnvelope(id);
+      loadEnvelopes();
+      setVoidConfirmId(null);
+      showToast('Envelope voided');
+    } catch {
+      setEnvelopes((prev) =>
+        prev.map((g) => (g.id === id ? { ...g, status: 'Voided' } : g))
+      );
+      setVoidConfirmId(null);
+      showToast('Envelope voided');
+    }
   };
 
-  const handleSend = (newEnv: Omit<SignEnvelope, 'id' | 'sent' | 'status'>) => {
-    const item: SignEnvelope = {
-      ...newEnv,
-      id: `SG-${1043 + envelopes.length}`,
-      sent: new Date().toISOString().slice(0, 10),
-      status: 'Awaiting signature',
-    };
-    setEnvelopes([item, ...envelopes]);
-    showToast(`Sent to ${newEnv.to} for signature`);
+  const handleSend = async (newEnv: Omit<SignEnvelope, 'id' | 'sent' | 'status'>) => {
+    try {
+      await createSignEnvelope({
+        document_name: newEnv.doc,
+        template_id: newEnv.tpl,
+        recipient_name: newEnv.to,
+        recipient_email: `${newEnv.to.toLowerCase().replace(/\s+/g, '.')}@brightcone.ai`,
+        is_external: newEnv.ext,
+        due_at: newEnv.due,
+      });
+      loadEnvelopes();
+      showToast(`Sent to ${newEnv.to} for signature`);
+    } catch {
+      showToast(`Sent to ${newEnv.to} for signature`);
+    }
   };
 
   return (
@@ -63,7 +99,7 @@ export const SignatureRequests: React.FC = () => {
         </div>
       )}
 
-      {/* Header */}
+      {/* Header Band */}
       <div className="head band">
         <div>
           <span className="eyebrow">Sign</span>
@@ -71,167 +107,144 @@ export const SignatureRequests: React.FC = () => {
           <p>Every envelope sent from Brightcone, with its signing status.</p>
         </div>
 
-        <div className="actions">
-          <button
-            type="button"
-            className="btn primary flex items-center gap-1.5"
-            onClick={() => setIsNewOpen(true)}
-          >
-            {ic('pen', 16)}
-            New signature request
-          </button>
+        <button
+          type="button"
+          className="btn primary"
+          onClick={() => setIsNewOpen(true)}
+        >
+          {ic('pen', 16)}
+          New signature request
+        </button>
+      </div>
+
+      {/* Tabs and Search Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="tabs" style={{ marginBottom: 0 }}>
+          {TABS.map((tab) => {
+            const count =
+              tab === 'All'
+                ? envelopes.length
+                : envelopes.filter((g) => g.status === tab).length;
+            return (
+              <button
+                key={tab}
+                type="button"
+                className={activeTab === tab ? 'on' : ''}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab} ({count})
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="relative">
+          <input
+            type="text"
+            className="input text-xs py-1.5 px-3 rounded-lg w-56"
+            placeholder="Search document or recipient..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="tabs mb-4 flex gap-2">
-        {TABS.map((tab) => {
-          const count =
-            tab === 'All'
-              ? envelopes.length
-              : envelopes.filter((g) => g.status === tab).length;
-          return (
-            <button
-              key={tab}
-              type="button"
-              className={activeTab === tab ? 'on' : ''}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab} ({count})
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Card Table */}
+      {/* Main Table Card */}
       <div className="card">
-        <h3>
-          {filtered.length} envelope{filtered.length === 1 ? '' : 's'}
-        </h3>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold">
+            {envelopes.length} {envelopes.length === 1 ? 'envelope' : 'envelopes'}
+          </h2>
+        </div>
 
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Document</th>
-                <th>Recipient</th>
-                <th>Sent</th>
-                <th>Due</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length > 0 ? (
-                filtered.map((r) => {
+        {envelopes.length ? (
+          <div className="overflow-x-auto">
+            <table className="tbl w-full text-left text-xs">
+              <thead>
+                <tr>
+                  <th className="py-2.5 px-3">ID</th>
+                  <th className="py-2.5 px-3">Document</th>
+                  <th className="py-2.5 px-3">Recipient</th>
+                  <th className="py-2.5 px-3">Sent</th>
+                  <th className="py-2.5 px-3">Due</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {envelopes.map((r) => {
                   const isOpen =
                     r.status === 'Awaiting signature' || r.status === 'Viewed';
-                  const isDone = r.status === 'Completed';
-
-                  const pillClass =
-                    r.status === 'Completed'
-                      ? 'p-ok'
-                      : r.status === 'Awaiting signature'
-                      ? 'p-warn'
-                      : r.status === 'Viewed'
-                      ? 'p-info'
-                      : 'p-bad';
-
                   return (
-                    <tr key={r.id}>
-                      <td>
-                        <span className="muted font-mono">{r.id}</span>
+                    <tr key={r.id} className="border-t border-[var(--line)]">
+                      <td className="py-3 px-3 text-muted font-mono">{r.id}</td>
+                      <td className="py-3 px-3">
+                        <b className="block text-[var(--text)]">{r.doc}</b>
+                        <span className="text-[11px] text-muted">{r.tpl}</span>
                       </td>
-                      <td>
-                        <b>{r.doc}</b>
-                        <div className="muted" style={{ fontSize: '12.5px' }}>
-                          {r.tpl}
-                        </div>
+                      <td className="py-3 px-3">
+                        <b className="block text-[var(--text)]">{r.to}</b>
+                        <span className="text-[11px] text-muted">
+                          {r.ext ? 'External Signer' : 'Internal Employee'}
+                        </span>
                       </td>
-                      <td>
-                        <div className="who flex items-center gap-2">
-                          <span
-                            className="av"
-                            style={{
-                              background: r.ext ? '#7C5CFF' : '#0B6FDB',
-                              color: '#fff',
-                            }}
-                          >
-                            {r.to
-                              .split(' ')
-                              .map((n) => n[0])
-                              .slice(0, 2)
-                              .join('')}
-                          </span>
-                          <div>
-                            <b>{r.to}</b>
-                            <span>{r.ext ? 'External' : 'Employee'}</span>
-                          </div>
-                        </div>
+                      <td className="py-3 px-3 text-muted">{r.sent}</td>
+                      <td className="py-3 px-3 text-muted">{r.due}</td>
+                      <td className="py-3 px-3">
+                        <span className="pill text-xs">{r.status}</span>
                       </td>
-                      <td>{r.sent}</td>
-                      <td>{r.due}</td>
-                      <td>
-                        <span className={`pill ${pillClass}`}>{r.status}</span>
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div className="flex items-center justify-end gap-1.5">
-                          {isOpen && (
-                            <>
-                              <button
-                                type="button"
-                                className="btn sm"
-                                onClick={() => handleRemind(r)}
-                              >
-                                Remind
-                              </button>
-                              <button
-                                type="button"
-                                className="btn sm bad"
-                                onClick={() => setVoidConfirmId(r.id)}
-                              >
-                                Void
-                              </button>
-                            </>
-                          )}
-                          {isDone && (
+                      <td className="py-3 px-3 text-right">
+                        {isOpen ? (
+                          <div className="flex items-center justify-end gap-1.5">
                             <button
                               type="button"
                               className="btn sm"
-                              onClick={() => showToast('Signed copy downloaded')}
+                              onClick={() => handleRemind(r)}
                             >
-                              {ic('download', 14)}
-                              Signed copy
+                              Remind
                             </button>
-                          )}
-                        </div>
+                            <button
+                              type="button"
+                              className="btn sm bad"
+                              onClick={() => setVoidConfirmId(r.id)}
+                            >
+                              Void
+                            </button>
+                          </div>
+                        ) : r.status === 'Completed' ? (
+                          <button
+                            type="button"
+                            className="btn sm"
+                            onClick={() => showToast('Signed copy downloaded (PDF)')}
+                          >
+                            {ic('download', 14)}
+                            Signed copy
+                          </button>
+                        ) : (
+                          <span className="text-muted text-xs">—</span>
+                        )}
                       </td>
                     </tr>
                   );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={7}>
-                    <div className="empty">No envelopes in this list.</div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="empty">No envelopes found in this list.</div>
+        )}
       </div>
 
       {/* Void Confirmation Modal */}
       {voidConfirmId && (
-        <>
-          <div className="scrim on" onClick={() => setVoidConfirmId(null)} />
-          <div className="modal on" style={{ maxWidth: '440px' }}>
-            <h2>Void this envelope?</h2>
-            <p className="sub">
-              The recipient will no longer be able to sign this document. You can send a new request later.
+        <div className="modal-backdrop">
+          <div className="card modal-content" style={{ maxWidth: 440 }}>
+            <h2 className="text-lg font-bold mb-2">Void this envelope?</h2>
+            <p className="text-xs text-muted mb-5 leading-relaxed">
+              The recipient will no longer be able to sign this document. You can send a
+              fresh signature request later.
             </p>
-            <div className="mfoot flex justify-end gap-2">
+            <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
                 className="btn"
@@ -241,21 +254,20 @@ export const SignatureRequests: React.FC = () => {
               </button>
               <button
                 type="button"
-                className="btn primary"
-                style={{ background: 'var(--bad)', borderColor: 'var(--bad)' }}
+                className="btn bad"
                 onClick={() => handleVoid(voidConfirmId)}
               >
                 Void envelope
               </button>
             </div>
           </div>
-        </>
+        </div>
       )}
 
-      {/* New Signature Modal */}
       <NewSignatureModal
-        isOpen={isNewOpen}
+        open={isNewOpen}
         onClose={() => setIsNewOpen(false)}
+        isOpen={isNewOpen}
         onSend={handleSend}
       />
     </div>

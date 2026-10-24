@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ic } from '../../components/icons';
 import { DirectoryEmployee } from './types';
-import { INITIAL_DIRECTORY_EMPLOYEES } from './mockData';
+import { fetchConnectDirectory } from '../../services/signConnectApi';
+import { mapDirectoryEmployeeFromApi } from './apiMapper';
 
 const getInitials = (name: string) => {
   return name
@@ -66,7 +67,15 @@ const OrgTreeNode: React.FC<TreeNodeProps> = ({ employee, allEmployees, onSelect
 };
 
 export const DirectoryPage: React.FC = () => {
-  const [employees] = useState<DirectoryEmployee[]>(INITIAL_DIRECTORY_EMPLOYEES);
+  const [employees, setEmployees] = useState<DirectoryEmployee[]>([]);
+
+  useEffect(() => {
+    fetchConnectDirectory()
+      .then((data) => {
+        if (data) setEmployees(data.map(mapDirectoryEmployeeFromApi));
+      })
+      .catch(() => {});
+  }, []);
   const [activeTab, setActiveTab] = useState<'People' | 'Org chart'>('People');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('');

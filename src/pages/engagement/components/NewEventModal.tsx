@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ic } from '../../../components/icons';
 import { EventItem } from '../types';
-import { INITIAL_DIRECTORY_EMPLOYEES } from '../mockData';
+import { fetchConnectDirectory } from '../../../services/signConnectApi';
 
 interface NewEventModalProps {
   isOpen: boolean;
@@ -16,6 +16,7 @@ export const NewEventModal: React.FC<NewEventModalProps> = ({
   onSave,
   editItem,
 }) => {
+  const [employees, setEmployees] = useState<Array<{ id: string; name: string }>>([]);
   const [name, setName] = useState('');
   const [etype, setEtype] = useState<EventItem['etype']>('Celebration');
   const [date, setDate] = useState('');
@@ -26,6 +27,23 @@ export const NewEventModal: React.FC<NewEventModalProps> = ({
   const [att, setAtt] = useState<number | ''>('');
   const [status, setStatus] = useState<EventItem['status']>('Planned');
   const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    fetchConnectDirectory()
+      .then((data) => {
+        if (data && data.length > 0) {
+          const mapped = data.map((e: any) => ({
+            id: e.employee_code || String(e.id),
+            name: e.full_name || '',
+          }));
+          setEmployees(mapped);
+          if (!editItem && mapped.length > 0) {
+            setOrganiser(mapped[0].name);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (editItem) {
@@ -45,7 +63,6 @@ export const NewEventModal: React.FC<NewEventModalProps> = ({
       setDate(new Date().toISOString().slice(0, 10));
       setTime('16:00');
       setVenue('');
-      setOrganiser(INITIAL_DIRECTORY_EMPLOYEES[1]?.name || '');
       setBudget('');
       setAtt('');
       setStatus('Planned');
@@ -155,7 +172,7 @@ export const NewEventModal: React.FC<NewEventModalProps> = ({
                 value={organiser}
                 onChange={(e) => setOrganiser(e.target.value)}
               >
-                {INITIAL_DIRECTORY_EMPLOYEES.map((emp) => (
+                {employees.map((emp) => (
                   <option key={emp.id} value={emp.name}>
                     {emp.name}
                   </option>

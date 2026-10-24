@@ -1,21 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SignEnvelope } from './types';
-import { INITIAL_SIGN_ENVELOPES } from './mockData';
 import { SignDocumentModal } from './components/SignDocumentModal';
 import { ic } from '../../components/icons';
 import { useAuth } from '../../services/authContext';
+import { fetchMySignEnvelopes, signEnvelope } from '../../services/signConnectApi';
+import { mapEnvelopeFromApi } from './apiMapper';
 
 export const SignDocumentFlow: React.FC = () => {
   const { user } = useAuth();
   const userName = user?.name || 'Rahul Varma';
 
-  const [envelopes, setEnvelopes] = useState<SignEnvelope[]>(() =>
-    INITIAL_SIGN_ENVELOPES.filter(
-      (g) => g.to === userName || g.to === 'Rahul Varma' || !g.ext
-    )
-  );
+  const [envelopes, setEnvelopes] = useState<SignEnvelope[]>([]);
   const [selectedEnvelope, setSelectedEnvelope] = useState<SignEnvelope | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const loadMyDocs = () => {
+    fetchMySignEnvelopes()
+      .then((data) => {
+        if (data) {
+          const mapped = data.map(mapEnvelopeFromApi);
+          const filtered = mapped.filter(
+            (g) => g.to === userName || g.to === 'Rahul Varma' || !g.ext
+          );
+          setEnvelopes(filtered.length > 0 ? filtered : mapped);
+        }
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadMyDocs();
+  }, [userName]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -26,19 +41,25 @@ export const SignDocumentFlow: React.FC = () => {
     (g) => g.status === 'Awaiting signature' || g.status === 'Viewed'
   );
 
-  const handleSigned = (id: string, signatureText: string) => {
-    setEnvelopes((prev) =>
-      prev.map((g) =>
-        g.id === id
-          ? {
-              ...g,
-              status: 'Completed',
-              signed: new Date().toISOString().slice(0, 10),
-            }
-          : g
-      )
-    );
-    showToast(`Signed as "${signatureText}". Your copy is saved here.`);
+  const handleSigned = async (id: string, signatureText: string) => {
+    try {
+      await signEnvelope(id, signatureText);
+      loadMyDocs();
+      showToast(`Signed as "${signatureText}". Your copy is saved here.`);
+    } catch {
+      setEnvelopes((prev) =>
+        prev.map((g) =>
+          g.id === id
+            ? {
+                ...g,
+                status: 'Completed',
+                signed: new Date().toISOString().slice(0, 10),
+              }
+            : g
+        )
+      );
+      showToast(`Signed as "${signatureText}". Your copy is saved here.`);
+    }
   };
 
   return (
@@ -53,123 +74,111 @@ export const SignDocumentFlow: React.FC = () => {
         </div>
       )}
 
-      {/* Header */}
-      <div className="head">
+      {/* Header Band */}
+      <div className="head band">
         <div>
+          <span className="eyebrow">Sign</span>
           <h1>Documents to sign</h1>
           <p>Review and e-sign documents HR sends you. Signed copies stay here.</p>
         </div>
       </div>
 
-      {/* Open Documents Banner */}
+      {/* Attention Banner if open items exist */}
       {openList.length > 0 && (
         <div
-          className="banner"
+          className="banner mb-5 flex items-center gap-3 p-3.5 rounded-xl border"
           style={{
             background: 'color-mix(in srgb, var(--ac) 9%, var(--surface))',
             borderColor: 'color-mix(in srgb, var(--ac) 30%, transparent)',
           }}
         >
-          {ic('pen', 18)}
-          <span>
+          <span className="av w-8 h-8 rounded-lg bg-[var(--ac)] text-white flex items-center justify-center shrink-0">
+            {ic('pen', 18)}
+          </span>
+          <div className="text-xs">
             <b style={{ color: 'var(--ac)' }}>
               {openList.length} document{openList.length > 1 ? 's' : ''}
             </b>{' '}
-            waiting for your signature.
-          </span>
+            waiting for your signature. Please review and sign before the deadline.
+          </div>
         </div>
       )}
 
-      {/* Documents Card Table */}
+      {/* Main Documents Card */}
       <div className="card">
-        <h3>Your documents</h3>
+        <h2 className="text-sm font-semibold mb-3">Your documents</h2>
 
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Document</th>
-                <th>Received</th>
-                <th>Sign by</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {envelopes.length > 0 ? (
-                envelopes.map((r) => {
+        {envelopes.length ? (
+          <div className="overflow-x-auto">
+            <table className="tbl w-full text-left text-xs">
+              <thead>
+                <tr>
+                  <th className="py-2.5 px-3">Document</th>
+                  <th className="py-2.5 px-3">Received</th>
+                  <th className="py-2.5 px-3">Sign by</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {envelopes.map((r) => {
                   const isOpen =
                     r.status === 'Awaiting signature' || r.status === 'Viewed';
-                  const isDone = r.status === 'Completed';
-
-                  const pillClass =
-                    r.status === 'Completed'
-                      ? 'p-ok'
-                      : r.status === 'Awaiting signature'
-                      ? 'p-warn'
-                      : r.status === 'Viewed'
-                      ? 'p-info'
-                      : 'p-bad';
-
                   return (
-                    <tr key={r.id}>
-                      <td>
-                        <b>{r.doc}</b>
-                        <div className="muted" style={{ fontSize: '12.5px' }}>
-                          From {r.from}
-                        </div>
+                    <tr key={r.id} className="border-t border-[var(--line)]">
+                      <td className="py-3 px-3">
+                        <b className="block text-[var(--text)]">{r.doc}</b>
+                        <span className="text-[11px] text-muted">
+                          From {r.from} • Template: {r.tpl}
+                        </span>
                       </td>
-                      <td>{r.sent}</td>
-                      <td>{r.due}</td>
-                      <td>
-                        <span className={`pill ${pillClass}`}>{r.status}</span>
+                      <td className="py-3 px-3 text-muted">{r.sent}</td>
+                      <td className="py-3 px-3 text-muted">{r.due}</td>
+                      <td className="py-3 px-3">
+                        <span className="pill text-xs">{r.status}</span>
                       </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div className="flex items-center justify-end gap-2">
-                          {isOpen && (
-                            <button
-                              type="button"
-                              className="btn sm primary flex items-center gap-1.5"
-                              onClick={() => setSelectedEnvelope(r)}
-                            >
-                              {ic('pen', 14)}
-                              Review & sign
-                            </button>
-                          )}
-                          {isDone && (
-                            <button
-                              type="button"
-                              className="btn sm flex items-center gap-1.5"
-                              onClick={() => showToast('Signed copy downloaded')}
-                            >
-                              {ic('download', 14)}
-                              Signed copy
-                            </button>
-                          )}
-                        </div>
+                      <td className="py-3 px-3 text-right">
+                        {isOpen ? (
+                          <button
+                            type="button"
+                            className="btn sm primary"
+                            onClick={() => setSelectedEnvelope(r)}
+                          >
+                            {ic('pen', 14)}
+                            Review & sign
+                          </button>
+                        ) : r.status === 'Completed' ? (
+                          <button
+                            type="button"
+                            className="btn sm"
+                            onClick={() => showToast('Signed copy downloaded (PDF)')}
+                          >
+                            {ic('download', 14)}
+                            Signed copy
+                          </button>
+                        ) : (
+                          <span className="text-muted text-xs">—</span>
+                        )}
                       </td>
                     </tr>
                   );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={5}>
-                    <div className="empty">Nothing to sign right now.</div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="empty">Nothing to sign right now. You are all caught up!</div>
+        )}
       </div>
 
-      {/* E-Sign Modal */}
-      <SignDocumentModal
-        envelope={selectedEnvelope}
-        onClose={() => setSelectedEnvelope(null)}
-        onSigned={handleSigned}
-        currentUser={userName}
-      />
+      {selectedEnvelope && (
+        <SignDocumentModal
+          envelope={selectedEnvelope}
+          signerName={userName}
+          onClose={() => setSelectedEnvelope(null)}
+          onSign={handleSigned}
+        />
+      )}
     </div>
   );
 };

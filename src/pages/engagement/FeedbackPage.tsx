@@ -1,11 +1,24 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ic } from '../../components/icons';
 import { FeedbackItem } from './types';
-import { INITIAL_FEEDBACK } from './mockData';
 import { FeedbackModal } from './components/FeedbackModal';
+import { fetchConnectFeedback, createConnectFeedback } from '../../services/signConnectApi';
+import { mapFeedbackFromApi } from './apiMapper';
 
 export const FeedbackPage: React.FC = () => {
-  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>(INITIAL_FEEDBACK);
+  const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
+
+  const loadFeedback = () => {
+    fetchConnectFeedback()
+      .then((data) => {
+        if (data) setFeedbacks(data.map(mapFeedbackFromApi));
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadFeedback();
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [catFilter, setCatFilter] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -32,7 +45,7 @@ export const FeedbackPage: React.FC = () => {
     showToast('Feedback record deleted');
   };
 
-  const handleSaveFeedback = (
+  const handleSaveFeedback = async (
     fbData: Omit<FeedbackItem, 'id' | 'date'>,
     id?: string
   ) => {
@@ -42,13 +55,19 @@ export const FeedbackPage: React.FC = () => {
       );
       showToast('Feedback updated');
     } else {
-      const newFb: FeedbackItem = {
-        id: `FB-0${feedbacks.length + 1}`,
-        date: new Date().toISOString().slice(0, 10),
-        ...fbData,
-      };
-      setFeedbacks([newFb, ...feedbacks]);
-      showToast('Feedback submitted');
+      try {
+        await createConnectFeedback({ category: fbData.cat, body: fbData.text });
+        loadFeedback();
+        showToast('Feedback submitted');
+      } catch {
+        const newFb: FeedbackItem = {
+          id: `FB-0${feedbacks.length + 1}`,
+          date: new Date().toISOString().slice(0, 10),
+          ...fbData,
+        };
+        setFeedbacks([newFb, ...feedbacks]);
+        showToast('Feedback submitted');
+      }
     }
   };
 

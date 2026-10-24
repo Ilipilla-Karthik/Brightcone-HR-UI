@@ -1,24 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { SignEnvelope } from '../types';
-import { INITIAL_SIGN_TEMPLATES, ALL_RECIPIENTS } from '../mockData';
 import { ic } from '../../../components/icons';
+import { fetchConnectDirectory } from '../../../services/signConnectApi';
+import * as templateService from '../../../services/templateService';
 
 interface NewSignatureModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
+  open?: boolean;
   onClose: () => void;
   onSend: (envelope: Omit<SignEnvelope, 'id' | 'sent' | 'status'>) => void;
   defaultTemplate?: string;
+  templates?: any[];
 }
 
 export const NewSignatureModal: React.FC<NewSignatureModalProps> = ({
   isOpen,
+  open,
   onClose,
   onSend,
   defaultTemplate,
 }) => {
+  const modalVisible = isOpen ?? open ?? false;
   const [tpl, setTpl] = useState(defaultTemplate || 'Offer letter');
   const [doc, setDoc] = useState('');
-  const [to, setTo] = useState(ALL_RECIPIENTS[0].name);
+  const [to, setTo] = useState('Rahul Varma');
+  const [recipients, setRecipients] = useState<Array<{ name: string; ext: boolean; role?: string }>>([]);
+  const [availableTemplates, setAvailableTemplates] = useState<string[]>([]);
   const [due, setDue] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 7);
@@ -27,15 +34,44 @@ export const NewSignatureModal: React.FC<NewSignatureModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    fetchConnectDirectory()
+      .then((data) => {
+        if (data && data.length > 0) {
+          const list: Array<{ name: string; ext: boolean; role?: string }> = data.map((e: any) => ({
+            name: e.full_name || '',
+            ext: false,
+            role: e.job_title || 'Team Member',
+          }));
+          list.push({ name: 'Neha Bansal', ext: true, role: 'External Candidate' });
+          list.push({ name: 'Olivia Martin', ext: true, role: 'External Contractor' });
+          setRecipients(list);
+          if (list.length > 0 && !to) setTo(list[0].name);
+        }
+      })
+      .catch(() => {});
+
+    templateService
+      .getTemplates()
+      .then((tplList) => {
+        if (tplList && tplList.length > 0) {
+          const names = tplList.map((t) => t.title);
+          setAvailableTemplates(names);
+          if (!defaultTemplate && names.length > 0) setTpl(names[0]);
+        }
+      })
+      .catch(() => {});
+  }, [modalVisible]);
+
+  useEffect(() => {
     if (defaultTemplate) {
       setTpl(defaultTemplate);
       setDoc(`${defaultTemplate}: Senior Engineer`);
     } else {
       setDoc('Offer letter: Senior ML Engineer');
     }
-  }, [defaultTemplate, isOpen]);
+  }, [defaultTemplate, modalVisible]);
 
-  if (!isOpen) return null;
+  if (!modalVisible) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +79,7 @@ export const NewSignatureModal: React.FC<NewSignatureModalProps> = ({
       setError('Document title is required.');
       return;
     }
-    const recObj = ALL_RECIPIENTS.find((r) => r.name === to);
+    const recObj = recipients.find((r) => r.name === to);
     onSend({
       doc: doc.trim(),
       tpl,
@@ -57,6 +93,13 @@ export const NewSignatureModal: React.FC<NewSignatureModalProps> = ({
     });
     onClose();
   };
+
+  const tplOptions = availableTemplates.length > 0 ? availableTemplates : ['Policy acknowledgement', 'Appraisal letter', 'NDA', 'Offer letter', 'Employment agreement'];
+  const recOptions = recipients.length > 0 ? recipients : [
+    { name: 'Rahul Varma', ext: false, role: 'Senior Backend Engineer' },
+    { name: 'Neha Bansal', ext: true, role: 'External Candidate' },
+    { name: 'Divya Kulkarni', ext: false, role: 'Security Engineer' }
+  ];
 
   return (
     <>
@@ -76,9 +119,9 @@ export const NewSignatureModal: React.FC<NewSignatureModalProps> = ({
                 setDoc(`${e.target.value}: ${to}`);
               }}
             >
-              {INITIAL_SIGN_TEMPLATES.map((t) => (
-                <option key={t.n} value={t.n}>
-                  {t.n}
+              {tplOptions.map((t) => (
+                <option key={t} value={t}>
+                  {t}
                 </option>
               ))}
             </select>
@@ -109,7 +152,7 @@ export const NewSignatureModal: React.FC<NewSignatureModalProps> = ({
                 value={to}
                 onChange={(e) => setTo(e.target.value)}
               >
-                {ALL_RECIPIENTS.map((r) => (
+                {recOptions.map((r) => (
                   <option key={r.name} value={r.name}>
                     {r.name} ({r.ext ? 'External' : r.role})
                   </option>

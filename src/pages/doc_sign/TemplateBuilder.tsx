@@ -1,11 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SignTemplateItem, SignEnvelope } from './types';
-import { INITIAL_SIGN_TEMPLATES } from './mockData';
+import * as templateService from '../../services/templateService';
 import { NewSignatureModal } from './components/NewSignatureModal';
 import { ic } from '../../components/icons';
 
 export const TemplateBuilder: React.FC = () => {
-  const [templates, setTemplates] = useState<SignTemplateItem[]>(INITIAL_SIGN_TEMPLATES);
+  const [templates, setTemplates] = useState<SignTemplateItem[]>([]);
+
+  useEffect(() => {
+    templateService
+      .getTemplates()
+      .then((data) => {
+        if (data && data.length > 0) {
+          setTemplates(
+            data.map((t) => ({
+              id: t.id,
+              n: t.title || 'Template',
+              f: t.requiredFields || 4,
+              used: t.usageCount || 0,
+              category: t.category,
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);

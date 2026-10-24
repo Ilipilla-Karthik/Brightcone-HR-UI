@@ -3,7 +3,8 @@ import { AnnouncementItem } from '../types';
 import { ic } from '../../../components/icons';
 
 interface NewAnnouncementModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
+  open?: boolean;
   onClose: () => void;
   onSave: (ann: { title: string; body: string; pin: boolean; id?: string }) => void;
   editItem?: AnnouncementItem | null;
@@ -11,10 +12,12 @@ interface NewAnnouncementModalProps {
 
 export const NewAnnouncementModal: React.FC<NewAnnouncementModalProps> = ({
   isOpen,
+  open,
   onClose,
   onSave,
   editItem,
 }) => {
+  const modalVisible = isOpen ?? open ?? false;
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [pin, setPin] = useState(false);
@@ -33,7 +36,7 @@ export const NewAnnouncementModal: React.FC<NewAnnouncementModalProps> = ({
     setError('');
   }, [editItem, isOpen]);
 
-  if (!isOpen) return null;
+  if (!modalVisible) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

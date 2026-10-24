@@ -1,11 +1,20 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ic } from '../../components/icons';
 import { TownhallItem } from './types';
-import { INITIAL_TOWNHALLS } from './mockData';
 import { TownhallModal } from './components/TownhallModal';
+import { fetchConnectTownhalls } from '../../services/signConnectApi';
+import { mapTownhallFromApi } from './apiMapper';
 
 export const TownhallPage: React.FC = () => {
-  const [townhalls, setTownhalls] = useState<TownhallItem[]>(INITIAL_TOWNHALLS);
+  const [townhalls, setTownhalls] = useState<TownhallItem[]>([]);
+
+  useEffect(() => {
+    fetchConnectTownhalls()
+      .then((data) => {
+        if (data) setTownhalls(data.map(mapTownhallFromApi));
+      })
+      .catch(() => {});
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);

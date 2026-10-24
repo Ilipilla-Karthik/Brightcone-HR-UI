@@ -1,11 +1,20 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ic } from '../../components/icons';
 import { EventItem } from './types';
-import { INITIAL_EVENTS } from './mockData';
 import { NewEventModal } from './components/NewEventModal';
+import { fetchConnectEvents } from '../../services/signConnectApi';
+import { mapEventFromApi } from './apiMapper';
 
 export const CompanyEventsPage: React.FC = () => {
-  const [events, setEvents] = useState<EventItem[]>(INITIAL_EVENTS);
+  const [events, setEvents] = useState<EventItem[]>([]);
+
+  useEffect(() => {
+    fetchConnectEvents()
+      .then((data) => {
+        if (data) setEvents(data.map(mapEventFromApi));
+      })
+      .catch(() => {});
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);

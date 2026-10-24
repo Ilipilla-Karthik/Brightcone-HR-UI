@@ -29,15 +29,15 @@ const getAvatarColor = (name: string) => {
 interface PostCardProps {
   post: FeedPost;
   currentUser: string;
-  deptText: string;
-  onLike: (id: string) => void;
-  onAddComment: (id: string, text: string) => void;
+  deptText?: string;
+  onLike: (id?: string) => void;
+  onAddComment: (text: string) => void;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
   post: p,
   currentUser,
-  deptText,
+  deptText = 'Brightcone',
   onLike,
   onAddComment,
 }) => {
@@ -47,7 +47,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const handleCommentSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && commentInput.trim()) {
-      onAddComment(p.id, commentInput.trim());
+      onAddComment(commentInput.trim());
       setCommentInput('');
     }
   };

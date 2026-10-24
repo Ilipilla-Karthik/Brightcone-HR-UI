@@ -1,11 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
 import { AnnouncementItem } from './types';
-import { INITIAL_ANNOUNCEMENTS } from './mockData';
 import { NewAnnouncementModal } from './components/NewAnnouncementModal';
+import {
+  fetchConnectPosts,
+  createConnectPost,
+  toggleConnectPin,
+} from '../../services/signConnectApi';
+import { mapAnnouncementFromPost } from './apiMapper';
 
 export const AnnouncementsPage: React.FC = () => {
-  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>(INITIAL_ANNOUNCEMENTS);
+  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
+
+  const loadAnnouncements = () => {
+    fetchConnectPosts()
+      .then((data) => {
+        if (data) {
+          const anns = data.filter((p) => p.post_type === 'Announcement');
+          setAnnouncements(anns.map(mapAnnouncementFromPost));
+        }
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadAnnouncements();
+  }, []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<AnnouncementItem | null>(null);
   const [toastMsg, setToastMsg] = useState('');
@@ -15,11 +35,17 @@ export const AnnouncementsPage: React.FC = () => {
     setTimeout(() => setToastMsg(''), 3000);
   };
 
-  const handleTogglePin = (id: string, pin: boolean) => {
-    setAnnouncements((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, pin } : a))
-    );
-    showToast(pin ? 'Announcement pinned' : 'Announcement unpinned');
+  const handleTogglePin = async (id: string, pin: boolean) => {
+    try {
+      await toggleConnectPin(id);
+      loadAnnouncements();
+      showToast(pin ? 'Announcement pinned' : 'Announcement unpinned');
+    } catch {
+      setAnnouncements((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, pin } : a))
+      );
+      showToast(pin ? 'Announcement pinned' : 'Announcement unpinned');
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -27,7 +53,7 @@ export const AnnouncementsPage: React.FC = () => {
     showToast('Announcement deleted');
   };
 
-  const handleSave = (item: { title: string; body: string; pin: boolean; id?: string }) => {
+  const handleSave = async (item: { title: string; body: string; pin: boolean; id?: string }) => {
     if (item.id) {
       setAnnouncements((prev) =>
         prev.map((a) =>
@@ -38,15 +64,24 @@ export const AnnouncementsPage: React.FC = () => {
       );
       showToast('Announcement updated');
     } else {
-      const newA: AnnouncementItem = {
-        id: `A${Date.now()}`,
-        t: item.title,
-        b: item.body,
-        pin: item.pin,
-        d: new Date().toISOString().slice(0, 10),
-      };
-      setAnnouncements([newA, ...announcements]);
-      showToast('Announcement published');
+      try {
+        await createConnectPost({
+          post_type: 'Announcement',
+          body: item.body || item.title,
+        });
+        loadAnnouncements();
+        showToast('Announcement published');
+      } catch {
+        const newA: AnnouncementItem = {
+          id: `A${Date.now()}`,
+          t: item.title,
+          b: item.body,
+          pin: item.pin,
+          d: new Date().toISOString().slice(0, 10),
+        };
+        setAnnouncements([newA, ...announcements]);
+        showToast('Announcement published');
+      }
     }
   };
 

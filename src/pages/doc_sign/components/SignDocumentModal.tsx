@@ -5,17 +5,22 @@ import { ic } from '../../../components/icons';
 interface SignDocumentModalProps {
   envelope: SignEnvelope | null;
   onClose: () => void;
-  onSigned: (id: string, signatureText: string) => void;
+  onSigned?: (id: string, signatureText: string) => void;
+  onSign?: (id: string, signatureText: string) => void;
   currentUser?: string;
+  signerName?: string;
 }
 
 export const SignDocumentModal: React.FC<SignDocumentModalProps> = ({
   envelope,
   onClose,
   onSigned,
-  currentUser = 'Rahul Varma',
+  onSign,
+  currentUser,
+  signerName,
 }) => {
-  const [sigName, setSigName] = useState(currentUser);
+  const activeUser = signerName || currentUser || 'Rahul Varma';
+  const [sigName, setSigName] = useState(activeUser);
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,7 +36,7 @@ export const SignDocumentModal: React.FC<SignDocumentModalProps> = ({
       setError('Tick the box to agree to electronic signing.');
       return;
     }
-    onSigned(envelope.id, sigName.trim());
+    if (onSign) { onSign(envelope.id, sigName.trim()); } else if (onSigned) { onSigned(envelope.id, sigName.trim()); }
     onClose();
   };
 
