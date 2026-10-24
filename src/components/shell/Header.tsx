@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/authContext';
-import { ic } from '../icons';
 
 interface HeaderProps {
   onOpenCommand?: () => void;
@@ -16,9 +15,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   onOpenCommand,
   role = 'hr_admin',
-  onSwitchRole,
   currentPersona,
-  onPersonaChange,
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -28,7 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const activeRole: 'hr_admin' | 'employee' =
-    currentPersona ? (currentPersona === 'admin' ? 'hr_admin' : 'employee') : role;
+    currentPersona ? (currentPersona === 'admin' ? 'hr_admin' : 'employee') : (user?.role === 'employee' ? 'employee' : role);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -51,8 +48,9 @@ export const Header: React.FC<HeaderProps> = ({
 
   const displayEmail =
     activeRole === 'employee' ? 'rahul.varma@brightcone.ai' : 'ananya.rao@brightcone.ai';
-  const roleTitle = activeRole === 'employee' ? 'Senior Engineer' : 'People Ops Lead';
+  const roleTitle = activeRole === 'employee' ? 'Backend Engineer' : 'People Ops Lead';
   const userInitials = activeRole === 'employee' ? 'RV' : 'AR';
+  const avatarBg = activeRole === 'employee' ? 'bg-[#00966D]' : 'bg-[#0B6FDB]';
 
   const toggleTheme = () => {
     const next = theme === 'light' ? 'dark' : 'light';
@@ -68,12 +66,6 @@ export const Header: React.FC<HeaderProps> = ({
     logout();
     setIsProfileOpen(false);
     navigate('/login', { replace: true });
-  };
-
-  const handleRoleSelect = (targetRole: 'hr_admin' | 'employee') => {
-    if (targetRole === activeRole) return;
-    if (onSwitchRole) onSwitchRole(targetRole);
-    if (onPersonaChange) onPersonaChange(targetRole === 'hr_admin' ? 'admin' : 'employee');
   };
 
   const getBreadcrumb = () => {
@@ -96,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({
     if (p.startsWith('/people')) {
       if (p.includes('/profile')) return { app: 'People', page: 'Employee profile' };
       if (p.includes('/org-chart')) return { app: 'People', page: 'Org structure' };
-      return { app: 'People', page: 'Directory' };
+      return { app: 'People', page: 'People directory' };
     }
     if (p.startsWith('/recruit')) return { app: 'Recruit', page: 'Pipeline & jobs' };
     if (p.startsWith('/time')) return { app: 'Shift', page: 'Attendance roster' };
@@ -115,18 +107,19 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const crumb = getBreadcrumb();
-  const homePath = activeRole === 'employee' ? '/portal' : '/suite';
+  const homePath = activeRole === 'employee' ? '/engagement/feed' : '/suite';
 
   return (
-    <header className="top flex-none relative z-50">
+    <header className="top flex items-center h-16 px-6 border-b border-[var(--line)] bg-[var(--surface,#fff)] relative z-50">
+      {/* 1. All Apps Launcher Icon Button */}
       <button
         type="button"
-        className="icon-btn"
+        className="w-10 h-10 rounded-xl border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-2)] flex items-center justify-center text-[var(--muted)] hover:text-[var(--text)] transition-colors shadow-2xs shrink-0 cursor-pointer"
         aria-label="All apps"
         title="All apps"
         onClick={() => navigate(homePath)}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
           <rect x="3" y="3" width="7" height="7" rx="1.5" />
           <rect x="14" y="3" width="7" height="7" rx="1.5" />
           <rect x="3" y="14" width="7" height="7" rx="1.5" />
@@ -134,108 +127,102 @@ export const Header: React.FC<HeaderProps> = ({
         </svg>
       </button>
 
-      <div className="crumb" id="crumb">
+      {/* 2. Breadcrumb Navigation */}
+      <div className="flex items-center gap-2 ml-4 text-sm whitespace-nowrap">
         <span
-          className="cursor-pointer hover:text-[var(--text)] transition-colors"
+          className="text-[var(--muted)] hover:text-[var(--text)] cursor-pointer transition-colors"
           onClick={() => navigate(homePath)}
         >
           {crumb.app}
         </span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 text-[var(--muted)]">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-[var(--muted)] opacity-60">
           <polyline points="9 18 15 12 9 6" />
         </svg>
-        <b>{crumb.page}</b>
+        <b className="font-semibold text-[var(--text)]">{crumb.page}</b>
       </div>
 
+      {/* 3. Search Capsule with Ctrl K badge */}
       <div
-        className="cmd cursor-pointer"
+        className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl border border-[var(--line)] bg-[var(--surface-2)] text-xs text-[var(--muted)] w-80 max-w-sm ml-5 cursor-pointer hover:border-[var(--muted)] transition-colors shadow-2xs"
         onClick={onOpenCommand}
         title="Search people, pages or actions (Ctrl K)"
       >
-        {ic('search', 16)}
-        <span>Search people, pages, actions…</span>
-        <kbd>Ctrl K</kbd>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-[var(--muted)] shrink-0">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
+        <span className="truncate">Search people, pages or actions</span>
+        <kbd className="ml-auto px-1.5 py-0.5 rounded bg-[var(--surface)] border border-[var(--line)] text-[10px] font-medium text-[var(--muted)] shadow-2xs shrink-0">
+          Ctrl K
+        </kbd>
       </div>
 
-      <div style={{ flex: 1 }} />
+      {/* Spacer */}
+      <div className="flex-1" />
 
-      {/* Prominent Portal Switcher Pill in Top Nav */}
-      <div className="flex items-center bg-[var(--surface-2)] border border-[var(--line)] rounded-full p-0.5 text-xs font-semibold shadow-inner mr-1">
+      {/* 4. Right Controls */}
+      <div className="flex items-center gap-3">
+        {/* Theme Toggle Button */}
         <button
           type="button"
-          onClick={() => handleRoleSelect('hr_admin')}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition-all cursor-pointer ${
-            activeRole === 'hr_admin'
-              ? 'bg-[var(--ac,#D9466F)] text-white shadow-xs font-bold'
-              : 'text-[var(--muted)] hover:text-[var(--text)]'
-          }`}
-          title="Switch to HR Admin Portal"
-        >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
-          <span>HR Admin</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => handleRoleSelect('employee')}
-          className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition-all cursor-pointer ${
-            activeRole === 'employee'
-              ? 'bg-[var(--ac,#D9466F)] text-white shadow-xs font-bold'
-              : 'text-[var(--muted)] hover:text-[var(--text)]'
-          }`}
-          title="Switch to Employee Portal"
-        >
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <circle cx="12" cy="7" r="4" />
-            <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" />
-          </svg>
-          <span>Employee</span>
-        </button>
-      </div>
-
-      <div className="r flex items-center gap-2">
-        <button
-          type="button"
-          className="icon-btn"
+          className="w-10 h-10 rounded-xl border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-2)] flex items-center justify-center text-[var(--text)] transition-colors shadow-2xs shrink-0 cursor-pointer"
           id="themeBtn"
           aria-label="Toggle theme"
           title="Toggle light / dark"
           onClick={toggleTheme}
         >
-          {theme === 'light' ? ic('moon', 18) : ic('sun', 18)}
+          {theme === 'light' ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+          )}
         </button>
 
+        {/* Notification Bell Button */}
         <button
           type="button"
-          className="icon-btn relative"
+          className="w-10 h-10 rounded-xl border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-2)] flex items-center justify-center text-[var(--text)] transition-colors shadow-2xs shrink-0 relative cursor-pointer"
           aria-label="Notifications"
           title="Notifications"
           onClick={() => navigate(homePath)}
         >
-          {ic('bell', 18)}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
           {activeRole === 'hr_admin' && (
-            <span className="dot absolute top-2 right-2 w-2 h-2 rounded-full bg-[var(--bad,#E53E3E)]" />
+            <span className="dot absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[var(--bad,#E53E3E)] ring-2 ring-[var(--surface)]" />
           )}
         </button>
 
+        {/* User Profile Pill */}
         <div className="relative" ref={menuRef}>
           <div
-            className="me flex items-center gap-2.5 cursor-pointer py-1 px-2 rounded-xl hover:bg-[var(--surface-2)] transition-colors"
-            id="me"
-            title="Account & Session"
+            className="flex items-center gap-2.5 cursor-pointer py-1 px-1.5 rounded-xl hover:bg-[var(--surface-2)] transition-colors"
             onClick={() => setIsProfileOpen((prev) => !prev)}
+            title="Profile details"
           >
-            <span className="av w-8 h-8 rounded-full bg-gradient-to-tr from-[#3B82F6] to-[#06B6D4] text-white flex items-center justify-center font-bold text-xs shadow-sm">
+            <span
+              className={`w-9 h-9 rounded-full text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs ${avatarBg}`}
+            >
               {userInitials}
             </span>
-            <div className="hidden sm:flex flex-col text-left">
-              <b className="text-xs font-semibold leading-tight text-[var(--text)]">{displayName}</b>
-              <span className="text-[11px] text-[var(--muted)]">{roleTitle}</span>
+            <div className="flex flex-col text-left leading-tight">
+              <span className="text-xs font-semibold text-[var(--text)]">{displayName}</span>
+              <span className="text-[11px] text-[var(--muted)] mt-0.5">{roleTitle}</span>
             </div>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3.5 h-3.5 text-[var(--muted)]">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
           </div>
 
           {isProfileOpen && (
@@ -250,36 +237,33 @@ export const Header: React.FC<HeaderProps> = ({
 
               <button
                 type="button"
-                onClick={() => {
-                  handleRoleSelect(activeRole === 'hr_admin' ? 'employee' : 'hr_admin');
-                  setIsProfileOpen(false);
-                }}
-                className="w-full text-left px-4 py-2.5 text-xs text-[var(--text)] hover:bg-[var(--surface-2)] flex items-center gap-2 cursor-pointer"
-              >
-                {ic('users', 14)}
-                <span>Switch to {activeRole === 'hr_admin' ? 'Employee View' : 'HR Admin View'}</span>
-              </button>
-
-              <button
-                type="button"
                 onClick={handleLogout}
                 className="w-full text-left px-4 py-2.5 text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 font-medium cursor-pointer"
               >
-                {ic('door', 14)}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
                 <span>Sign out</span>
               </button>
             </div>
           )}
         </div>
 
+        {/* 5. Logout Icon Button */}
         <button
           type="button"
           onClick={handleLogout}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-xl transition-all border border-rose-200 dark:border-rose-900/60 shadow-xs cursor-pointer ml-1"
+          className="w-10 h-10 rounded-xl border border-[var(--line)] bg-[var(--surface)] hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-600 flex items-center justify-center text-[var(--text)] transition-colors shadow-2xs shrink-0 cursor-pointer"
           title="Sign out of Brightcone"
+          aria-label="Sign out"
         >
-          {ic('door', 14)}
-          <span className="hidden sm:inline">Sign out</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
         </button>
       </div>
     </header>

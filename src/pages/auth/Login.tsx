@@ -50,7 +50,7 @@ export const Login: React.FC = () => {
     login(token, userObj);
 
     const from = (location.state as any)?.from?.pathname;
-    const target = from || '/suite';
+    const target = from || (persona === 'admin' ? '/suite' : '/engagement/feed');
     navigate(target, { replace: true });
   };
 

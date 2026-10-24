@@ -49,7 +49,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         // fallback
       }
     }
-    return DEFAULT_HR_ADMIN;
+    const persona = localStorage.getItem('persona');
+    return persona === 'employee' ? DEFAULT_EMPLOYEE : DEFAULT_HR_ADMIN;
   });
 
   const [isLoading] = useState<boolean>(false);
