@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './services/authContext';
+import { NotificationsProvider } from './services/NotificationsContext';
 import { Login } from './pages/auth/Login';
 import { AppRail } from './components/shell/AppRail';
 import { Header } from './components/shell/Header';
@@ -227,9 +228,11 @@ const AppLayout: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <AppLayout />
-      </Router>
+      <NotificationsProvider>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <AppLayout />
+        </Router>
+      </NotificationsProvider>
     </AuthProvider>
   );
 };
