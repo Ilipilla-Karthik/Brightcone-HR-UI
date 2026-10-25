@@ -80,6 +80,8 @@
   margin: 0;
   line-height: 1.35;
   flex: 1;
+  min-width: 0;
+  word-break: break-word;
 }
 
 .badgeGroup {
@@ -88,6 +90,7 @@
   gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .cardMeta {

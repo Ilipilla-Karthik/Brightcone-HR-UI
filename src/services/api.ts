@@ -133,6 +133,7 @@ export async function sendReminders(params: {
   course_id?: string;
   assignment_id?: string;
   employee_id?: string;
+  employee_ids?: string[];
   bulk?: boolean;
 }): Promise<RemindResponse> {
   const res = await api.post('/learn/remind', params);
@@ -200,5 +201,7 @@ export async function downloadExportRatings(cycleId: string): Promise<void> {
   window.URL.revokeObjectURL(url);
   document.body.removeChild(a);
 }
+
+export * from './learnApi';
 
 export default api;

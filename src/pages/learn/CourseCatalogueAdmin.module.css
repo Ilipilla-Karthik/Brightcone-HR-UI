@@ -148,11 +148,18 @@
   background: color-mix(in srgb, #6366F1 4.5%, transparent);
 }
 
+.courseCell {
+  white-space: normal !important;
+  max-width: 340px;
+  min-width: 180px;
+}
+
 .courseTitle {
   font-weight: 600;
   color: var(--text);
   margin: 0;
-  line-height: 1.3;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 .courseDur {
@@ -255,6 +262,27 @@
 .actionRemindBtn:hover {
   background: var(--surface-2);
   border-color: color-mix(in srgb, #6366F1 40%, var(--line));
+}
+
+.actionAssignBtn {
+  padding: 5px 11px;
+  font-size: 13px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--brand, #0B6FDB) 30%, transparent);
+  background: var(--info-bg, #EFF6FF);
+  color: var(--brand, #0B6FDB);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.actionAssignBtn:hover {
+  background: color-mix(in srgb, var(--brand, #0B6FDB) 15%, transparent);
+  transform: translateY(-1px);
 }
 
 .emptyState {

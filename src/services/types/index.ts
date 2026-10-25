@@ -59,6 +59,7 @@ export interface MyAssignment {
   completed_at?: string | null;
   content_type?: CourseContentType | null;
   content_url?: string | null;
+  score?: number | null;
 }
 
 export interface OpenMandatoryItem {
@@ -87,6 +88,7 @@ export interface MandatoryCourseStat {
   due_date: string | null;
   completed_count: number;
   total_assigned: number;
+  completion_percentage?: number;
 }
 
 export interface LearnDashboardMetrics {
@@ -96,6 +98,8 @@ export interface LearnDashboardMetrics {
   elective_courses_count: number;
   in_progress_count: number;
   people_behind_count: number;
+  active_learners_30d?: number;
+  avg_completion_days?: number;
   completion_by_course: CourseCompletionStat[];
   compliance_breakdown: MandatoryCourseStat[];
   open_mandatory: OpenMandatoryItem[];
@@ -203,3 +207,6 @@ export interface RemindReviewResult {
   message: string;
   reason?: string | null;
 }
+
+
+export * from './learnTypes';
