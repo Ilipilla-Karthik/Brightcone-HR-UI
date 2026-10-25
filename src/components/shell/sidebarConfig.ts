@@ -275,12 +275,23 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
     }
     return [
       {
-        title: 'TALENT ACQUISITION',
+        title: 'PIPELINE & SOURCING',
         items: [
-          { label: 'Recruit overview', to: '/recruit', icon: ic('dashboard', 15) },
-          { label: 'Jobs & pipelines', to: '/recruit/admin', badge: 5, icon: ic('briefcase', 15) },
-          { label: 'Referrals', to: '/recruit/jobs', icon: ic('users', 15) },
-          { label: 'Performance LMS', to: '/recruit/performance', icon: ic('chart', 15) },
+          { label: 'Recruit dashboard', to: '/recruit/dashboard', icon: ic('dashboard', 15) },
+          { label: 'Candidate tracker', to: '/recruit/candidate-tracker', badge: 8, icon: ic('users', 15) },
+          { label: 'Interview scheduling', to: '/recruit/interviews', icon: ic('clock', 15) },
+          { label: 'Manpower requisitions', to: '/recruit/manpower', icon: ic('briefcase', 15) },
+          { label: 'Jobs & pipelines', to: '/recruit/admin', badge: 4, icon: ic('briefcase', 15) },
+        ],
+      },
+      {
+        title: 'OFFERS & ONBOARDING',
+        items: [
+          { label: 'Offer letters', to: '/recruit/offers', icon: ic('pen', 15) },
+          { label: 'Joining formalities & BGV', to: '/recruit/joining', icon: ic('shield', 15) },
+          { label: 'Onboarding checklist', to: '/recruit/onboarding', icon: ic('check', 15) },
+          { label: 'Campus & internships', to: '/recruit/internships', icon: ic('learn', 15) },
+          { label: 'Employee referrals', to: '/recruit/jobs', icon: ic('gift', 15) },
         ],
       },
     ];

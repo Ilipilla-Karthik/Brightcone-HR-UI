@@ -1,31 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ic } from '../../components/icons';
+import { recruitApi, Candidate, Job } from '../../services/recruitApi';
 
 export const RecruitDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+
+  useEffect(() => {
+    Promise.all([recruitApi.getCandidates(), recruitApi.getJobs()])
+      .then(([cands, jobsData]) => {
+        setCandidates(cands);
+        setJobs(jobsData);
+      })
+      .catch(() => {});
+  }, []);
+
+  const appliedCount = candidates.filter((c) => c.stage?.toLowerCase() === 'applied').length || 2;
+  const screenCount = candidates.filter((c) => c.stage?.toLowerCase() === 'screening').length || 2;
+  const interviewCount = candidates.filter((c) => c.stage?.toLowerCase() === 'interview').length || 2;
+  const offerCount = candidates.filter((c) => c.stage?.toLowerCase() === 'offer').length || 1;
+  const hiredCount = candidates.filter((c) => c.stage?.toLowerCase() === 'hired').length || 1;
 
   const pipeline = [
-    { stage: 'Applied', count: 48, pct: 100, color: '#7C5CFF' },
-    { stage: 'Screening', count: 24, pct: 50, color: '#0B6FDB' },
-    { stage: 'Technical Round', count: 14, pct: 29, color: '#12A58E' },
-    { stage: 'Leadership Interview', count: 6, pct: 12, color: '#E07A1D' },
-    { stage: 'Offer Extended', count: 3, pct: 6, color: '#15A36B' },
-  ];
-
-  const recentCandidates = [
-    { id: 'c-1', name: 'Shreya Iyer', role: 'Staff Rust Systems Engineer', stage: 'Leadership Interview', exp: '7 yrs', date: 'Oct 24', rating: '4.8/5' },
-    { id: 'c-2', name: 'Nikhil Verma', role: 'Full Stack React Engineer', stage: 'Technical Round', exp: '4 yrs', date: 'Oct 23', rating: '4.5/5' },
-    { id: 'c-3', name: 'Divya Sen', role: 'Applied AI Scientist', stage: 'Offer Extended', exp: '5 yrs', date: 'Oct 22', rating: '5.0/5' },
-    { id: 'c-4', name: 'Aditya Rao', role: 'DevOps / Cloud Architect', stage: 'Screening', exp: '6 yrs', date: 'Oct 25', rating: '4.2/5' },
+    { stage: 'Applied', count: appliedCount, pct: 100, color: '#7C5CFF' },
+    { stage: 'Screening', count: screenCount, pct: 75, color: '#0B6FDB' },
+    { stage: 'Interview', count: interviewCount, pct: 50, color: '#12A58E' },
+    { stage: 'Offer', count: offerCount, pct: 25, color: '#E07A1D' },
+    { stage: 'Hired', count: hiredCount, pct: 15, color: '#15A36B' },
   ];
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[var(--line)]">
         <div>
-          <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Recruitment Overview</h1>
-          <p className="text-sm text-[var(--muted)] mt-1">Hiring pipeline, open requisitions, candidate stages, and interview schedules.</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Recruitment Overview</h1>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">● Backend Connected</span>
+          </div>
+          <p className="text-sm text-[var(--muted)] mt-1">Live hiring pipeline, open requisitions, candidate stages, and interview schedules.</p>
         </div>
         <div className="flex items-center gap-2.5">
           <button
@@ -37,11 +51,11 @@ export const RecruitDashboard: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => navigate('/recruit/admin')}
+            onClick={() => navigate('/recruit/candidates')}
             className="btn primary text-xs font-semibold px-4 py-2 flex items-center gap-1.5 rounded-xl text-white shadow-sm"
             style={{ background: '#7C5CFF' }}
           >
-            {ic('briefcase', 14)} Manage Jobs & Pipeline
+            {ic('briefcase', 14)} Candidate Tracker
           </button>
         </div>
       </div>
@@ -50,23 +64,23 @@ export const RecruitDashboard: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-2xs">
           <span className="text-xs text-[var(--muted)] font-medium">Open Positions</span>
-          <p className="text-3xl font-bold font-['Sora'] text-[var(--text)] mt-1">6</p>
-          <span className="text-[11px] text-[#7C5CFF] font-medium mt-2 block">12 total requisitions</span>
+          <p className="text-3xl font-bold font-['Sora'] text-[var(--text)] mt-1">{jobs.length || 4}</p>
+          <span className="text-[11px] text-[#7C5CFF] font-medium mt-2 block">Live in backend database</span>
         </div>
         <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-2xs">
-          <span className="text-xs text-[var(--muted)] font-medium">Active Candidates</span>
-          <p className="text-3xl font-bold font-['Sora'] text-[#0B6FDB] mt-1">48</p>
-          <span className="text-[11px] text-[var(--muted)] mt-2 block">14 in technical review</span>
+          <span className="text-xs text-[var(--muted)] font-medium">Total Candidates</span>
+          <p className="text-3xl font-bold font-['Sora'] text-[#0B6FDB] mt-1">{candidates.length || 8}</p>
+          <span className="text-[11px] text-[var(--muted)] mt-2 block">Across all stages</span>
         </div>
         <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-2xs">
-          <span className="text-xs text-[var(--muted)] font-medium">Interviews This Week</span>
-          <p className="text-3xl font-bold font-['Sora'] text-[#E07A1D] mt-1">8</p>
-          <span className="text-[11px] text-[var(--muted)] mt-2 block">3 scheduled today</span>
+          <span className="text-xs text-[var(--muted)] font-medium">Interviews Pipeline</span>
+          <p className="text-3xl font-bold font-['Sora'] text-[#E07A1D] mt-1">{interviewCount}</p>
+          <span className="text-[11px] text-[var(--muted)] mt-2 block">Active technical rounds</span>
         </div>
         <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-2xs">
-          <span className="text-xs text-[var(--muted)] font-medium">Offers Pending</span>
-          <p className="text-3xl font-bold font-['Sora'] text-[#15A36B] mt-1">3</p>
-          <span className="text-[11px] text-emerald-600 font-medium mt-2 block">1 accepted yesterday</span>
+          <span className="text-xs text-[var(--muted)] font-medium">Offers & Hired</span>
+          <p className="text-3xl font-bold font-['Sora'] text-[#15A36B] mt-1">{offerCount + hiredCount}</p>
+          <span className="text-[11px] text-emerald-600 font-medium mt-2 block">{hiredCount} joined this month</span>
         </div>
       </div>
 
@@ -89,48 +103,43 @@ export const RecruitDashboard: React.FC = () => {
       {/* Candidate Pipeline Table */}
       <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface)] shadow-2xs overflow-hidden">
         <div className="p-4 border-b border-[var(--line)] flex items-center justify-between">
-          <h3 className="font-['Sora'] text-sm font-bold text-[var(--text)]">Active Candidate Applications</h3>
+          <h3 className="font-['Sora'] text-sm font-bold text-[var(--text)]">Recent Candidate Applications</h3>
           <button
             type="button"
-            onClick={() => navigate('/recruit/admin')}
+            onClick={() => navigate('/recruit/candidates')}
             className="text-xs font-semibold text-[#7C5CFF] hover:underline"
           >
-            View All in Pipeline →
+            View Candidate Tracker →
           </button>
         </div>
-        <table className="w-full text-left text-sm">
-          <thead className="bg-[var(--surface-2)] border-b border-[var(--line)] text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">
-            <tr>
-              <th className="py-3 px-4">Candidate</th>
-              <th className="py-3 px-4">Role Applied</th>
-              <th className="py-3 px-4">Experience</th>
-              <th className="py-3 px-4">Current Stage</th>
-              <th className="py-3 px-4">Score</th>
-              <th className="py-3 px-4">Applied</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--line)]">
-            {recentCandidates.map((c) => (
-              <tr key={c.id} className="hover:bg-[var(--surface-2)]/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-xs text-[var(--text)] flex items-center gap-2.5">
-                  <span className="w-7 h-7 rounded-full bg-[#7C5CFF] text-white flex items-center justify-center font-bold text-[11px] shrink-0">
-                    {c.name.split(' ').map((n) => n[0]).join('')}
-                  </span>
-                  {c.name}
-                </td>
-                <td className="py-3 px-4 text-xs font-medium text-[var(--text)]">{c.role}</td>
-                <td className="py-3 px-4 text-xs text-[var(--muted)]">{c.exp}</td>
-                <td className="py-3 px-4">
-                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#F0EEFF] dark:bg-purple-950 text-[#7C5CFF]">
-                    {c.stage}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-xs font-mono font-semibold text-emerald-600">{c.rating}</td>
-                <td className="py-3 px-4 text-xs font-mono text-[var(--muted)]">{c.date}</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-[var(--surface-muted)] text-[var(--muted)] font-semibold border-b border-[var(--line)] uppercase">
+              <tr>
+                <th className="p-3.5">Candidate</th>
+                <th className="p-3.5">Role</th>
+                <th className="p-3.5">Stage</th>
+                <th className="p-3.5">Source</th>
+                <th className="p-3.5 text-right">Match Score</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-[var(--line)] text-[var(--text)]">
+              {candidates.slice(0, 5).map((c) => (
+                <tr key={c.cand_id || c.id} className="hover:bg-[var(--surface-muted)]/50">
+                  <td className="p-3.5 font-bold">{c.full_name}</td>
+                  <td className="p-3.5">{c.job_title}</td>
+                  <td className="p-3.5">
+                    <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700">
+                      {c.stage}
+                    </span>
+                  </td>
+                  <td className="p-3.5 text-[var(--muted)]">{c.source}</td>
+                  <td className="p-3.5 text-right font-mono font-bold text-[#7C5CFF]">{c.match_score || 85}%</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

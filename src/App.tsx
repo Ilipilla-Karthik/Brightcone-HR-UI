@@ -62,6 +62,13 @@ import { EmployeeDocuments } from './pages/people/EmployeeDocuments';
 
 import { RecruitDashboard } from './pages/recruit/RecruitDashboard';
 import { RecruitAdminPage } from './pages/recruit/RecruitAdminPage';
+import { CandidateTrackerPage } from './pages/recruit/CandidateTrackerPage';
+import { InterviewSchedulingPage } from './pages/recruit/InterviewSchedulingPage';
+import { OfferLettersPage } from './pages/recruit/OfferLettersPage';
+import { JoiningFormalitiesPage } from './pages/recruit/JoiningFormalitiesPage';
+import { OnboardingChecklistPage } from './pages/recruit/OnboardingChecklistPage';
+import { InternshipManagementPage } from './pages/recruit/InternshipManagementPage';
+import { ManpowerRequirementsPage } from './pages/recruit/ManpowerRequirementsPage';
 import { JobsReferralsPage } from './pages/recruit/JobsReferralsPage';
 import { PerformanceLMSAdmin } from './pages/recruit/PerformanceLMSAdmin';
 
@@ -211,10 +218,20 @@ const AppLayout: React.FC = () => {
               <Route path="/people/documents" element={<EmployeeDocuments />} />
               <Route path="/employees/*" element={<Navigate to="/people" replace />} />
 
-              {/* Recruit */}
+              {/* Recruit - All 9 Pages & Aliases */}
               <Route path="/recruit" element={<RecruitDashboard />} />
+              <Route path="/recruit/dashboard" element={<RecruitDashboard />} />
               <Route path="/recruit/admin" element={<RecruitAdminPage />} />
+              <Route path="/recruit/candidates" element={<CandidateTrackerPage />} />
+              <Route path="/recruit/candidate-tracker" element={<CandidateTrackerPage />} />
+              <Route path="/recruit/interviews" element={<InterviewSchedulingPage />} />
+              <Route path="/recruit/offers" element={<OfferLettersPage />} />
+              <Route path="/recruit/joining" element={<JoiningFormalitiesPage />} />
+              <Route path="/recruit/onboarding" element={<OnboardingChecklistPage />} />
+              <Route path="/recruit/internships" element={<InternshipManagementPage />} />
+              <Route path="/recruit/manpower" element={<ManpowerRequirementsPage />} />
               <Route path="/recruit/jobs" element={<JobsReferralsPage />} />
+              <Route path="/recruit/jobs-referrals" element={<JobsReferralsPage />} />
               <Route path="/recruit/performance" element={<PerformanceLMSAdmin />} />
               <Route path="/recruitment/*" element={<Navigate to="/recruit" replace />} />
 
