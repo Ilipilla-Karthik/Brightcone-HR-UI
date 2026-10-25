@@ -80,17 +80,73 @@ export const Header: React.FC<HeaderProps> = ({
       if (p.includes('/flow')) return { app: 'Sign', page: 'Documents to sign' };
       return { app: 'Sign', page: activeRole === 'employee' ? 'Documents to sign' : 'Sign dashboard' };
     }
-    if (p.includes('/announcements')) return { app: 'Connect', page: 'Announcements' };
-    if (p.includes('/directory')) return { app: 'Connect', page: 'People directory' };
-    if (p.includes('/events')) return { app: 'Connect', page: 'Company events' };
-    if (p.includes('/celebrations')) return { app: 'Connect', page: 'Celebrations' };
-    if (p.includes('/feedback')) return { app: 'Connect', page: 'Employee feedback' };
-    if (p.includes('/townhall')) return { app: 'Connect', page: 'Town hall meetings' };
-    return { app: 'Connect', page: 'Company feed' };
+    if (p.startsWith('/engagement') || p.startsWith('/connect')) {
+      if (p.includes('/announcements')) return { app: 'Connect', page: 'Announcements' };
+      if (p.includes('/directory')) return { app: 'Connect', page: 'People directory' };
+      if (p.includes('/events')) return { app: 'Connect', page: 'Company events' };
+      if (p.includes('/celebrations')) return { app: 'Connect', page: 'Celebrations' };
+      if (p.includes('/feedback')) return { app: 'Connect', page: 'Employee feedback' };
+      if (p.includes('/townhall')) return { app: 'Connect', page: 'Town hall meetings' };
+      return { app: 'Connect', page: 'Company feed' };
+    }
+    if (p.startsWith('/payroll')) {
+      if (p.includes('/admin')) return { app: 'Payroll', page: 'Run payroll wizard' };
+      if (p.includes('/structures')) return { app: 'Payroll', page: 'Salary structures' };
+      if (p.includes('/statutory')) return { app: 'Payroll', page: 'Statutory compliance' };
+      if (p.includes('/payslips')) return { app: 'Payroll', page: 'My payslips' };
+      if (p.includes('/benefits')) return { app: 'Payroll', page: 'Benefits admin' };
+      return { app: 'Payroll', page: 'Payroll operations' };
+    }
+    if (p.startsWith('/expense')) {
+      if (p.includes('/finance')) return { app: 'Expense', page: 'Approval queue' };
+      if (p.includes('/office')) return { app: 'Expense', page: 'Office expenses' };
+      return { app: 'Expense', page: 'My claims' };
+    }
+    if (p.startsWith('/learn')) {
+      if (p.includes('/courses')) return { app: 'Learn', page: 'Course catalogue' };
+      if (p.includes('/my-learning')) return { app: 'Learn', page: 'My learning' };
+      if (p.includes('/posh')) return { app: 'Learn', page: 'POSH training' };
+      if (p.includes('/security')) return { app: 'Learn', page: 'Security awareness' };
+      if (p.includes('/skills-matrix')) return { app: 'Learn', page: 'Skills matrix' };
+      if (p.includes('/tracker')) return { app: 'Learn', page: 'Completion tracker' };
+      if (p.includes('/programmes')) return { app: 'Learn', page: 'Programmes' };
+      if (p.includes('/categories')) return { app: 'Learn', page: 'Categories' };
+      if (p.includes('/certificates')) return { app: 'Learn', page: 'Certificates' };
+      return { app: 'Learn', page: 'Learn dashboard' };
+    }
+    if (p.startsWith('/time') || p.startsWith('/shift')) {
+      if (p.includes('/attendance')) return { app: 'Shift', page: 'My attendance' };
+      if (p.includes('/leave')) return { app: 'Shift', page: 'Leave requests' };
+      if (p.includes('/roster')) return { app: 'Shift', page: 'Shift roster' };
+      if (p.includes('/swap')) return { app: 'Shift', page: 'Shift swap' };
+      if (p.includes('/holidays')) return { app: 'Shift', page: 'Holiday calendar' };
+      return { app: 'Shift', page: 'Attendance admin' };
+    }
+    if (p.startsWith('/people') || p.startsWith('/employees')) {
+      if (p.includes('/directory')) return { app: 'People', page: 'People directory' };
+      if (p.includes('/org-chart')) return { app: 'People', page: 'Organization chart' };
+      if (p.includes('/onboarding')) return { app: 'People', page: 'Onboarding' };
+      if (p.includes('/assets')) return { app: 'People', page: 'Asset tracking' };
+      if (p.includes('/documents')) return { app: 'People', page: 'Employee documents' };
+      return { app: 'People', page: 'Employees' };
+    }
+    if (p.startsWith('/recruit') || p.startsWith('/recruitment')) {
+      if (p.includes('/admin')) return { app: 'Recruit', page: 'Jobs & pipelines' };
+      if (p.includes('/jobs')) return { app: 'Recruit', page: 'Job openings' };
+      if (p.includes('/performance')) return { app: 'Recruit', page: 'Performance LMS' };
+      return { app: 'Recruit', page: 'Talent acquisition' };
+    }
+    if (p.startsWith('/suite')) {
+      if (p.includes('/approvals')) return { app: 'People Plus', page: 'Approvals inbox' };
+      if (p.includes('/audit')) return { app: 'People Plus', page: 'Audit log' };
+      if (p.includes('/settings')) return { app: 'People Plus', page: 'Settings & access' };
+      return { app: 'People Plus', page: 'Executive suite' };
+    }
+    return { app: 'People Plus', page: 'Self-service portal' };
   };
 
   const crumb = getBreadcrumb();
-  const homePath = activeRole === 'employee' ? '/doc-sign/flow' : '/doc-sign/dashboard';
+  const homePath = activeRole === 'employee' ? '/portal' : '/suite';
 
   return (
     <header className="top flex items-center h-16 px-6 border-b border-[var(--line)] bg-[var(--surface,#fff)] relative z-50">
