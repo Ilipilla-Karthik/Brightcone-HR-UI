@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
-import { getEmployees } from '../../services/api';
+import { fetchEmployees, createEmployeeApi } from '../../services/peopleApi';
 
 interface EmployeeRecord {
   id: string;
@@ -38,19 +38,19 @@ export const EmployeesPage: React.FC = () => {
   const [newEmp, setNewEmp] = useState({ name: '', role: '', department: 'Engineering', email: '', location: 'Hyderabad' });
 
   useEffect(() => {
-    getEmployees()
+    fetchEmployees()
       .then((data: any) => {
         if (Array.isArray(data) && data.length > 0) {
           const mapped: EmployeeRecord[] = data.map((d: any, idx: number) => ({
-            id: d.id || `BC-${1000 + idx}`,
-            name: d.name || `${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Employee',
-            role: d.role || d.job_title || 'Engineer',
+            id: d.employee_code || (typeof d.id === 'string' ? d.id : `BC-${1000 + idx}`),
+            name: d.full_name || d.name || `${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Employee',
+            role: d.job_title || d.role || 'Engineer',
             department: d.department || 'Engineering',
-            email: d.email || `emp${idx}@brightcone.ai`,
+            email: d.work_email || d.email || `emp${idx}@brightcone.ai`,
             location: d.location || 'Hyderabad',
             status: d.status === 'Probation' ? 'Probation' : d.status === 'On Leave' ? 'On Leave' : 'Active',
             manager: d.manager_name || 'Naresh Vemparala',
-            joiningDate: d.joining_date || '2023-01-01',
+            joiningDate: d.joined || d.joining_date || '2023-01-01',
           }));
           setEmployees(mapped);
         }
@@ -73,8 +73,9 @@ export const EmployeesPage: React.FC = () => {
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmp.name.trim() || !newEmp.email.trim()) return;
+    const generatedCode = `BC-${1000 + employees.length + 1}`;
     const created: EmployeeRecord = {
-      id: `BC-${1000 + employees.length + 1}`,
+      id: generatedCode,
       name: newEmp.name.trim(),
       role: newEmp.role.trim() || 'Software Engineer',
       department: newEmp.department,
@@ -84,6 +85,15 @@ export const EmployeesPage: React.FC = () => {
       manager: 'Naresh Vemparala',
       joiningDate: new Date().toISOString().split('T')[0],
     };
+    createEmployeeApi({
+      employee_code: generatedCode,
+      full_name: created.name,
+      job_title: created.role,
+      department: created.department,
+      work_email: created.email,
+      location: created.location,
+      status: 'Active',
+    }).catch(() => {});
     setEmployees([created, ...employees]);
     setIsAddOpen(false);
     setNewEmp({ name: '', role: '', department: 'Engineering', email: '', location: 'Hyderabad' });

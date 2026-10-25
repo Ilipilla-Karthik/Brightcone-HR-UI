@@ -62,6 +62,17 @@ import { DirectoryOrgChart } from './pages/people/DirectoryOrgChart';
 import { OnboardingPage } from './pages/people/OnboardingPage';
 import { AssetsAdminPage } from './pages/people/AssetsAdminPage';
 import { EmployeeDocuments } from './pages/people/EmployeeDocuments';
+import { ExitManagementPage } from './pages/people/ExitManagementPage';
+import { PerformanceAdmin } from './pages/people/PerformanceAdmin';
+import { ProbationTracking } from './pages/people/ProbationTracking';
+import { EmployeeProfilePage } from './pages/people/EmployeeProfilePage';
+import { AccessCardPage } from './pages/people/AccessCardPage';
+import { FacilitiesPage } from './pages/people/FacilitiesPage';
+import { VendorPage } from './pages/people/VendorPage';
+import { IncrementsPage } from './pages/people/IncrementsPage';
+import { RecognitionPage } from './pages/people/RecognitionPage';
+import { HelpdeskQueuePage } from './pages/people/HelpdeskQueuePage';
+import { OrgStructureAdmin } from './pages/people/OrgStructureAdmin';
 
 import { RecruitDashboard } from './pages/recruit/RecruitDashboard';
 import { RecruitAdminPage } from './pages/recruit/RecruitAdminPage';
@@ -217,14 +228,41 @@ const AppLayout: React.FC = () => {
               <Route path="/time/shifts" element={<ShiftsPage />} />
               <Route path="/shift/*" element={<Navigate to="/time/roster" replace />} />
 
-              {/* People */}
+              {/* People - Overview & Workforce */}
               <Route path="/people" element={<EmployeesPage />} />
+              <Route path="/people/dashboard" element={<PeopleDashboard />} />
               <Route path="/people/overview" element={<PeopleDashboard />} />
               <Route path="/people/directory" element={<DirectoryOrgChart />} />
               <Route path="/people/org-chart" element={<DirectoryOrgChart />} />
               <Route path="/people/onboarding" element={<OnboardingPage />} />
-              <Route path="/people/assets" element={<AssetsAdminPage />} />
+              <Route path="/people/exit" element={<ExitManagementPage />} />
+              <Route path="/people/exits" element={<ExitManagementPage />} />
+              <Route path="/people/exit-management" element={<ExitManagementPage />} />
+
+              {/* Employee Management */}
+              <Route path="/people/employees" element={<EmployeesPage />} />
+              <Route path="/people/master-data" element={<EmployeesPage />} />
+              <Route path="/people/profiles" element={<EmployeeProfilePage />} />
+              <Route path="/people/new-joiners" element={<OnboardingPage />} />
+              <Route path="/people/probation" element={<ProbationTracking />} />
               <Route path="/people/documents" element={<EmployeeDocuments />} />
+
+              {/* Performance */}
+              <Route path="/people/performance" element={<PerformanceAdmin />} />
+              <Route path="/people/appraisals" element={<PerformanceAdmin />} />
+              <Route path="/people/probation-reviews" element={<ProbationTracking />} />
+              <Route path="/people/increments" element={<IncrementsPage />} />
+              <Route path="/people/recognition" element={<RecognitionPage />} />
+
+              {/* Administration & Assets */}
+              <Route path="/people/assets" element={<AssetsAdminPage />} />
+              <Route path="/people/access-cards" element={<AccessCardPage />} />
+              <Route path="/people/facilities" element={<FacilitiesPage />} />
+              <Route path="/people/vendors" element={<VendorPage />} />
+
+              {/* Operations */}
+              <Route path="/people/helpdesk" element={<HelpdeskQueuePage />} />
+              <Route path="/people/departments" element={<OrgStructureAdmin />} />
               <Route path="/employees/*" element={<Navigate to="/people" replace />} />
 
               {/* Recruit - All 9 Pages & Aliases */}

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
+import { fetchAssets, createAssetApi } from '../../services/peopleApi';
 
 interface AssetRecord {
   id: string;
@@ -30,6 +31,27 @@ export const AssetsAdminPage: React.FC = () => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newAsset, setNewAsset] = useState({ name: '', tag: '', category: 'Laptop' as const, serial: '', assignedTo: 'Unassigned', department: 'Engineering' });
 
+  useEffect(() => {
+    fetchAssets()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped: AssetRecord[] = data.map((d, i) => ({
+            id: String(d.id || i + 1),
+            tag: d.serial_number || `BC-AST-${100 + i}`,
+            name: d.model_name || 'Hardware Asset',
+            category: (d.asset_type === 'Monitor' ? 'Monitor' : d.asset_type === 'Peripherals' ? 'Access Device' : 'Laptop') as any,
+            serial: d.serial_number || `SN-${i}`,
+            assignedTo: d.employee_code || 'Unassigned',
+            department: 'IT Equipment',
+            condition: 'Excellent',
+            status: d.status?.includes('Active') || d.status?.includes('Assigned') ? 'Assigned' : 'Available',
+          }));
+          setAssets(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const categories = ['All', 'Laptop', 'Monitor', 'Access Device', 'Phone'];
 
   const filtered = assets.filter((a) => {
@@ -42,17 +64,25 @@ export const AssetsAdminPage: React.FC = () => {
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAsset.name || !newAsset.tag) return;
+    const serialNum = newAsset.serial || `SN-${Math.floor(Math.random() * 900000 + 100000)}`;
     const item: AssetRecord = {
       id: `ast-${Date.now()}`,
       tag: newAsset.tag,
       name: newAsset.name,
       category: newAsset.category,
-      serial: newAsset.serial || `SN-${Math.floor(Math.random() * 900000 + 100000)}`,
+      serial: serialNum,
       assignedTo: newAsset.assignedTo,
       department: newAsset.department,
       condition: 'Excellent',
       status: newAsset.assignedTo === 'Unassigned' ? 'Available' : 'Assigned',
     };
+    createAssetApi({
+      model_name: item.name,
+      asset_type: item.category,
+      serial_number: item.serial,
+      employee_code: item.assignedTo,
+      status: item.status,
+    }).catch(() => {});
     setAssets([item, ...assets]);
     setIsAddOpen(false);
     setNewAsset({ name: '', tag: '', category: 'Laptop', serial: '', assignedTo: 'Unassigned', department: 'Engineering' });

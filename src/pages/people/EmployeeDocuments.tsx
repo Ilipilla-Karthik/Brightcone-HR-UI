@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
+import { fetchDocuments } from '../../services/peopleApi';
 
 interface DocumentRecord {
   id: string;
@@ -27,6 +28,26 @@ export const EmployeeDocuments: React.FC = () => {
   const [search, setSearch] = useState('');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [newDoc, setNewDoc] = useState({ title: '', type: 'Employment Contract' as const, employeeName: 'Rahul Varma' });
+
+  useEffect(() => {
+    fetchDocuments()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped: DocumentRecord[] = data.map((d, i) => ({
+            id: String(d.id || i + 1),
+            title: d.title || 'Official Document',
+            type: (d.document_type || 'Employment Contract') as any,
+            employeeName: d.employee_code === 'BC-1001' ? 'Naresh Vemparala' : 'Rahul Varma',
+            employeeId: d.employee_code || `BC-100${i + 1}`,
+            uploadDate: d.issued_date || '2026-10-01',
+            size: d.file_size || '240 KB',
+            status: 'Verified',
+          }));
+          setDocs(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const types = ['All', 'Employment Contract', 'Identity Proof', 'Tax Declaration', 'Non-Disclosure', 'Degree Certificate'];
 
