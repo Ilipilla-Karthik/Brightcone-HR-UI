@@ -36,7 +36,7 @@ export const getAppInfo = (pathname: string): AppInfo => {
     return { name: 'Learn', color: '#6366F1', icon: ic('learn', 20) };
   }
   if (pathname.startsWith('/time') || pathname.startsWith('/shift')) {
-    return { name: 'Shift', color: '#3B82C4', icon: ic('clock', 20) };
+    return { name: 'Shift', color: '#3B82C4', icon: ic('calendar', 20) };
   }
   if (pathname.startsWith('/people') || pathname.startsWith('/employees')) {
     return { name: 'People', color: '#12A58E', icon: ic('users', 20) };
@@ -214,23 +214,37 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
     if (role === 'employee') {
       return [
         {
-          title: 'TIME & ATTENDANCE',
+          title: 'MY SCHEDULE',
           items: [
-            { label: 'My attendance', to: '/time/attendance', icon: ic('clock', 15) },
-            { label: 'Leave requests', to: '/time/leave', icon: ic('leave', 15) },
-            { label: 'Shift swap', to: '/time/swap', icon: ic('swap', 15) },
+            { label: 'My schedule', to: '/time/attendance', icon: ic('clock', 15) },
           ],
         },
       ];
     }
     return [
       {
-        title: 'ATTENDANCE & ROSTER',
+        title: 'OVERVIEW',
         items: [
-          { label: 'Attendance admin', to: '/time', icon: ic('dashboard', 15) },
-          { label: 'Shift roster', to: '/time/roster', icon: ic('calendar', 15) },
-          { label: 'Holiday calendar', to: '/time/holidays', icon: ic('sun', 15) },
-          { label: 'Shift swap queue', to: '/time/swap', icon: ic('swap', 15) },
+          { label: 'Weekly roster', to: '/time/roster', icon: ic('calendar', 15) },
+        ],
+      },
+      {
+        title: 'ATTENDANCE & LEAVE',
+        items: [
+          { label: 'Daily attendance', to: '/time/attendance', icon: ic('clock', 15) },
+          { label: 'Login & logout', to: '/time/login-logout', icon: ic('login', 15) },
+          { label: 'Leave requests', to: '/time/leave', icon: ic('leave', 15) },
+          { label: 'Leave balance', to: '/time/leave-balance', icon: ic('calendar', 15) },
+          { label: 'Work from home', to: '/time/wfh', icon: ic('home', 15) },
+          { label: 'Comp-off tracker', to: '/time/comp-off', icon: ic('swap', 15) },
+          { label: 'Holiday calendar', to: '/time/holidays', icon: ic('gift', 15) },
+        ],
+      },
+      {
+        title: 'MANAGE',
+        items: [
+          { label: 'Swap requests', to: '/time/swaps', icon: ic('swap', 15) },
+          { label: 'Attendance & shifts', to: '/time/shifts', icon: ic('clock', 15) },
         ],
       },
     ];

@@ -52,6 +52,9 @@ import { MyLeavePage } from './pages/time/MyLeavePage';
 import { ShiftRosterPage } from './pages/time/ShiftRosterPage';
 import { ShiftSwapPage } from './pages/time/ShiftSwapPage';
 import { HolidayAdminPage } from './pages/time/HolidayAdminPage';
+import { WorkFromHomePage } from './pages/time/WorkFromHomePage';
+import { CompOffTrackerPage } from './pages/time/CompOffTrackerPage';
+import { ShiftsPage } from './pages/time/ShiftsPage';
 
 import { EmployeesPage } from './pages/people/EmployeesPage';
 import { PeopleDashboard } from './pages/people/PeopleDashboard';
@@ -199,14 +202,20 @@ const AppLayout: React.FC = () => {
               <Route path="/learn/records" element={<CertificatesRecordsPage />} />
               <Route path="/learn/recommendations" element={<SkillRecommendationsPage />} />
 
-              {/* Shift */}
-              <Route path="/time" element={<AttendanceAdmin />} />
-              <Route path="/time/attendance" element={<MyAttendancePage />} />
-              <Route path="/time/leave" element={<MyLeavePage />} />
+              {/* Shift & Time */}
+              <Route path="/time" element={<ShiftRosterPage />} />
               <Route path="/time/roster" element={<ShiftRosterPage />} />
-              <Route path="/time/swap" element={<ShiftSwapPage />} />
+              <Route path="/time/attendance" element={<AttendanceAdmin />} />
+              <Route path="/time/login-logout" element={<MyAttendancePage />} />
+              <Route path="/time/leave" element={<MyLeavePage />} />
+              <Route path="/time/leave-balance" element={<MyLeavePage />} />
+              <Route path="/time/wfh" element={<WorkFromHomePage />} />
+              <Route path="/time/comp-off" element={<CompOffTrackerPage />} />
               <Route path="/time/holidays" element={<HolidayAdminPage />} />
-              <Route path="/shift/*" element={<Navigate to="/time" replace />} />
+              <Route path="/time/swaps" element={<ShiftSwapPage />} />
+              <Route path="/time/swap" element={<ShiftSwapPage />} />
+              <Route path="/time/shifts" element={<ShiftsPage />} />
+              <Route path="/shift/*" element={<Navigate to="/time/roster" replace />} />
 
               {/* People */}
               <Route path="/people" element={<EmployeesPage />} />
