@@ -173,27 +173,46 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
           items: [
             { label: 'My learning', to: '/learn/my-learning', icon: ic('learn', 15) },
             { label: 'POSH training', to: '/learn/posh', badge: 'Required', icon: ic('shield', 15) },
-            { label: 'Security awareness', to: '/learn/security', icon: ic('shield', 15) },
+            { label: 'Security awareness', to: '/learn/security-training', icon: ic('shield', 15) },
+            { label: 'Skills & records', to: '/learn/records', icon: ic('doc', 15) },
           ],
         },
       ];
     }
     return [
       {
-        title: 'COURSES & CATALOGUE',
+        title: 'OVERVIEW',
         items: [
           { label: 'Learn dashboard', to: '/learn/dashboard', icon: ic('dashboard', 15) },
-          { label: 'Course catalogue', to: '/learn/courses', icon: ic('learn', 15) },
-          { label: 'Programmes', to: '/learn/programmes', icon: ic('list', 15) },
+        ],
+      },
+      {
+        title: 'TRAINING & DEVELOPMENT',
+        items: [
+          { label: 'Training & development', to: '/learn/training', icon: ic('learn', 15) },
+        ],
+      },
+      {
+        title: 'COMPLIANCE TRAINING',
+        items: [
+          { label: 'POSH training & committee', to: '/learn/posh', icon: ic('shield', 15) },
+          { label: 'Security & compliance training', to: '/learn/security-training', icon: ic('shield', 15) },
+          { label: 'Training completion', to: '/learn/completion', icon: ic('check', 15) },
+        ],
+      },
+      {
+        title: 'CATALOGUE',
+        items: [
+          { label: 'Courses', to: '/learn/courses', icon: ic('learn', 15) },
           { label: 'Categories', to: '/learn/categories', icon: ic('grid', 15) },
         ],
       },
       {
-        title: 'COMPLIANCE & SKILLS',
+        title: 'SKILLS & RECORDS',
         items: [
-          { label: 'Skills matrix', to: '/learn/skills-matrix', icon: ic('chart', 15) },
-          { label: 'Completion tracker', to: '/learn/tracker', icon: ic('check', 15) },
-          { label: 'Certificates', to: '/learn/certificates', icon: ic('doc', 15) },
+          { label: 'Skills matrix', to: '/learn/skills', icon: ic('chart', 15) },
+          { label: 'Certificates & records', to: '/learn/records', icon: ic('doc', 15) },
+          { label: 'Skill recommendations', to: '/learn/recommendations', icon: ic('star', 15) },
         ],
       },
     ];

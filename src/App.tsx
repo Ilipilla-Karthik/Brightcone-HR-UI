@@ -180,11 +180,16 @@ const AppLayout: React.FC = () => {
               <Route path="/learn/my-learning" element={<EmployeeLearnPage />} />
               <Route path="/learn/posh" element={<PoshPage />} />
               <Route path="/learn/security" element={<SecurityTrainingPage />} />
+              <Route path="/learn/security-training" element={<SecurityTrainingPage />} />
               <Route path="/learn/skills-matrix" element={<SkillsMatrixPage />} />
+              <Route path="/learn/skills" element={<SkillsMatrixPage />} />
               <Route path="/learn/tracker" element={<TrainingCompletionPage />} />
+              <Route path="/learn/completion" element={<TrainingCompletionPage />} />
               <Route path="/learn/programmes" element={<TrainingProgrammesPage />} />
+              <Route path="/learn/training" element={<TrainingProgrammesPage />} />
               <Route path="/learn/categories" element={<CategoriesPage />} />
               <Route path="/learn/certificates" element={<CertificatesRecordsPage />} />
+              <Route path="/learn/records" element={<CertificatesRecordsPage />} />
               <Route path="/learn/recommendations" element={<SkillRecommendationsPage />} />
 
               {/* Shift */}
