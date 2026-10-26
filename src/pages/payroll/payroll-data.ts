@@ -1,4 +1,4 @@
-// Shared types, employee list, mock data and utility helpers for Payroll & Compliance views
+﻿// Shared types, employee list, mock data and utility helpers for Payroll & Compliance views
 
 export interface EmployeeRef {
   id: string
@@ -9,14 +9,14 @@ export interface EmployeeRef {
 }
 
 export const DEMO_EMPLOYEES: EmployeeRef[] = [
-  { id: 'BC-1001', name: 'Naresh Vemparala', email: 'naresh.vemparala@brightcone.ai', dept: 'Leadership', role: 'Founder & CEO' },
-  { id: 'BC-1004', name: 'Ananya Rao', email: 'ananya.rao@brightcone.ai', dept: 'People Ops', role: 'People Ops Lead' },
-  { id: 'BC-1012', name: 'Karthik Reddy', email: 'karthik.reddy@brightcone.ai', dept: 'AI Research', role: 'Principal AI Engineer' },
-  { id: 'BC-1019', name: 'Priya Menon', email: 'priya.menon@brightcone.ai', dept: 'Engineering', role: 'Engineering Manager' },
-  { id: 'BC-1024', name: 'Arjun Nair', email: 'arjun.nair@brightcone.ai', dept: 'Engineering', role: 'Senior Frontend Engineer' },
-  { id: 'BC-1031', name: 'Sneha Iyer', email: 'sneha.iyer@brightcone.ai', dept: 'Design', role: 'Product Designer' },
-  { id: 'BC-1038', name: 'Rahul Varma', email: 'rahul.varma@brightcone.ai', dept: 'Engineering', role: 'Senior Backend Engineer' },
-  { id: 'BC-1045', name: 'Vikram Malhotra', email: 'vikram.malhotra@brightcone.ai', dept: 'Engineering', role: 'DevOps Architect' },
+  { id: 'BC-1001', name: 'Ananya Rao', email: 'ananya.rao@brightcone.ai', dept: 'People Ops', role: 'People Ops Lead' },
+  { id: 'BC-1002', name: 'Naresh Vemparala', email: 'naresh.vemparala@brightcone.ai', dept: 'Operations', role: 'VP Operations' },
+  { id: 'BC-1003', name: 'Karthik Reddy', email: 'karthik.reddy@brightcone.ai', dept: 'Engineering', role: 'Principal Architect' },
+  { id: 'BC-1004', name: 'Priya Menon', email: 'priya.menon@brightcone.ai', dept: 'Product', role: 'Head of Product' },
+  { id: 'BC-1005', name: 'Meera Joshi', email: 'meera.joshi@brightcone.ai', dept: 'Finance', role: 'Finance Lead' },
+  { id: 'BC-1006', name: 'Rahul Varma', email: 'rahul.varma@brightcone.ai', dept: 'Engineering', role: 'Staff Engineer' },
+  { id: 'BC-1007', name: 'Sneha Iyer', email: 'sneha.iyer@brightcone.ai', dept: 'Design', role: 'Product Designer' },
+  { id: 'BC-1008', name: 'Arjun Nair', email: 'arjun.nair@brightcone.ai', dept: 'Sales', role: 'Account Executive' },
 ]
 
 export function formatINR(val: number | string | undefined | null): string {

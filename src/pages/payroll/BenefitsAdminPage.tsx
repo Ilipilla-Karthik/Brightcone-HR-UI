@@ -1,233 +1,168 @@
-import React, { useState } from 'react';
-import { ic } from '../../components/icons';
+﻿import React, { useState } from 'react'
+import { Plus, Heart, Users, Calendar, Trash2, X } from 'lucide-react'
 
-interface BenefitPlan {
-  id: string;
-  name: string;
-  category: 'Health' | 'Life' | 'Wellness' | 'Allowance';
-  provider: string;
-  coverage: string;
-  enrolledEmployees: number;
-  monthlyCostPerEmployee: string;
-  status: 'Active' | 'Under Review';
+export interface BenefitPlan {
+  id: string
+  name: string
+  provider: string
+  coverAmount: string
+  cost: string
 }
 
-interface Enrollment {
-  id: string;
-  employeeName: string;
-  planName: string;
-  dependents: number;
-  coverageAmt: string;
-  status: 'Enrolled' | 'Pending Verification' | 'Opted Out';
-}
-
-const BENEFIT_PLANS: BenefitPlan[] = [
+const INITIAL_PLANS: BenefitPlan[] = [
   {
-    id: 'BEN-01',
-    name: 'Group Health Insurance (GHI)',
-    category: 'Health',
-    provider: 'HDFC ERGO Health',
-    coverage: '₹5,00,000 Sum Insured (Family Floater)',
-    enrolledEmployees: 24,
-    monthlyCostPerEmployee: '₹1,850',
-    status: 'Active',
+    id: 'BP-01',
+    name: 'Group health insurance',
+    provider: 'Star Health',
+    coverAmount: '₹5,00,000 family floater',
+    cost: 'Company paid',
   },
   {
-    id: 'BEN-02',
-    name: 'Group Term Life (GTL)',
-    category: 'Life',
-    provider: 'Tata AIA Life',
-    coverage: '3x Annual CTC (Min ₹25 Lakhs)',
-    enrolledEmployees: 24,
-    monthlyCostPerEmployee: '₹420',
-    status: 'Active',
+    id: 'BP-02',
+    name: 'Group term life',
+    provider: 'HDFC Life',
+    coverAmount: '3x annual CTC',
+    cost: 'Company paid',
   },
   {
-    id: 'BEN-03',
-    name: 'Pluxee Meal & Food Card',
-    category: 'Allowance',
-    provider: 'Pluxee (Sodexo)',
-    coverage: '₹3,000 / month (Tax-Free Food Wallet)',
-    enrolledEmployees: 21,
-    monthlyCostPerEmployee: '₹3,000',
-    status: 'Active',
+    id: 'BP-03',
+    name: 'Group personal accident',
+    provider: 'ICICI Lombard',
+    coverAmount: '₹20,00,000',
+    cost: 'Company paid',
   },
-  {
-    id: 'BEN-04',
-    name: 'Cult.fit Corporate Wellness Pass',
-    category: 'Wellness',
-    provider: 'Cult.fit Healthcare',
-    coverage: 'Unlimited Gym & Fitness Studio Access',
-    enrolledEmployees: 18,
-    monthlyCostPerEmployee: '₹1,200',
-    status: 'Active',
-  },
-];
+]
 
 export const BenefitsAdminPage: React.FC = () => {
-  const [plans] = useState<BenefitPlan[]>(BENEFIT_PLANS);
-  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [toastMsg, setToastMsg] = useState('');
+  const [plans, setPlans] = useState<BenefitPlan[]>(INITIAL_PLANS)
+  const [modalOpen, setModalOpen] = useState(false)
 
-  const [newPlan, setNewPlan] = useState({
-    name: '',
-    category: 'Health',
-    provider: '',
-    coverage: '',
-    cost: '',
-  });
+  // Plan modal form
+  const [planName, setPlanName] = useState('')
+  const [provider, setProvider] = useState('')
+  const [cover, setCover] = useState('₹5,00,000')
+  const [cost, setCost] = useState('Company paid')
 
-  const showToast = (msg: string) => {
-    setToastMsg(msg);
-    setTimeout(() => setToastMsg(''), 3000);
-  };
+  const handleAddPlan = (e: React.FormEvent) => {
+    e.preventDefault()
+    const newPlan: BenefitPlan = {
+      id: `BP-${Date.now().toString().slice(-4)}`,
+      name: planName,
+      provider,
+      coverAmount: cover,
+      cost,
+    }
+    setPlans((prev) => [...prev, newPlan])
+    setPlanName('')
+    setProvider('')
+    setCover('₹5,00,000')
+    setCost('Company paid')
+    setModalOpen(false)
+  }
 
-  const handleCreatePlan = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPlan.name || !newPlan.provider) return;
-    setIsModalOpen(false);
-    showToast(`Created new benefit plan: ${newPlan.name}`);
-  };
-
-  const verifyEnrollment = (id: string) => {
-    setEnrollments((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: 'Enrolled' } : e))
-    );
-    showToast('Enrollment verified & active');
-  };
+  const handleDeletePlan = (id: string) => {
+    setPlans((prev) => prev.filter((p) => p.id !== id))
+  }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6 pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-['Sora']">
-            Employee Benefits & Insurance
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Group medical floater, term life, meal allowances, and wellness programs [PAY-14]
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="text-xs font-bold tracking-wider text-emerald-600 dark:text-emerald-400 uppercase">PAYROLL</span>
+          </div>
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Benefits</h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
+            Insurance plans, enrolment and dependents across the company.
           </p>
         </div>
-
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors flex items-center gap-2 self-start sm:self-auto"
-        >
-          <span className="w-4 h-4">{ic('plus', 16)}</span>
-          Add Benefit Plan
-        </button>
-      </div>
-
-      {/* Plan Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {plans.map((plan) => (
-          <div
-            key={plan.id}
-            className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-3 hover:border-slate-300 transition-colors"
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            onClick={() => setModalOpen(true)}
+            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold flex items-center gap-2 transition-all shadow-md hover:shadow-lg hover:scale-[1.02] cursor-pointer"
           >
-            <div className="flex items-center justify-between">
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 uppercase">
-                {plan.category}
-              </span>
-              <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
-                ● {plan.status}
-              </span>
-            </div>
-
-            <div>
-              <h3 className="font-bold text-slate-900 text-sm font-['Sora']">{plan.name}</h3>
-              <p className="text-xs text-slate-500 mt-0.5">{plan.provider}</p>
-            </div>
-
-            <div className="bg-slate-50 p-2.5 rounded-lg text-xs space-y-1">
-              <p className="text-slate-700 font-medium">{plan.coverage}</p>
-              <p className="text-slate-400 text-[11px]">Cost: {plan.monthlyCostPerEmployee} / mo</p>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-              <span>{plan.enrolledEmployees} Enrolled</span>
-              <button
-                onClick={() => showToast(`Opening policy details for ${plan.name}`)}
-                className="text-emerald-700 font-semibold hover:underline"
-              >
-                View Policy →
-              </button>
-            </div>
-          </div>
-        ))}
+            <Plus size={18} />
+            <span>Add plan</span>
+          </button>
+        </div>
       </div>
 
-      {/* Active Enrollments Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-          <h2 className="font-bold text-slate-900 text-sm font-['Sora']">
-            Employee Enrollment Roster
-          </h2>
-          <span className="text-xs text-slate-500">{enrollments.length} active records</span>
+      {/* 3 KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#0f172a]/90 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span className="w-7 h-7 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+              <Heart size={16} />
+            </span>
+            <span>Enrolled in health cover</span>
+          </div>
+          <div className="text-3xl font-extrabold text-slate-900 dark:text-white mt-4">14</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">100% of eligible employees</div>
         </div>
 
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#0f172a]/90 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span className="w-7 h-7 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+              <Users size={16} />
+            </span>
+            <span>Dependents covered</span>
+          </div>
+          <div className="text-3xl font-extrabold text-slate-900 dark:text-white mt-4">40</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Spouses, children, parents</div>
+        </div>
+
+        <div className="p-6 rounded-2xl bg-white dark:bg-[#0f172a]/90 border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <span className="w-7 h-7 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+              <Calendar size={16} />
+            </span>
+            <span>Enrolment closes</span>
+          </div>
+          <div className="text-3xl font-extrabold text-slate-900 dark:text-white mt-4">Oct 31</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">For the 2027 policy year</div>
+        </div>
+      </div>
+
+      {/* Plans Section */}
+      <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0f172a]/90 overflow-hidden shadow-sm">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white">Plans</h2>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
-            <thead className="bg-slate-100 text-slate-600 uppercase font-semibold">
+            <thead className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider bg-slate-100/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
               <tr>
-                <th className="py-3 px-4">Employee</th>
-                <th className="py-3 px-4">Benefit Plan</th>
-                <th className="py-3 px-4">Dependents Covered</th>
-                <th className="py-3 px-4">Coverage Value</th>
-                <th className="py-3 px-4">Enrollment Status</th>
-                <th className="py-3 px-4 text-right">Action</th>
+                <th className="py-3 px-6">PLAN</th>
+                <th className="py-3 px-6">PROVIDER</th>
+                <th className="py-3 px-6">COVER</th>
+                <th className="py-3 px-6">COST</th>
+                <th className="py-3 px-6 text-right"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700">
-              {enrollments.length === 0 ? (
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800/80 text-slate-700 dark:text-slate-300">
+              {plans.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-10 text-center text-slate-500">
-                    <div className="flex flex-col items-center justify-center gap-1">
-                      <span className="text-xl">📋</span>
-                      <p className="font-semibold text-slate-700 text-sm">No Active Enrollments</p>
-                      <p className="text-xs text-slate-400">Employee benefit enrollments will be listed here once submitted.</p>
-                    </div>
+                  <td colSpan={5} className="py-12 text-center text-slate-400 dark:text-slate-500">
+                    No insurance plans configured. Click Add plan to set up company health cover.
                   </td>
                 </tr>
               ) : (
-                enrollments.map((enr) => (
-                  <tr key={enr.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-4 font-semibold text-slate-900">{enr.employeeName}</td>
-                    <td className="py-3 px-4 text-slate-700 font-medium">{enr.planName}</td>
-                    <td className="py-3 px-4 text-slate-500 font-mono">
-                      {enr.dependents > 0 ? `${enr.dependents} Members` : 'Self Only'}
-                    </td>
-                    <td className="py-3 px-4 font-mono font-medium text-slate-800">
-                      {enr.coverageAmt}
-                    </td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          enr.status === 'Enrolled'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}
+                plans.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-900/50 transition-colors">
+                    <td className="py-4 px-6 font-semibold text-slate-900 dark:text-white">{p.name}</td>
+                    <td className="py-4 px-6 text-slate-600 dark:text-slate-300">{p.provider}</td>
+                    <td className="py-4 px-6 font-medium text-slate-800 dark:text-slate-200">{p.coverAmount}</td>
+                    <td className="py-4 px-6 text-slate-600 dark:text-slate-300">{p.cost}</td>
+                    <td className="py-4 px-6 text-right">
+                      <button
+                        onClick={() => handleDeletePlan(p.id)}
+                        title="Delete Plan"
+                        className="p-2 rounded-lg text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-500/10 border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20 transition-colors cursor-pointer"
                       >
-                        {enr.status}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      {enr.status === 'Pending Verification' ? (
-                        <button
-                          onClick={() => verifyEnrollment(enr.id)}
-                          className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
-                        >
-                          Verify
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => showToast(`Sent health e-card for ${enr.employeeName}`)}
-                          className="px-2 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
-                        >
-                          Send E-Card
-                        </button>
-                      )}
+                        <Trash2 size={16} />
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -237,103 +172,87 @@ export const BenefitsAdminPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-          <form
-            onSubmit={handleCreatePlan}
-            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4"
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-slate-900 text-sm font-['Sora']">Add New Benefit Plan</h3>
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                ✕
+      {/* Add Plan Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Add Benefit Plan</h2>
+              <button onClick={() => setModalOpen(false)} className="text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer">
+                <X size={18} />
               </button>
             </div>
-
-            <div className="space-y-3 text-xs">
+            <form onSubmit={handleAddPlan} className="py-4 space-y-3.5">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Plan Title</label>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Plan Name</label>
                 <input
                   type="text"
+                  value={planName}
+                  onChange={(e) => setPlanName(e.target.value)}
+                  placeholder="e.g. Group Health Insurance"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
                   required
-                  placeholder="e.g. Executive Dental & Vision Add-on"
-                  value={newPlan.name}
-                  onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-800"
                 />
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Benefit Category</label>
-                <select
-                  value={newPlan.category}
-                  onChange={(e) => setNewPlan({ ...newPlan, category: e.target.value as any })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-800"
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Insurance Provider</label>
+                <input
+                  type="text"
+                  value={provider}
+                  onChange={(e) => setProvider(e.target.value)}
+                  placeholder="e.g. Star Health / ICICI Lombard"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Cover Amount</label>
+                  <input
+                    type="text"
+                    value={cover}
+                    onChange={(e) => setCover(e.target.value)}
+                    placeholder="e.g. ₹5,00,000 family floater"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">Cost Structure</label>
+                  <input
+                    type="text"
+                    value={cost}
+                    onChange={(e) => setCost(e.target.value)}
+                    placeholder="e.g. Company paid"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs text-slate-700 dark:text-slate-300 cursor-pointer"
                 >
-                  <option value="Health">Health</option>
-                  <option value="Life">Life</option>
-                  <option value="Wellness">Wellness</option>
-                  <option value="Allowance">Allowance</option>
-                </select>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white shadow-md cursor-pointer"
+                >
+                  Save Plan
+                </button>
               </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Insurance / Provider</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Care Health Insurance"
-                  value={newPlan.provider}
-                  onChange={(e) => setNewPlan({ ...newPlan, provider: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-800"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Coverage Specification</label>
-                <input
-                  type="text"
-                  placeholder="e.g. ₹50,000 OPD per annum"
-                  value={newPlan.coverage}
-                  onChange={(e) => setNewPlan({ ...newPlan, coverage: e.target.value })}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-slate-800"
-                />
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg shadow-sm"
-              >
-                Create Benefit Plan
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Toast Notification */}
-      {toastMsg && (
-        <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs font-medium shadow-xl flex items-center gap-2 animate-fade-in">
-          <span className="w-4 h-4 text-emerald-400">{ic('check', 16)}</span>
-          {toastMsg}
+            </form>
+          </div>
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default BenefitsAdminPage;
+export default BenefitsAdminPage

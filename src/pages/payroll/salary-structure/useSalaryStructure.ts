@@ -1,18 +1,20 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNotifications } from "../../../services/NotificationsContext";
-import { fetchEmployees } from "../../../services/peopleApi";
 import {
   type SalaryStructure,
   type SalaryRevision,
   type IncrementRecord,
   type SalaryBreakdown,
+  defaultStructures,
+  defaultRevisions,
+  defaultHistory,
 } from "./types";
 
 export function useSalaryStructure() {
-  const [structures, setStructures] = useState<SalaryStructure[]>([]);
-  const [revisions, setRevisions] = useState<SalaryRevision[]>([]);
-  const [history, setHistory] = useState<IncrementRecord[]>([]);
+  const [structures, setStructures] = useState<SalaryStructure[]>(defaultStructures);
+  const [revisions, setRevisions] = useState<SalaryRevision[]>(defaultRevisions);
+  const [history, setHistory] = useState<IncrementRecord[]>(defaultHistory);
   const { addNotification } = useNotifications();
 
   // Live Calculator State (PAY-01)
@@ -23,45 +25,16 @@ export function useSalaryStructure() {
 
   const fetchAll = async () => {
     try {
-      const emps = await fetchEmployees();
-      if (emps && emps.length > 0) {
-        const liveStructs: SalaryStructure[] = emps.map((e) => {
-          const ctc = e.ctc || 3600000;
-          const gross = Math.round(ctc / 12);
-          const basic = Math.round(gross * 0.5);
-          const hra = Math.round(basic * 0.5);
-          const special = gross - basic - hra;
-          const pf = 1800;
-          const pt = 200;
-          const tds = Math.round(gross * 0.05);
-          const net = gross - pf - pt - tds;
-
-          return {
-            id: `STR-${e.employee_code}`,
-            employee_id: e.employee_code,
-            employee_name: e.full_name,
-            department: e.department || "Engineering",
-            effective_from: e.joined || "2026-04-01",
-            gross_monthly: gross,
-            basic,
-            hra,
-            special_allowance: special,
-            employee_pf: pf,
-            professional_tax: pt,
-            estimated_tds: tds,
-            net_take_home: net,
-            annual_ctc: ctc,
-            pf_opt_out: false,
-            tax_regime: "New",
-            is_active: e.status === "Active",
-          };
-        });
-        setStructures(liveStructs);
-      } else {
-        setStructures([]);
-      }
+      const [resStructs, resRevs, resHist] = await Promise.all([
+        axios.get("/api/salary/structures"),
+        axios.get("/api/salary/revisions"),
+        axios.get("/api/salary/increments"),
+      ]);
+      if (resStructs.data) setStructures(resStructs.data);
+      if (resRevs.data) setRevisions(resRevs.data);
+      if (resHist.data) setHistory(resHist.data);
     } catch {
-      setStructures([]);
+      // Keep local default state
     }
   };
 
