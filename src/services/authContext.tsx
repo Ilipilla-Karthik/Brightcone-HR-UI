@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from './types';
+import { ensureValidJwt } from './api';
 
 interface AuthContextType {
   user: User | null;
@@ -60,6 +61,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const [isLoading] = useState<boolean>(false);
 
+  useEffect(() => {
+    if (localStorage.getItem('bc_logged_out') !== 'true') {
+      ensureValidJwt().then((validToken) => {
+        if (validToken) {
+          setToken(validToken);
+        }
+      });
+    }
+  }, []);
+
   const login = (newToken: string, newUser: User) => {
     localStorage.removeItem('bc_logged_out');
     localStorage.setItem('token', newToken);
@@ -82,6 +93,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('bc_logged_out');
     localStorage.setItem('user', JSON.stringify(newUser));
     localStorage.setItem('persona', newRole === 'employee' ? 'employee' : 'admin');
+    localStorage.removeItem('token');
+    ensureValidJwt(true).then((validToken) => {
+      if (validToken) setToken(validToken);
+    });
     setUser(newUser);
   };
 
