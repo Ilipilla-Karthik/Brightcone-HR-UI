@@ -202,6 +202,7 @@ const AppLayout: React.FC = () => {
               {/* Payroll */}
               <Route path="/payroll" element={<PayrollDashboard />} />
               <Route path="/payroll/admin" element={<PayrollAdminPage />} />
+              <Route path="/payroll/run" element={<PayrollAdminPage />} />
               <Route path="/payroll/structures" element={<SalaryStructurePage />} />
               <Route path="/payroll/statutory" element={<StatutoryFilings />} />
               <Route path="/payroll/payslips" element={<MyPayslipsPage />} />
