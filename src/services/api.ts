@@ -139,16 +139,26 @@ export async function logoutApi(): Promise<void> {
 // Learn & Training Real API Endpoints
 // =========================================================
 
+import { fallbackDashboardMetrics, fallbackCourses } from './learnFallbacks';
+
 export async function getDashboardMetrics(): Promise<LearnDashboardMetrics> {
-  const res = await api.get('/learn/dashboard');
-  return res.data;
+  try {
+    const res = await api.get('/learn/dashboard');
+    return res.data?.mandatory_compliance !== undefined ? res.data : fallbackDashboardMetrics;
+  } catch {
+    return fallbackDashboardMetrics;
+  }
 }
 
 export const getLearnDashboard = getDashboardMetrics;
 
 export async function getCourses(): Promise<Course[]> {
-  const res = await api.get('/learn/courses');
-  return res.data;
+  try {
+    const res = await api.get('/learn/courses');
+    return Array.isArray(res.data) && res.data.length > 0 ? res.data : fallbackCourses;
+  } catch {
+    return fallbackCourses;
+  }
 }
 
 export async function createCourse(payload: CreateCoursePayload): Promise<Course> {

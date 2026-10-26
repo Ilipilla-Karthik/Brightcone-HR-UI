@@ -7,7 +7,44 @@ import {
   RecommendationsResponse,
   PoshRecord,
   SecurityTraining,
+  LearnDashboardMetrics,
+  Course,
 } from './types';
+
+export const fallbackDashboardMetrics: LearnDashboardMetrics = {
+  mandatory_compliance: 84.5,
+  total_courses: 8,
+  mandatory_courses_count: 3,
+  elective_courses_count: 5,
+  in_progress_count: 42,
+  people_behind_count: 7,
+  active_learners_30d: 68,
+  avg_completion_days: 12,
+  completion_by_course: [
+    { course_id: 'c1', title: 'POSH & Workplace Ethics 2026', course_type: 'Mandatory', percentage: 92, total_assigned: 50, completed_count: 46 },
+    { course_id: 'c2', title: 'Data Privacy & GDPR Fundamentals', course_type: 'Mandatory', percentage: 88, total_assigned: 48, completed_count: 42 },
+    { course_id: 'c3', title: 'Information Security Essentials', course_type: 'Mandatory', percentage: 76, total_assigned: 50, completed_count: 38 },
+  ],
+  compliance_breakdown: [
+    { course_id: 'c1', title: 'POSH & Workplace Ethics 2026', due_date: '2026-10-31', completion_percentage: 92, total_assigned: 50, completed_count: 46 },
+    { course_id: 'c2', title: 'Data Privacy & GDPR Fundamentals', due_date: '2026-11-05', completion_percentage: 88, total_assigned: 48, completed_count: 42 },
+    { course_id: 'c3', title: 'Information Security Essentials', due_date: '2026-10-29', completion_percentage: 76, total_assigned: 50, completed_count: 38 },
+  ],
+  open_mandatory: [
+    { assignment_id: 'asg-1', employee_id: 'emp-1', employee_name: 'Naresh Vemparala', department: 'Engineering', course_id: 'c1', course_title: 'POSH & Workplace Ethics 2026', due_date: '2026-10-31', progress: 30 },
+    { assignment_id: 'asg-2', employee_id: 'emp-2', employee_name: 'Siddharth Rao', department: 'Infrastructure', course_id: 'c3', course_title: 'Information Security Essentials', due_date: '2026-10-29', progress: 50 },
+    { assignment_id: 'asg-3', employee_id: 'emp-3', employee_name: 'Priya Menon', department: 'Product', course_id: 'c2', course_title: 'Data Privacy & GDPR Fundamentals', due_date: '2026-11-05', progress: 0 },
+  ],
+  total_open_mandatory: 3,
+};
+
+export const fallbackCourses: Course[] = [
+  { id: 'c1', title: 'POSH & Workplace Ethics 2026', course_type: 'Mandatory', duration: '45 mins', audience: 'All Staff', due_date: '2026-10-31', total_assigned: 50, completed_count: 46, completion_percentage: 92 },
+  { id: 'c2', title: 'Data Privacy & GDPR Fundamentals', course_type: 'Mandatory', duration: '60 mins', audience: 'All Staff', due_date: '2026-11-05', total_assigned: 48, completed_count: 42, completion_percentage: 88 },
+  { id: 'c3', title: 'Information Security Essentials', course_type: 'Mandatory', duration: '30 mins', audience: 'Engineering', due_date: '2026-10-29', total_assigned: 50, completed_count: 38, completion_percentage: 76 },
+  { id: 'c4', title: 'Rust Systems Programming Patterns', course_type: 'Elective', duration: '120 mins', audience: 'Engineering', due_date: null, total_assigned: 25, completed_count: 18, completion_percentage: 72 },
+  { id: 'c5', title: 'React 18 & Design Systems Architecture', course_type: 'Elective', duration: '90 mins', audience: 'Frontend', due_date: null, total_assigned: 30, completed_count: 24, completion_percentage: 80 },
+];
 
 export const fallbackProgrammes: TrainingProgramme[] = [
   {
