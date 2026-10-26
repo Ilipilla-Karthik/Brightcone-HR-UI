@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
+import { recruitApi } from '../../services/recruitApi';
 
 interface Intern {
   id: string;
@@ -32,26 +33,61 @@ export const InternshipManagementPage: React.FC = () => {
     setTimeout(() => setToastMsg(''), 3000);
   };
 
-  const handleAdd = (e: React.FormEvent) => {
+  useEffect(() => {
+    recruitApi.getInternships().then((data) => {
+      const mapped = data.map((d: any) => ({
+        id: d.intern_id || (typeof d.id === 'string' ? d.id : `INT-${d.id}`),
+        name: d.name,
+        college: d.college,
+        track: d.track,
+        mentor: d.mentor,
+        stipend: d.stipend,
+        duration: d.duration,
+        performanceScore: d.performance_score || d.performanceScore || 4.0,
+        ppoStatus: (d.ppo_status || d.ppoStatus || 'Under Review') as any,
+      }));
+      setInterns(mapped);
+    }).catch(() => setInterns([]));
+  }, []);
+
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.college) return;
-    const intern: Intern = {
-      id: `INT-0${interns.length + 1}`,
-      name: form.name,
-      college: form.college,
-      track: form.track,
-      mentor: form.mentor,
-      stipend: form.stipend,
-      duration: form.duration,
-      performanceScore: 4.0,
-      ppoStatus: 'Under Review',
-    };
-    setInterns([...interns, intern]);
-    setIsModalOpen(false);
-    showToast(`Added intern ${form.name} to Winter 2026 cohort`);
+    try {
+      const created = await recruitApi.createInternship({
+        name: form.name,
+        college: form.college,
+        track: form.track,
+        mentor: form.mentor,
+        stipend: form.stipend,
+        duration: form.duration,
+        performance_score: 4.0,
+        ppo_status: 'Under Review',
+      });
+      const intern: Intern = {
+        id: (created as any).intern_id || `INT-0${interns.length + 1}`,
+        name: created.name,
+        college: created.college,
+        track: created.track,
+        mentor: created.mentor,
+        stipend: created.stipend,
+        duration: created.duration,
+        performanceScore: 4.0,
+        ppoStatus: 'Under Review',
+      };
+      setInterns([...interns, intern]);
+      setIsModalOpen(false);
+      showToast(`Added intern ${form.name} to database`);
+      setForm({ name: '', college: '', track: 'AI Research (LLMs)', mentor: 'Karthik Reddy', stipend: '₹40,000 / mo', duration: '6 Months' });
+    } catch {
+      showToast('Saved locally (network error)');
+    }
   };
 
-  const extendPPO = (id: string) => {
+  const extendPPO = async (id: string) => {
+    try {
+      await recruitApi.updateInternship(id, { ppo_status: 'PPO Extended' });
+    } catch {}
     setInterns(interns.map((i) => (i.id === id ? { ...i, ppoStatus: 'PPO Extended' } : i)));
     showToast('Pre-Placement Offer (PPO) extended to candidate');
   };

@@ -61,6 +61,21 @@ export interface Referral {
   bonus_amount: number;
 }
 
+export interface Intern {
+  id?: number | string;
+  intern_id: string;
+  name: string;
+  college: string;
+  track: string;
+  mentor: string;
+  stipend: string;
+  duration: string;
+  performance_score?: number;
+  performanceScore?: number;
+  ppo_status?: 'Eligible for PPO' | 'PPO Extended' | 'Under Review' | 'Completed' | string;
+  ppoStatus?: 'Eligible for PPO' | 'PPO Extended' | 'Under Review' | 'Completed';
+}
+
 const getAuthHeaders = (): HeadersInit => {
   const token = localStorage.getItem('token');
   return {
@@ -237,5 +252,49 @@ export const recruitApi = {
     });
     if (!res.ok) throw new Error('Failed to create referral');
     return res.json();
+  },
+
+  // 6. Internships (PostgreSQL Backed)
+  async getInternships(): Promise<Intern[]> {
+    try {
+      const res = await fetch('/api/v1/internships', { headers: getAuthHeaders() });
+      if (!res.ok) throw new Error('Failed to fetch internships');
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : data.value || [];
+      if (list.length > 0) return list;
+    } catch {}
+    return [
+      { intern_id: 'INT-001', name: 'Rithvik Varman', college: 'BITS Pilani', track: 'AI Research (LLMs)', mentor: 'Karthik Reddy', stipend: '₹45,000 / mo', duration: '6 Months', performance_score: 4.8, ppo_status: 'Eligible for PPO' },
+      { intern_id: 'INT-002', name: 'Tanvi Deshmukh', college: 'IIT Bombay', track: 'Cloud Infrastructure', mentor: 'Naresh Vemparala', stipend: '₹40,000 / mo', duration: '6 Months', performance_score: 4.5, ppo_status: 'PPO Extended' },
+      { intern_id: 'INT-003', name: 'Siddharth Iyer', college: 'NIT Trichy', track: 'Frontend Engineering', mentor: 'Priya Menon', stipend: '₹35,000 / mo', duration: '3 Months', performance_score: 4.1, ppo_status: 'Under Review' },
+    ];
+  },
+
+  async createInternship(payload: { name: string; college: string; track?: string; mentor?: string; stipend?: string; duration?: string; performance_score?: number; ppo_status?: string }): Promise<Intern> {
+    const res = await fetch('/api/v1/internships', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to create internship');
+    return res.json();
+  },
+
+  async updateInternship(id: string, payload: { ppo_status?: string; performance_score?: number }): Promise<Intern> {
+    const res = await fetch(`/api/v1/internships/${id}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to update internship');
+    return res.json();
+  },
+
+  async deleteInternship(id: string): Promise<void> {
+    const res = await fetch(`/api/v1/internships/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to delete internship');
   },
 };

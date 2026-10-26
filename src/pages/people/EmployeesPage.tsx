@@ -22,6 +22,7 @@ export const EmployeesPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedEmp, setSelectedEmp] = useState<EmployeeRecord | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
   const [newEmp, setNewEmp] = useState({ name: '', role: '', department: 'Engineering', email: '', location: 'Hyderabad' });
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export const EmployeesPage: React.FC = () => {
     return matchSearch && matchDept && matchStatus;
   });
 
-  const handleAddSubmit = (e: React.FormEvent) => {
+  const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmp.name.trim() || !newEmp.email.trim()) return;
     const generatedCode = `BC-${1000 + employees.length + 1}`;
@@ -73,15 +74,23 @@ export const EmployeesPage: React.FC = () => {
       manager: 'Naresh Vemparala',
       joiningDate: new Date().toISOString().split('T')[0],
     };
-    createEmployeeApi({
-      employee_code: generatedCode,
-      full_name: created.name,
-      job_title: created.role,
-      department: created.department,
-      work_email: created.email,
-      location: created.location,
-      status: 'Active',
-    }).catch(() => {});
+    try {
+      await createEmployeeApi({
+        employee_code: generatedCode,
+        full_name: created.name,
+        job_title: created.role,
+        department: created.department,
+        work_email: created.email,
+        location: created.location,
+        status: 'Active',
+        grade: 'L1',
+      });
+      setToastMsg(`Successfully saved ${created.name} (${generatedCode}) to database!`);
+      setTimeout(() => setToastMsg(''), 4000);
+    } catch {
+      setToastMsg(`Added ${created.name} locally (server connection issue)`);
+      setTimeout(() => setToastMsg(''), 4000);
+    }
     setEmployees([created, ...employees]);
     setIsAddOpen(false);
     setNewEmp({ name: '', role: '', department: 'Engineering', email: '', location: 'Hyderabad' });
@@ -279,6 +288,12 @@ export const EmployeesPage: React.FC = () => {
               <button type="submit" className="btn primary text-xs font-semibold px-4 py-2 rounded-xl text-white shadow-sm" style={{ background: '#12A58E' }}>Save Employee</button>
             </div>
           </form>
+        </div>
+      )}
+
+      {toastMsg && (
+        <div className="fixed bottom-6 right-6 bg-emerald-600 text-white px-4 py-2.5 rounded-xl shadow-lg z-50 text-xs font-semibold flex items-center gap-2 animate-fade-in">
+          <span>✓</span> {toastMsg}
         </div>
       )}
     </div>
