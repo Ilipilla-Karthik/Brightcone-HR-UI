@@ -132,7 +132,7 @@ const AppLayout: React.FC = () => {
     if (p.startsWith('/doc-sign') || p.startsWith('/sign') || p.startsWith('/doc_sign')) return '#D9466F';
     if (p.startsWith('/engagement') || p.startsWith('/connect')) return '#0BA6CC';
     if (p.startsWith('/payroll')) return '#0F9F6E';
-    if (p.startsWith('/expense')) return '#E07A1D';
+    if (p.startsWith('/expense') || p.startsWith('/expenses')) return '#E07A1D';
     if (p.startsWith('/learn')) return '#6366F1';
     if (p.startsWith('/time') || p.startsWith('/shift')) return '#3B82C4';
     if (p.startsWith('/people') || p.startsWith('/employees')) return '#12A58E';
@@ -221,7 +221,13 @@ const AppLayout: React.FC = () => {
               {/* Expense */}
               <Route path="/expense" element={<ExpenseEmployeePage />} />
               <Route path="/expense/finance" element={<ExpenseFinancePage />} />
+              <Route path="/expense/claims" element={<ExpenseFinancePage />} />
               <Route path="/expense/office" element={<OfficeExpensePage />} />
+              <Route path="/expense/my-claims" element={<ExpenseEmployeePage />} />
+              <Route path="/expenses" element={<Navigate to={role === 'employee' ? '/expense' : '/expense/finance'} replace />} />
+              <Route path="/expenses/claims" element={<ExpenseFinancePage />} />
+              <Route path="/expenses/office" element={<OfficeExpensePage />} />
+              <Route path="/expenses/my-claims" element={<ExpenseEmployeePage />} />
 
               {/* Learn */}
               <Route path="/learn" element={<Navigate to={role === 'employee' ? '/learn/my-learning' : '/learn/dashboard'} replace />} />

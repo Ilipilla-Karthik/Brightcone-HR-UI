@@ -29,7 +29,7 @@ export const getAppInfo = (pathname: string): AppInfo => {
   if (pathname.startsWith('/payroll')) {
     return { name: 'Payroll', color: '#0F9F6E', icon: ic('pay', 20) };
   }
-  if (pathname.startsWith('/expense')) {
+  if (pathname.startsWith('/expense') || pathname.startsWith('/expenses')) {
     return { name: 'Expense', color: '#E07A1D', icon: ic('receipt', 20) };
   }
   if (pathname.startsWith('/learn')) {
@@ -159,7 +159,7 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
   }
 
   // 4. Expense Module
-  if (p.startsWith('/expense')) {
+  if (p.startsWith('/expense') || p.startsWith('/expenses')) {
     if (role === 'employee') {
       return [{ title: 'EXPENSES', items: [{ label: 'My claims', to: '/expense', icon: ic('receipt', 15) }] }];
     }
