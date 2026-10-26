@@ -47,22 +47,27 @@ export const getAppInfo = (pathname: string): AppInfo => {
   return { name: 'People Plus', color: '#0B87FF', icon: ic('grid', 20) };
 };
 
+const EMPLOYEE_PORTAL_NAV: NavSection[] = [
+  {
+    title: 'SELF SERVICE',
+    items: [
+      { label: 'My workspace', to: '/portal', icon: ic('grid', 15) },
+      { label: 'My documents', to: '/doc-sign/flow', icon: ic('pen', 15) },
+      { label: 'Company feed', to: '/engagement/feed', icon: ic('chat', 15) },
+      { label: 'My payslips', to: '/payroll/payslips', icon: ic('pay', 15) },
+      { label: 'My claims', to: '/expense', icon: ic('receipt', 15) },
+    ],
+  },
+];
+
 export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): NavSection[] => {
   // 1. Sign Module
   if (p.startsWith('/doc-sign') || p.startsWith('/sign') || p.startsWith('/doc_sign')) {
     if (role === 'employee') {
-      return [
-        {
-          title: 'DOCUMENTS',
-          items: [{ label: 'My documents', to: '/doc-sign/flow', badge: 'Action', icon: ic('pen', 15) }],
-        },
-      ];
+      return [{ title: 'DOCUMENTS', items: [{ label: 'My documents', to: '/doc-sign/flow', badge: 'Action', icon: ic('pen', 15) }] }];
     }
     return [
-      {
-        title: 'OVERVIEW',
-        items: [{ label: 'Dashboard', to: '/doc-sign/dashboard', icon: ic('dashboard', 15) }],
-      },
+      { title: 'OVERVIEW', items: [{ label: 'Dashboard', to: '/doc-sign/dashboard', icon: ic('dashboard', 15) }] },
       {
         title: 'DOCUMENTS',
         items: [
@@ -84,21 +89,16 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
   // 2. Connect Module
   if (p.startsWith('/engagement') || p.startsWith('/connect')) {
     if (role === 'employee') {
-      return [
-        {
-          title: 'COMMUNITY',
-          items: [
-            { label: 'Feed', to: '/engagement/feed', icon: ic('chat', 15) },
-            { label: 'Directory', to: '/engagement/directory', icon: ic('users', 15) },
-          ],
-        },
-      ];
+      return [{
+        title: 'COMMUNITY',
+        items: [
+          { label: 'Feed', to: '/engagement/feed', icon: ic('chat', 15) },
+          { label: 'Directory', to: '/engagement/directory', icon: ic('users', 15) },
+        ],
+      }];
     }
     return [
-      {
-        title: 'OVERVIEW',
-        items: [{ label: 'Feed', to: '/engagement/feed', icon: ic('chat', 15) }],
-      },
+      { title: 'OVERVIEW', items: [{ label: 'Feed', to: '/engagement/feed', icon: ic('chat', 15) }] },
       {
         title: 'COMMUNICATE',
         items: [
@@ -121,12 +121,7 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
   // 3. Payroll Module
   if (p.startsWith('/payroll')) {
     if (role === 'employee') {
-      return [
-        {
-          title: 'COMPENSATION',
-          items: [{ label: 'My payslips', to: '/payroll/payslips', icon: ic('receipt', 15) }],
-        },
-      ];
+      return [{ title: 'COMPENSATION', items: [{ label: 'My payslips', to: '/payroll/payslips', icon: ic('receipt', 15) }] }];
     }
     return [
       {
@@ -145,12 +140,7 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
   // 4. Expense Module
   if (p.startsWith('/expense')) {
     if (role === 'employee') {
-      return [
-        {
-          title: 'EXPENSES',
-          items: [{ label: 'My claims', to: '/expense', icon: ic('receipt', 15) }],
-        },
-      ];
+      return [{ title: 'EXPENSES', items: [{ label: 'My claims', to: '/expense', icon: ic('receipt', 15) }] }];
     }
     return [
       {
@@ -212,22 +202,10 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
   // 6. Shift Module
   if (p.startsWith('/time') || p.startsWith('/shift')) {
     if (role === 'employee') {
-      return [
-        {
-          title: 'MY SCHEDULE',
-          items: [
-            { label: 'My schedule', to: '/time/attendance', icon: ic('clock', 15) },
-          ],
-        },
-      ];
+      return [{ title: 'MY SCHEDULE', items: [{ label: 'My schedule', to: '/time/attendance', icon: ic('clock', 15) }] }];
     }
     return [
-      {
-        title: 'OVERVIEW',
-        items: [
-          { label: 'Weekly roster', to: '/time/roster', icon: ic('calendar', 15) },
-        ],
-      },
+      { title: 'OVERVIEW', items: [{ label: 'Weekly roster', to: '/time/roster', icon: ic('calendar', 15) }] },
       {
         title: 'ATTENDANCE & LEAVE',
         items: [
@@ -361,30 +339,51 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
     ];
   }
 
-  // 9. People Plus Suite / Portal (Default)
-  if (role === 'employee') {
+  // 9. Suite Module & Default
+  if (p.startsWith('/suite')) {
+    if (role === 'employee') return EMPLOYEE_PORTAL_NAV;
     return [
       {
-        title: 'SELF SERVICE',
+        title: 'OVERVIEW',
         items: [
-          { label: 'My workspace', to: '/portal', icon: ic('grid', 15) },
-          { label: 'My documents', to: '/doc-sign/flow', icon: ic('pen', 15) },
-          { label: 'Company feed', to: '/engagement/feed', icon: ic('chat', 15) },
-          { label: 'My payslips', to: '/payroll/payslips', icon: ic('pay', 15) },
-          { label: 'My claims', to: '/expense', icon: ic('receipt', 15) },
+          { label: 'Suite dashboard', to: '/suite', icon: ic('grid', 15) },
+          { label: 'Approvals inbox', to: '/suite/approvals', badge: 10, icon: ic('inbox', 15) },
+          { label: 'Reports & analytics', to: '/suite/reports', icon: ic('chart', 15) },
+        ],
+      },
+      {
+        title: 'ADVANCED HR',
+        items: [
+          { label: 'Performance management', to: '/suite/performance', icon: ic('star', 15) },
+          { label: 'Career growth & promotions', to: '/suite/career', icon: ic('chart', 15) },
+          { label: 'Workforce analytics', to: '/suite/workforce-analytics', icon: ic('users', 15) },
+          { label: 'Engagement analytics', to: '/suite/engagement', icon: ic('chat', 15) },
+          { label: 'HR compliance dashboard', to: '/suite/compliance', icon: ic('shield', 15) },
+          { label: 'Actions & reminders', to: '/suite/actions', icon: ic('bell', 15) },
+          { label: 'Access control', to: '/suite/access-control', icon: ic('key', 15) },
+        ],
+      },
+      {
+        title: 'ADMINISTRATION',
+        items: [
+          { label: 'Settings & access', to: '/suite/settings', icon: ic('gear', 15) },
+          { label: 'Audit log', to: '/suite/audit', icon: ic('list', 15) },
+          { label: 'Data & backup', to: '/suite/data-backup', icon: ic('doc', 15) },
         ],
       },
     ];
   }
 
+  // 10. People Plus Portal (Default)
+  if (role === 'employee') return EMPLOYEE_PORTAL_NAV;
+
   return [
     {
       title: 'EXECUTIVE SUITE',
       items: [
-        { label: 'Suite overview', to: '/suite', icon: ic('grid', 15) },
-        { label: 'Approvals inbox', to: '/suite/approvals', badge: 7, icon: ic('inbox', 15) },
-        { label: 'Audit log', to: '/suite/audit', icon: ic('list', 15) },
-        { label: 'Settings & access', to: '/suite/settings', icon: ic('gear', 15) },
+        { label: 'Suite dashboard', to: '/suite', icon: ic('grid', 15) },
+        { label: 'Approvals inbox', to: '/suite/approvals', badge: 10, icon: ic('inbox', 15) },
+        { label: 'Reports & analytics', to: '/suite/reports', icon: ic('chart', 15) },
       ],
     },
   ];

@@ -90,6 +90,15 @@ import { SuiteDashboard } from './pages/suite/SuiteDashboard';
 import { ApprovalsInbox } from './pages/suite/ApprovalsInbox';
 import { AuditLogPage } from './pages/suite/AuditLogPage';
 import { SettingsAccess } from './pages/suite/SettingsAccess';
+import { ReportsAnalytics } from './pages/suite/ReportsAnalytics';
+import { AccessControlPage } from './pages/suite/AccessControlPage';
+import { DataBackupPage } from './pages/suite/DataBackupPage';
+import { WorkforceAnalyticsPage } from './pages/suite/WorkforceAnalyticsPage';
+import { ComplianceDashboardPage } from './pages/suite/ComplianceDashboardPage';
+import { ActionsRemindersPage } from './pages/suite/ActionsRemindersPage';
+import { CareerPromotionsPage } from './pages/suite/CareerPromotionsPage';
+import { EngagementAnalyticsPage } from './pages/suite/EngagementAnalyticsPage';
+import { PerformanceManagementPage } from './pages/suite/PerformanceManagementPage';
 import { EmployeePortalPage } from './pages/portal/EmployeePortalPage';
 
 const AppLayout: React.FC = () => {
@@ -156,6 +165,15 @@ const AppLayout: React.FC = () => {
               <Route path="/suite/approvals" element={<ApprovalsInbox />} />
               <Route path="/suite/audit" element={<AuditLogPage />} />
               <Route path="/suite/settings" element={<SettingsAccess />} />
+              <Route path="/suite/reports" element={<ReportsAnalytics />} />
+              <Route path="/suite/access-control" element={<AccessControlPage />} />
+              <Route path="/suite/data-backup" element={<DataBackupPage />} />
+              <Route path="/suite/workforce-analytics" element={<WorkforceAnalyticsPage />} />
+              <Route path="/suite/compliance" element={<ComplianceDashboardPage />} />
+              <Route path="/suite/actions" element={<ActionsRemindersPage />} />
+              <Route path="/suite/career" element={<CareerPromotionsPage />} />
+              <Route path="/suite/engagement" element={<EngagementAnalyticsPage />} />
+              <Route path="/suite/performance" element={<PerformanceManagementPage />} />
               <Route path="/portal" element={<EmployeePortalPage />} />
 
               {/* Sign */}
