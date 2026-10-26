@@ -121,7 +121,13 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
   // 3. Payroll Module
   if (p.startsWith('/payroll')) {
     if (role === 'employee') {
-      return [{ title: 'COMPENSATION', items: [{ label: 'My payslips', to: '/payroll/payslips', icon: ic('receipt', 15) }] }];
+      return [{
+        title: 'COMPENSATION',
+        items: [
+          { label: 'My payslips', to: '/payroll/payslips', icon: ic('receipt', 15) },
+          { label: 'My benefits', to: '/payroll/benefits', icon: ic('heart', 15) },
+        ],
+      }];
     }
     return [
       {
@@ -129,8 +135,23 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
         items: [
           { label: 'Payroll overview', to: '/payroll', icon: ic('dashboard', 15) },
           { label: 'Run payroll wizard', to: '/payroll/admin', badge: 'Run', icon: ic('pay', 15) },
+          { label: 'Monthly payroll', to: '/payroll/monthly', icon: ic('doc', 15) },
+          { label: 'Payslip records', to: '/payroll/records', icon: ic('receipt', 15) },
+        ],
+      },
+      {
+        title: 'SALARY & REVISIONS',
+        items: [
           { label: 'Salary structures', to: '/payroll/structures', icon: ic('chart', 15) },
-          { label: 'Statutory compliance', to: '/payroll/statutory', icon: ic('shield', 15) },
+          { label: 'Salary revisions', to: '/payroll/revisions', icon: ic('chart', 15) },
+        ],
+      },
+      {
+        title: 'COMPLIANCE & BENEFITS',
+        items: [
+          { label: 'Statutory compliance', to: '/payroll/compliance', icon: ic('shield', 15) },
+          { label: 'PF & ESI compliance', to: '/payroll/pf-esi', icon: ic('shield', 15) },
+          { label: 'Statutory filings', to: '/payroll/statutory', icon: ic('doc', 15) },
           { label: 'Benefits admin', to: '/payroll/benefits', icon: ic('heart', 15) },
         ],
       },

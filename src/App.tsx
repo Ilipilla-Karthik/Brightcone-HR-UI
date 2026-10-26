@@ -30,6 +30,11 @@ import { SalaryStructurePage } from './pages/payroll/SalaryStructurePage';
 import { StatutoryFilings } from './pages/payroll/StatutoryFilings';
 import { MyPayslipsPage } from './pages/payroll/MyPayslipsPage';
 import { BenefitsAdminPage } from './pages/payroll/BenefitsAdminPage';
+import { MonthlyPayrollPage } from './pages/payroll/MonthlyPayrollPage';
+import { PayslipRecordsPage } from './pages/payroll/PayslipRecordsPage';
+import { SalaryRevisionsPage } from './pages/payroll/SalaryRevisionsPage';
+import { PfEsiCompliancePage } from './pages/payroll/PfEsiCompliancePage';
+import { StatutoryCompliancePage } from './pages/payroll/StatutoryCompliancePage';
 import { ExpenseEmployeePage } from './pages/payroll/ExpenseEmployeePage';
 import { ExpenseFinancePage } from './pages/payroll/ExpenseFinancePage';
 import { OfficeExpensePage } from './pages/payroll/OfficeExpensePage';
@@ -203,8 +208,13 @@ const AppLayout: React.FC = () => {
               <Route path="/payroll" element={<PayrollDashboard />} />
               <Route path="/payroll/admin" element={<PayrollAdminPage />} />
               <Route path="/payroll/run" element={<PayrollAdminPage />} />
+              <Route path="/payroll/monthly" element={<MonthlyPayrollPage />} />
+              <Route path="/payroll/records" element={<PayslipRecordsPage />} />
               <Route path="/payroll/structures" element={<SalaryStructurePage />} />
+              <Route path="/payroll/revisions" element={<SalaryRevisionsPage />} />
               <Route path="/payroll/statutory" element={<StatutoryFilings />} />
+              <Route path="/payroll/pf-esi" element={<PfEsiCompliancePage />} />
+              <Route path="/payroll/compliance" element={<StatutoryCompliancePage />} />
               <Route path="/payroll/payslips" element={<MyPayslipsPage />} />
               <Route path="/payroll/benefits" element={<BenefitsAdminPage />} />
 
