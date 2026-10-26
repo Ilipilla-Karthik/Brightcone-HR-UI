@@ -57,9 +57,12 @@ import { MyLeavePage } from './pages/time/MyLeavePage';
 import { ShiftRosterPage } from './pages/time/ShiftRosterPage';
 import { ShiftSwapPage } from './pages/time/ShiftSwapPage';
 import { HolidayAdminPage } from './pages/time/HolidayAdminPage';
-import { WorkFromHomePage } from './pages/time/WorkFromHomePage';
-import { CompOffTrackerPage } from './pages/time/CompOffTrackerPage';
+import { WorkFromHomePage } from './pages/WorkFromHomePage';
+import { CompOffTrackerPage } from './pages/CompOffTrackerPage';
 import { ShiftsPage } from './pages/time/ShiftsPage';
+import { LeaveCalculatorPage } from './pages/LeaveCalculatorPage';
+import { LeaveQuotasAdminPage } from './pages/time/LeaveQuotasAdminPage';
+import { LeaveTypesAdminPage } from './pages/time/LeaveTypesAdminPage';
 
 import { EmployeesPage } from './pages/people/EmployeesPage';
 import { PeopleDashboard } from './pages/people/PeopleDashboard';
@@ -255,6 +258,13 @@ const AppLayout: React.FC = () => {
               <Route path="/time/login-logout" element={<MyAttendancePage />} />
               <Route path="/time/leave" element={<MyLeavePage />} />
               <Route path="/time/leave-balance" element={<MyLeavePage />} />
+              <Route path="/time/leave-calculator" element={<LeaveCalculatorPage />} />
+              <Route path="/time/leave/calculator" element={<LeaveCalculatorPage />} />
+              <Route path="/time/leave-quotas" element={<LeaveQuotasAdminPage />} />
+              <Route path="/time/leave/quotas" element={<LeaveQuotasAdminPage />} />
+              <Route path="/time/quotas" element={<LeaveQuotasAdminPage />} />
+              <Route path="/time/leave-types" element={<LeaveTypesAdminPage />} />
+              <Route path="/time/leave/types" element={<LeaveTypesAdminPage />} />
               <Route path="/time/wfh" element={<WorkFromHomePage />} />
               <Route path="/time/comp-off" element={<CompOffTrackerPage />} />
               <Route path="/time/holidays" element={<HolidayAdminPage />} />

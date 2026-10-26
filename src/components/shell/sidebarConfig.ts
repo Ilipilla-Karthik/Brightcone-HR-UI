@@ -231,7 +231,7 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
           { label: 'Daily attendance', to: '/time/attendance', icon: ic('clock', 15) },
           { label: 'Login & logout', to: '/time/login-logout', icon: ic('login', 15) },
           { label: 'Leave requests', to: '/time/leave', icon: ic('leave', 15) },
-          { label: 'Leave balance', to: '/time/leave-balance', icon: ic('calendar', 15) },
+          { label: 'Leave calculator', to: '/time/leave-calculator', icon: ic('calendar', 15) },
           { label: 'Work from home', to: '/time/wfh', icon: ic('home', 15) },
           { label: 'Comp-off tracker', to: '/time/comp-off', icon: ic('swap', 15) },
           { label: 'Holiday calendar', to: '/time/holidays', icon: ic('gift', 15) },
@@ -242,6 +242,8 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
         items: [
           { label: 'Swap requests', to: '/time/swaps', icon: ic('swap', 15) },
           { label: 'Attendance & shifts', to: '/time/shifts', icon: ic('clock', 15) },
+          { label: 'Leave quotas', to: '/time/leave-quotas', icon: ic('leave', 15) },
+          { label: 'Leave types', to: '/time/leave-types', icon: ic('doc', 15) },
         ],
       },
     ];

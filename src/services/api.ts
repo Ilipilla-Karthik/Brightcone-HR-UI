@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 import {
   Course,
   CreateCoursePayload,
@@ -13,14 +13,18 @@ import {
   RateEmployeePayload,
   RemindReviewResult,
 } from './types';
+import { shiftApi, API_BASE_URL, request, type ApiResponse } from './shiftApi';
 
-export const api = axios.create({
+const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 8000,
 });
+
+export type ApiClient = AxiosInstance & typeof shiftApi;
+export const api: ApiClient = Object.assign(axiosInstance, shiftApi);
 
 let authPromise: Promise<string | null> | null = null;
 
@@ -245,5 +249,7 @@ export async function downloadExportRatings(cycleId: string): Promise<void> {
 }
 
 export * from './learnApi';
+
+export { API_BASE_URL, request, type ApiResponse, shiftApi };
 
 export default api;
