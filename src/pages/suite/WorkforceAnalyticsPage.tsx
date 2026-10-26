@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../services/api';
+import { fetchEmployees, fetchDepartments } from '../../services/peopleApi';
 
 interface Employee {
   id: string;
@@ -39,28 +39,27 @@ export const WorkforceAnalyticsPage: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
-    Promise.allSettled([api.get('/employees'), api.get('/departments')]).then(([eRes, dRes]) => {
+    Promise.allSettled([fetchEmployees(), fetchDepartments()]).then(([eRes, dRes]) => {
       if (!mounted) return;
-      if (eRes.status === 'fulfilled') setEmployees(eRes.value.data || []);
-      if (dRes.status === 'fulfilled') setDepts(dRes.value.data || []);
-      if (eRes.status === 'rejected' && dRes.status === 'rejected') {
-        setEmployees([
-          { id: 'e1', name: 'Rahul Sharma', department: 'Engineering', gender: 'Male', date_of_joining: '2024-03-15' },
-          { id: 'e2', name: 'Priya Nair', department: 'Product', gender: 'Female', date_of_joining: '2023-08-01' },
-          { id: 'e3', name: 'Vikram Singh', department: 'Engineering', gender: 'Male', date_of_joining: '2022-01-10' },
-          { id: 'e4', name: 'Ananya Rao', department: 'HR & Ops', gender: 'Female', date_of_joining: '2021-06-20' },
-          { id: 'e5', name: 'Karthik Reddy', department: 'Engineering', gender: 'Male', date_of_joining: '2020-09-05' },
-          { id: 'e6', name: 'Deepa Krishnan', department: 'Finance', gender: 'Female', date_of_joining: '2023-11-01' },
-          { id: 'e7', name: 'Suresh Kumar', department: 'Sales', gender: 'Male', date_of_joining: '2025-01-15' },
-          { id: 'e8', name: 'Meera Joshi', department: 'Product', gender: 'Female', date_of_joining: '2022-07-19' },
-        ]);
-        setDepts([
-          { id: 'd1', name: 'Engineering', employee_count: 18 },
-          { id: 'd2', name: 'Product', employee_count: 7 },
-          { id: 'd3', name: 'Sales', employee_count: 11 },
-          { id: 'd4', name: 'HR & Ops', employee_count: 5 },
-          { id: 'd5', name: 'Finance', employee_count: 4 },
-        ]);
+      if (eRes.status === 'fulfilled') {
+        setEmployees(eRes.value.map(e => ({
+          id: e.employee_code,
+          name: e.full_name,
+          department: e.department,
+          gender: 'Unspecified',
+          date_of_joining: e.joined,
+        })));
+      } else {
+        setEmployees([]);
+      }
+      if (dRes.status === 'fulfilled') {
+        setDepts(dRes.value.map(d => ({
+          id: String(d.id),
+          name: d.name,
+          employee_count: d.employee_count,
+        })));
+      } else {
+        setDepts([]);
       }
     }).finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };

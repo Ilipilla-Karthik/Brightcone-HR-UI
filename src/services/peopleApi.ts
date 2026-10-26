@@ -24,6 +24,7 @@ export interface DepartmentApiItem {
   name: string;
   code: string;
   description?: string;
+  employee_count?: number;
 }
 
 export interface AssetApiItem {
@@ -71,10 +72,16 @@ export interface HelpdeskTicketApiItem {
   status?: string;
 }
 
+function unwrapArray<T>(data: any): T[] {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.value)) return data.value;
+  return [];
+}
+
 export async function fetchEmployees(): Promise<EmployeeApiItem[]> {
   try {
     const res = await api.get('/employees');
-    return Array.isArray(res.data) ? res.data : [];
+    return unwrapArray<EmployeeApiItem>(res.data);
   } catch {
     return [];
   }
@@ -88,7 +95,7 @@ export async function createEmployeeApi(data: Partial<EmployeeApiItem>): Promise
 export async function fetchDepartments(): Promise<DepartmentApiItem[]> {
   try {
     const res = await api.get('/departments');
-    return Array.isArray(res.data) ? res.data : [];
+    return unwrapArray<DepartmentApiItem>(res.data);
   } catch {
     return [];
   }
@@ -97,7 +104,7 @@ export async function fetchDepartments(): Promise<DepartmentApiItem[]> {
 export async function fetchAssets(): Promise<AssetApiItem[]> {
   try {
     const res = await api.get('/assets');
-    return Array.isArray(res.data) ? res.data : [];
+    return unwrapArray<AssetApiItem>(res.data);
   } catch {
     return [];
   }
@@ -111,7 +118,7 @@ export async function createAssetApi(data: Partial<AssetApiItem>): Promise<Asset
 export async function fetchDocuments(): Promise<DocumentApiItem[]> {
   try {
     const res = await api.get('/documents');
-    return Array.isArray(res.data) ? res.data : [];
+    return unwrapArray<DocumentApiItem>(res.data);
   } catch {
     return [];
   }
@@ -120,7 +127,7 @@ export async function fetchDocuments(): Promise<DocumentApiItem[]> {
 export async function fetchResignations(): Promise<ResignationApiItem[]> {
   try {
     const res = await api.get('/resignation');
-    return Array.isArray(res.data) ? res.data : [];
+    return unwrapArray<ResignationApiItem>(res.data);
   } catch {
     return [];
   }
@@ -154,7 +161,7 @@ export async function fetchPerformanceSummary(): Promise<any> {
 export async function fetchPerformanceGoals(): Promise<any[]> {
   try {
     const res = await api.get('/performance/goals');
-    return Array.isArray(res.data) ? res.data : [];
+    return unwrapArray<any>(res.data);
   } catch {
     return [];
   }
@@ -163,7 +170,7 @@ export async function fetchPerformanceGoals(): Promise<any[]> {
 export async function fetchHelpdeskTickets(): Promise<HelpdeskTicketApiItem[]> {
   try {
     const res = await api.get('/helpdesk');
-    return Array.isArray(res.data) ? res.data : [];
+    return unwrapArray<HelpdeskTicketApiItem>(res.data);
   } catch {
     return [];
   }

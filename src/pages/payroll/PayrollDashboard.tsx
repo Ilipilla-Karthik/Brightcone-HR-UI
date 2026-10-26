@@ -14,9 +14,9 @@ interface PayrollSummary {
 export const PayrollDashboard: React.FC = () => {
   const [summary, setSummary] = useState<PayrollSummary>({
     activeMonth: 'October 2026',
-    totalEmployees: 42,
-    totalGrossPaise: 485000000,
-    totalNetPaise: 412000000,
+    totalEmployees: 0,
+    totalGrossPaise: 0,
+    totalNetPaise: 0,
     status: 'Draft',
   });
 
@@ -26,15 +26,15 @@ export const PayrollDashboard: React.FC = () => {
         if (res.data) {
           setSummary({
             activeMonth: res.data.month || 'October 2026',
-            totalEmployees: res.data.total_employees || 42,
-            totalGrossPaise: (res.data.total_gross || 4850000) * 100,
-            totalNetPaise: (res.data.total_net || 4120000) * 100,
+            totalEmployees: res.data.total_employees ?? 0,
+            totalGrossPaise: Math.round((res.data.total_gross ?? 0) * 100),
+            totalNetPaise: Math.round((res.data.total_net ?? 0) * 100),
             status: res.data.status || 'Draft',
           });
         }
       })
       .catch(() => {
-        // Fallback default metrics
+        // Leave at clean live/empty state
       });
   }, []);
 

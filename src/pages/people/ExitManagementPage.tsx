@@ -17,14 +17,8 @@ interface ResignationRow {
   status: string;
 }
 
-const DEFAULT_EXITS: ResignationRow[] = [
-  { id: 1, code: 'BC-1020', name: 'Rahul Varma', reason: 'Pursuing Higher Studies abroad', lastDay: '2026-11-30', noticePeriod: 60, status: 'Under Review by Manager' },
-  { id: 2, code: 'BC-1060', name: 'Rohan Verma', reason: 'Relocation to hometown', lastDay: '2026-10-31', noticePeriod: 30, status: 'Clearance in Progress' },
-  { id: 3, code: 'BC-1071', name: 'Deepak S', reason: 'Better opportunity outside', lastDay: '2026-09-15', noticePeriod: 45, status: 'Completed' },
-];
-
 export const ExitManagementPage: React.FC = () => {
-  const [exits, setExits] = useState<ResignationRow[]>(DEFAULT_EXITS);
+  const [exits, setExits] = useState<ResignationRow[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'clearance'>('all');
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,20 +33,21 @@ export const ExitManagementPage: React.FC = () => {
   useEffect(() => {
     fetchResignations()
       .then((data: ResignationApiItem[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          const mapped = data.map((d) => ({
-            id: d.id,
-            code: d.employee_code,
-            name: d.employee_name,
-            reason: d.reason,
-            lastDay: d.proposed_last_day,
-            noticePeriod: d.notice_period_days || 60,
-            status: d.status || 'Under Review by Manager',
-          }));
-          setExits(mapped);
-        }
+        const list = Array.isArray(data) ? data : (data as any)?.value || [];
+        const mapped = list.map((d: any) => ({
+          id: d.id,
+          code: d.employee_code,
+          name: d.employee_name,
+          reason: d.reason,
+          lastDay: d.proposed_last_day,
+          noticePeriod: d.notice_period_days || 60,
+          status: d.status || 'Under Review by Manager',
+        }));
+        setExits(mapped);
       })
-      .catch(() => {});
+      .catch(() => {
+        setExits([]);
+      });
   }, []);
 
   const handleStatusChange = async (id: number, nextStatus: string) => {
@@ -196,48 +191,54 @@ export const ExitManagementPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)] text-[var(--text)]">
-              {filtered.map((item) => (
-                <tr key={item.id} className="hover:bg-[var(--surface-2)]/30 transition-colors">
-                  <td className="p-3.5">
-                    <div className="font-semibold">{item.name}</div>
-                    <div className="text-[10px] text-[var(--muted)] font-mono">{item.code}</div>
-                  </td>
-                  <td className="p-3.5 max-w-xs truncate text-[var(--muted)]">{item.reason}</td>
-                  <td className="p-3.5">{item.noticePeriod} Days</td>
-                  <td className="p-3.5 font-medium">{item.lastDay}</td>
-                  <td className="p-3.5">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                      item.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-500' :
-                      item.status === 'Clearance in Progress' ? 'bg-blue-500/10 text-blue-500' : 'bg-amber-500/10 text-amber-500'
-                    }`}>
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="p-3.5 text-right space-x-2">
-                    {item.status === 'Under Review by Manager' && (
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(item.id, 'Clearance in Progress')}
-                        className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold text-[10px] cursor-pointer"
-                      >
-                        Approve & Start Clearance
-                      </button>
-                    )}
-                    {item.status === 'Clearance in Progress' && (
-                      <button
-                        type="button"
-                        onClick={() => handleStatusChange(item.id, 'Completed')}
-                        className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px] cursor-pointer"
-                      >
-                        Complete Exit
-                      </button>
-                    )}
-                    {item.status === 'Completed' && (
-                      <span className="text-[10px] text-[var(--muted)]">Cleared</span>
-                    )}
-                  </td>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-[var(--muted)]">No resignation or exit requests found in records.</td>
                 </tr>
-              ))}
+              ) : (
+                filtered.map((item) => (
+                  <tr key={item.id} className="hover:bg-[var(--surface-2)]/30 transition-colors">
+                    <td className="p-3.5">
+                      <div className="font-semibold">{item.name}</div>
+                      <div className="text-[10px] text-[var(--muted)] font-mono">{item.code}</div>
+                    </td>
+                    <td className="p-3.5 max-w-xs truncate text-[var(--muted)]">{item.reason}</td>
+                    <td className="p-3.5">{item.noticePeriod} Days</td>
+                    <td className="p-3.5 font-medium">{item.lastDay}</td>
+                    <td className="p-3.5">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                        item.status === 'Completed' ? 'bg-emerald-500/10 text-emerald-500' :
+                        item.status === 'Clearance in Progress' ? 'bg-blue-500/10 text-blue-500' : 'bg-amber-500/10 text-amber-500'
+                      }`}>
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="p-3.5 text-right space-x-2">
+                      {item.status === 'Under Review by Manager' && (
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(item.id, 'Clearance in Progress')}
+                          className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold text-[10px] cursor-pointer"
+                        >
+                          Approve & Start Clearance
+                        </button>
+                      )}
+                      {item.status === 'Clearance in Progress' && (
+                        <button
+                          type="button"
+                          onClick={() => handleStatusChange(item.id, 'Completed')}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px] cursor-pointer"
+                        >
+                          Complete Exit
+                        </button>
+                      )}
+                      {item.status === 'Completed' && (
+                        <span className="text-[10px] text-[var(--muted)]">Cleared</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -64,17 +64,9 @@ const BENEFIT_PLANS: BenefitPlan[] = [
   },
 ];
 
-const INITIAL_ENROLLMENTS: Enrollment[] = [
-  { id: 'ENR-1', employeeName: 'Naresh Vemparala', planName: 'Group Health Insurance (GHI)', dependents: 3, coverageAmt: '₹5,00,000', status: 'Enrolled' },
-  { id: 'ENR-2', employeeName: 'Karthik Reddy', planName: 'Group Health Insurance (GHI)', dependents: 2, coverageAmt: '₹5,00,000', status: 'Enrolled' },
-  { id: 'ENR-3', employeeName: 'Priya Sharma', planName: 'Cult.fit Corporate Wellness Pass', dependents: 0, coverageAmt: 'Elite Pass', status: 'Enrolled' },
-  { id: 'ENR-4', employeeName: 'Rahul Varma', planName: 'Pluxee Meal & Food Card', dependents: 0, coverageAmt: '₹3,000/mo', status: 'Enrolled' },
-  { id: 'ENR-5', employeeName: 'Rohan Verma', planName: 'Group Health Insurance (GHI)', dependents: 1, coverageAmt: '₹5,00,000', status: 'Pending Verification' },
-];
-
 export const BenefitsAdminPage: React.FC = () => {
   const [plans] = useState<BenefitPlan[]>(BENEFIT_PLANS);
-  const [enrollments, setEnrollments] = useState<Enrollment[]>(INITIAL_ENROLLMENTS);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
 
@@ -188,46 +180,58 @@ export const BenefitsAdminPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {enrollments.map((enr) => (
-                <tr key={enr.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-4 font-semibold text-slate-900">{enr.employeeName}</td>
-                  <td className="py-3 px-4 text-slate-700 font-medium">{enr.planName}</td>
-                  <td className="py-3 px-4 text-slate-500 font-mono">
-                    {enr.dependents > 0 ? `${enr.dependents} Members` : 'Self Only'}
-                  </td>
-                  <td className="py-3 px-4 font-mono font-medium text-slate-800">
-                    {enr.coverageAmt}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        enr.status === 'Enrolled'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }`}
-                    >
-                      {enr.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    {enr.status === 'Pending Verification' ? (
-                      <button
-                        onClick={() => verifyEnrollment(enr.id)}
-                        className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
-                      >
-                        Verify
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => showToast(`Sent health e-card for ${enr.employeeName}`)}
-                        className="px-2 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
-                      >
-                        Send E-Card
-                      </button>
-                    )}
+              {enrollments.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-10 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <span className="text-xl">📋</span>
+                      <p className="font-semibold text-slate-700 text-sm">No Active Enrollments</p>
+                      <p className="text-xs text-slate-400">Employee benefit enrollments will be listed here once submitted.</p>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                enrollments.map((enr) => (
+                  <tr key={enr.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-4 font-semibold text-slate-900">{enr.employeeName}</td>
+                    <td className="py-3 px-4 text-slate-700 font-medium">{enr.planName}</td>
+                    <td className="py-3 px-4 text-slate-500 font-mono">
+                      {enr.dependents > 0 ? `${enr.dependents} Members` : 'Self Only'}
+                    </td>
+                    <td className="py-3 px-4 font-mono font-medium text-slate-800">
+                      {enr.coverageAmt}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          enr.status === 'Enrolled'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {enr.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      {enr.status === 'Pending Verification' ? (
+                        <button
+                          onClick={() => verifyEnrollment(enr.id)}
+                          className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
+                        >
+                          Verify
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => showToast(`Sent health e-card for ${enr.employeeName}`)}
+                          className="px-2 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
+                        >
+                          Send E-Card
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

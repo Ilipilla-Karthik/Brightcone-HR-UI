@@ -13,16 +13,8 @@ interface Requisition {
   status: 'Approved' | 'In Review' | 'Filled';
 }
 
-const INITIAL_REQS: Requisition[] = [
-  { id: 'REQ-2026-01', department: 'AI Research', role: 'Senior ML Engineer', targetCount: 3, filledCount: 2, budgetCTC: '₹35 - 45 LPA', priority: 'Critical', status: 'Approved' },
-  { id: 'REQ-2026-02', department: 'Engineering', role: 'Staff Rust Systems Engineer', targetCount: 2, filledCount: 1, budgetCTC: '₹40 - 55 LPA', priority: 'Critical', status: 'Approved' },
-  { id: 'REQ-2026-03', department: 'Engineering', role: 'QA Automation Engineer', targetCount: 2, filledCount: 2, budgetCTC: '₹18 - 25 LPA', priority: 'High', status: 'Filled' },
-  { id: 'REQ-2026-04', department: 'Design', role: 'Product Designer', targetCount: 1, filledCount: 0, budgetCTC: '₹22 - 30 LPA', priority: 'Medium', status: 'In Review' },
-  { id: 'REQ-2026-05', department: 'Sales', role: 'Solutions Architect', targetCount: 2, filledCount: 1, budgetCTC: '₹30 - 40 LPA', priority: 'High', status: 'Approved' },
-];
-
 export const ManpowerRequirementsPage: React.FC = () => {
-  const [reqs, setReqs] = useState<Requisition[]>(INITIAL_REQS);
+  const [reqs, setReqs] = useState<Requisition[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
@@ -41,7 +33,25 @@ export const ManpowerRequirementsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    recruitApi.getJobs().then(setJobs).catch(() => {});
+    recruitApi.getJobs().then((data) => {
+      setJobs(data);
+      if (data && data.length > 0) {
+        setReqs(
+          data.map((j) => ({
+            id: j.job_code || j.job_id,
+            department: j.department || 'Engineering',
+            role: j.title,
+            targetCount: 1,
+            filledCount: 0,
+            budgetCTC: j.employment_type || 'Full Time',
+            priority: 'High',
+            status: j.status === 'Open' ? 'Approved' : 'Filled',
+          }))
+        );
+      } else {
+        setReqs([]);
+      }
+    }).catch(() => setReqs([]));
   }, []);
 
   const handleCreate = (e: React.FormEvent) => {
@@ -113,53 +123,65 @@ export const ManpowerRequirementsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {reqs.map((r) => (
-                <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-4 font-mono font-medium text-slate-700">{r.id}</td>
-                  <td className="py-3 px-4">
-                    <p className="font-semibold text-slate-900">{r.role}</p>
-                    <p className="text-[11px] text-slate-500">{r.department}</p>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900 font-mono">{r.filledCount} / {r.targetCount}</span>
-                      <div className="w-16 bg-slate-100 h-2 rounded-full overflow-hidden">
-                        <div
-                          className="bg-blue-600 h-full rounded-full"
-                          style={{ width: `${(r.filledCount / r.targetCount) * 100}%` }}
-                        />
-                      </div>
+              {reqs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <span className="text-xl">📋</span>
+                      <p className="font-semibold text-slate-700 text-sm">No Requisitions Found</p>
+                      <p className="text-xs text-slate-400">Create a new hiring requisition or open jobs to get started.</p>
                     </div>
                   </td>
-                  <td className="py-3 px-4 font-mono text-slate-700">{r.budgetCTC}</td>
-                  <td className="py-3 px-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      r.priority === 'Critical' ? 'bg-rose-100 text-rose-800' :
-                      r.priority === 'High' ? 'bg-amber-100 text-amber-800' :
-                      'bg-slate-100 text-slate-800'
-                    }`}>
-                      {r.priority}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      r.status === 'Approved' ? 'bg-blue-100 text-blue-800' :
-                      r.status === 'Filled' ? 'bg-emerald-100 text-emerald-800' :
-                      'bg-slate-100 text-slate-800'
-                    }`}>
-                      {r.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <button
-                      onClick={() => showToast(`Opening candidates matched to ${r.role}`)}
-                      className="px-2.5 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded"
-                    >
-                      View Pipeline →
-                    </button>
-                  </td>
                 </tr>
-              ))}
+              ) : (
+                reqs.map((r) => (
+                  <tr key={r.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-4 font-mono font-medium text-slate-700">{r.id}</td>
+                    <td className="py-3 px-4">
+                      <p className="font-semibold text-slate-900">{r.role}</p>
+                      <p className="text-[11px] text-slate-500">{r.department}</p>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 font-mono">{r.filledCount} / {r.targetCount}</span>
+                        <div className="w-16 bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div
+                            className="bg-blue-600 h-full rounded-full"
+                            style={{ width: `${(r.filledCount / r.targetCount) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-slate-700">{r.budgetCTC}</td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        r.priority === 'Critical' ? 'bg-rose-100 text-rose-800' :
+                        r.priority === 'High' ? 'bg-amber-100 text-amber-800' :
+                        'bg-slate-100 text-slate-800'
+                      }`}>
+                        {r.priority}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        r.status === 'Approved' ? 'bg-blue-100 text-blue-800' :
+                        r.status === 'Filled' ? 'bg-emerald-100 text-emerald-800' :
+                        'bg-slate-100 text-slate-800'
+                      }`}>
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        onClick={() => showToast(`Opening candidates matched to ${r.role}`)}
+                        className="px-2.5 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded"
+                      >
+                        View Pipeline →
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
+import { fetchDepartments } from '../../services/peopleApi';
 
 interface DashboardSummary {
   total_employees?: number;
@@ -51,11 +52,17 @@ export const ReportsAnalytics: React.FC = () => {
       try {
         const [summaryRes, deptRes] = await Promise.allSettled([
           api.get('/dashboard/summary'),
-          api.get('/departments'),
+          fetchDepartments(),
         ]);
         if (!mounted) return;
         if (summaryRes.status === 'fulfilled') setSummary(summaryRes.value.data);
-        if (deptRes.status === 'fulfilled') setDepartments(deptRes.value.data || []);
+        if (deptRes.status === 'fulfilled') {
+          setDepartments(deptRes.value.map(d => ({
+            id: String(d.id),
+            name: d.name,
+            employee_count: d.employee_count,
+          })));
+        }
       } catch {
         if (mounted) setError('Failed to load analytics data.');
       } finally {

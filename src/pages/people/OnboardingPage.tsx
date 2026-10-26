@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
+import { recruitApi } from '../../services/recruitApi';
 
 interface OnboardingCandidate {
   id: string;
@@ -14,18 +15,33 @@ interface OnboardingCandidate {
   status: 'In Progress' | 'Ready for Day 1' | 'Completed';
 }
 
-const DEFAULT_ONBOARDINGS: OnboardingCandidate[] = [
-  { id: 'onb-1', name: 'Tanvi Shah', role: 'HR Specialist', department: 'People Ops', joiningDate: '2026-11-01', progress: 80, buddy: 'Ananya Rao', tasksCompleted: 4, totalTasks: 5, status: 'Ready for Day 1' },
-  { id: 'onb-2', name: 'Arjun Das', role: 'ML Research Scientist', department: 'AI Research', joiningDate: '2026-11-05', progress: 40, buddy: 'Karthik Reddy', tasksCompleted: 2, totalTasks: 5, status: 'In Progress' },
-  { id: 'onb-3', name: 'Kunal Mehra', role: 'Talent Acquisition Partner', department: 'People Ops', joiningDate: '2026-11-10', progress: 20, buddy: 'Ananya Rao', tasksCompleted: 1, totalTasks: 5, status: 'In Progress' },
-  { id: 'onb-4', name: 'Varun Nair', role: 'Senior Financial Analyst', department: 'Finance', joiningDate: '2026-10-15', progress: 100, buddy: 'Sneha Patel', tasksCompleted: 5, totalTasks: 5, status: 'Completed' },
-];
-
 export const OnboardingPage: React.FC = () => {
-  const [candidates, setCandidates] = useState<OnboardingCandidate[]>(DEFAULT_ONBOARDINGS);
+  const [candidates, setCandidates] = useState<OnboardingCandidate[]>([]);
   const [filter, setFilter] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newHire, setNewHire] = useState({ name: '', role: '', department: 'Engineering', joiningDate: '', buddy: 'Ananya Rao' });
+
+  useEffect(() => {
+    recruitApi.getCandidates()
+      .then((cands) => {
+        const onboardings: OnboardingCandidate[] = cands
+          .filter((c) => c.stage === 'Offer' || c.stage === 'Hired')
+          .map((c, idx) => ({
+            id: `onb-${idx + 1}`,
+            name: c.full_name,
+            role: c.job_title || 'Software Engineer',
+            department: 'Engineering',
+            joiningDate: '2026-11-15',
+            progress: c.stage === 'Hired' ? 100 : 70,
+            buddy: 'Ananya Rao',
+            tasksCompleted: c.stage === 'Hired' ? 5 : 3,
+            totalTasks: 5,
+            status: c.stage === 'Hired' ? 'Completed' : 'Ready for Day 1',
+          }));
+        setCandidates(onboardings);
+      })
+      .catch(() => setCandidates([]));
+  }, []);
 
   const filtered = candidates.filter((c) => filter === 'All' || c.status === filter);
 
@@ -175,6 +191,9 @@ export const OnboardingPage: React.FC = () => {
             ))}
           </tbody>
         </table>
+        {filtered.length === 0 && (
+          <div className="py-12 text-center text-sm text-[var(--muted)]">No active onboarding candidates in pipeline.</div>
+        )}
       </div>
 
       {/* Modal */}

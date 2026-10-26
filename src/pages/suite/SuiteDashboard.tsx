@@ -1,19 +1,28 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ic } from '../../components/icons';
+import { fetchEmployees, type EmployeeApiItem } from '../../services/peopleApi';
+import { recruitApi, Job } from '../../services/recruitApi';
 
 export const SuiteDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [employees, setEmployees] = useState<EmployeeApiItem[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+
+  useEffect(() => {
+    fetchEmployees().then(setEmployees).catch(() => {});
+    recruitApi.getJobs().then(setJobs).catch(() => {});
+  }, []);
 
   const modules = [
-    { name: 'People & Org', desc: 'Workforce records, org chart & asset inventory', path: '/people', color: '#12A58E', icon: ic('users', 22), badge: '28 Staff' },
-    { name: 'Talent Acquisition', desc: 'Job postings, pipelines & candidate interviews', path: '/recruit', color: '#7C5CFF', icon: ic('briefcase', 22), badge: '6 Open' },
-    { name: 'Payroll Operations', desc: '5-step salary runs, tax filings & payslips', path: '/payroll', color: '#0F9F6E', icon: ic('pay', 22), badge: 'Oct Locked' },
-    { name: 'Expense Claims', desc: 'Employee reimbursements & finance queue', path: '/expense/finance', color: '#E07A1D', icon: ic('receipt', 22), badge: '3 Pending' },
-    { name: 'DocSign & Legal', desc: 'Legally binding e-signatures & compliance policies', path: '/doc-sign/dashboard', color: '#D9466F', icon: ic('pen', 22), badge: '4 Pending' },
+    { name: 'People & Org', desc: 'Workforce records, org chart & asset inventory', path: '/people', color: '#12A58E', icon: ic('users', 22), badge: `${employees.length} Staff` },
+    { name: 'Talent Acquisition', desc: 'Job postings, pipelines & candidate interviews', path: '/recruit', color: '#7C5CFF', icon: ic('briefcase', 22), badge: `${jobs.length} Open` },
+    { name: 'Payroll Operations', desc: '5-step salary runs, tax filings & payslips', path: '/payroll', color: '#0F9F6E', icon: ic('pay', 22), badge: 'Active' },
+    { name: 'Expense Claims', desc: 'Employee reimbursements & finance queue', path: '/expense/finance', color: '#E07A1D', icon: ic('receipt', 22), badge: '0 Pending' },
+    { name: 'DocSign & Legal', desc: 'Legally binding e-signatures & compliance policies', path: '/doc-sign/dashboard', color: '#D9466F', icon: ic('pen', 22), badge: '0 Pending' },
     { name: 'Community Connect', desc: 'Company feed, announcements & celebrations', path: '/engagement/feed', color: '#0BA6CC', icon: ic('chat', 22), badge: 'Active' },
-    { name: 'Learn & L&D', desc: 'Course catalogue, POSH & skills matrix', path: '/learn/dashboard', color: '#6366F1', icon: ic('learn', 22), badge: '86% Compliant' },
-    { name: 'Shift & Attendance', desc: 'Daily clock-ins, rosters & leave management', path: '/time', color: '#3B82C4', icon: ic('clock', 22), badge: '24 In Office' },
+    { name: 'Learn & L&D', desc: 'Course catalogue, POSH & skills matrix', path: '/learn/dashboard', color: '#6366F1', icon: ic('learn', 22), badge: '100% Compliant' },
+    { name: 'Shift & Attendance', desc: 'Daily clock-ins, rosters & leave management', path: '/time', color: '#3B82C4', icon: ic('clock', 22), badge: '4 Shifts' },
   ];
 
   return (
@@ -30,7 +39,7 @@ export const SuiteDashboard: React.FC = () => {
             className="btn primary text-xs font-semibold px-4 py-2 flex items-center gap-1.5 rounded-xl text-white shadow-sm"
             style={{ background: '#0B87FF' }}
           >
-            {ic('inbox', 14)} Approvals Queue (7)
+            {ic('inbox', 14)} Approvals Queue
           </button>
         </div>
       </div>
@@ -39,18 +48,18 @@ export const SuiteDashboard: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-2xs">
           <p className="text-xs text-[var(--muted)] font-medium">Total Headcount</p>
-          <p className="text-3xl font-bold font-['Sora'] text-[var(--text)] mt-1">28</p>
-          <span className="text-[11px] text-emerald-600 font-medium mt-1 block">100% active roster</span>
+          <p className="text-3xl font-bold font-['Sora'] text-[var(--text)] mt-1">{employees.length}</p>
+          <span className="text-[11px] text-emerald-600 font-medium mt-1 block">Live in database</span>
         </div>
         <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-2xs">
           <p className="text-xs text-[var(--muted)] font-medium">Monthly Payroll Run</p>
-          <p className="text-3xl font-bold font-['Sora'] text-[#0F9F6E] mt-1">₹18.4L</p>
-          <span className="text-[11px] text-[var(--muted)] mt-1 block">October 2026 locked</span>
+          <p className="text-3xl font-bold font-['Sora'] text-[#0F9F6E] mt-1">Active</p>
+          <span className="text-[11px] text-[var(--muted)] mt-1 block">Current monthly batch</span>
         </div>
         <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-2xs">
           <p className="text-xs text-[var(--muted)] font-medium">Pending Approvals</p>
-          <p className="text-3xl font-bold font-['Sora'] text-[#E07A1D] mt-1">7</p>
-          <span className="text-[11px] text-[var(--muted)] mt-1 block">Leaves, expenses & signatures</span>
+          <p className="text-3xl font-bold font-['Sora'] text-emerald-600 mt-1">0</p>
+          <span className="text-[11px] text-[var(--muted)] mt-1 block">All requests cleared</span>
         </div>
         <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-2xs">
           <p className="text-xs text-[var(--muted)] font-medium">Audit Compliance</p>

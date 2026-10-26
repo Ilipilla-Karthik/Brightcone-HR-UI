@@ -18,14 +18,8 @@ interface TicketItem {
   createdOn: string;
 }
 
-const DEFAULT_TICKETS: TicketItem[] = [
-  { id: '1', ticketId: 'TKT-1042', employee: 'Rahul Varma', empCode: 'BC-1020', category: 'Payroll & Tax', subject: 'Form 12BB tax deduction breakdown clarification', priority: 'High', status: 'Open', createdOn: '2026-10-24' },
-  { id: '2', ticketId: 'TKT-1043', employee: 'Priya Sharma', empCode: 'BC-1025', category: 'IT Hardware', subject: 'Second 4K monitor HDMI-to-USB-C adapter needed', priority: 'Medium', status: 'In Progress', createdOn: '2026-10-23' },
-  { id: '3', ticketId: 'TKT-1044', employee: 'Meera Nambiar', empCode: 'BC-1065', category: 'General HR', subject: 'Confirmation of address letter for passport renewal', priority: 'Low', status: 'Resolved', createdOn: '2026-10-20' },
-];
-
 export const HelpdeskQueuePage: React.FC = () => {
-  const [tickets, setTickets] = useState<TicketItem[]>(DEFAULT_TICKETS);
+  const [tickets, setTickets] = useState<TicketItem[]>([]);
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,22 +28,23 @@ export const HelpdeskQueuePage: React.FC = () => {
   useEffect(() => {
     fetchHelpdeskTickets()
       .then((data: HelpdeskTicketApiItem[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          const mapped: TicketItem[] = data.map((d, i) => ({
-            id: String(d.id || i + 1),
-            ticketId: `TKT-${1040 + i}`,
-            employee: d.employee_name || 'Rahul Varma',
-            empCode: d.employee_code || 'BC-1038',
-            category: d.category || 'General HR',
-            subject: d.subject || 'Employee Query',
-            priority: (d.priority || 'Medium') as any,
-            status: (d.status || 'Open') as any,
-            createdOn: new Date().toISOString().split('T')[0],
-          }));
-          setTickets(mapped);
-        }
+        const list = Array.isArray(data) ? data : (data as any)?.value || [];
+        const mapped: TicketItem[] = list.map((d: any, i: number) => ({
+          id: String(d.id || i + 1),
+          ticketId: `TKT-${1040 + i}`,
+          employee: d.employee_name || 'Rahul Varma',
+          empCode: d.employee_code || 'BC-1038',
+          category: d.category || 'General HR',
+          subject: d.subject || 'Employee Query',
+          priority: (d.priority || 'Medium') as any,
+          status: (d.status || 'Open') as any,
+          createdOn: new Date().toISOString().split('T')[0],
+        }));
+        setTickets(mapped);
       })
-      .catch(() => {});
+      .catch(() => {
+        setTickets([]);
+      });
   }, []);
 
   const handleStatusChange = (id: string, nextStatus: TicketItem['status']) => {
@@ -164,56 +159,62 @@ export const HelpdeskQueuePage: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line)] text-[var(--text)]">
-            {filtered.map((item) => (
-              <tr key={item.id} className="hover:bg-[var(--surface-2)]/30 transition-colors">
-                <td className="p-3.5 font-mono text-[10px] text-[#12A58E] font-semibold">{item.ticketId}</td>
-                <td className="p-3.5">
-                  <div className="font-semibold">{item.employee}</div>
-                  <div className="text-[10px] text-[var(--muted)] font-mono">{item.empCode}</div>
-                </td>
-                <td className="p-3.5"><span className="px-2 py-0.5 rounded-md bg-[var(--surface-2)] text-[10px] font-medium">{item.category}</span></td>
-                <td className="p-3.5 max-w-sm font-medium">{item.subject}</td>
-                <td className="p-3.5">
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                    item.priority === 'High' ? 'bg-rose-500/10 text-rose-500' :
-                    item.priority === 'Medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'
-                  }`}>
-                    {item.priority}
-                  </span>
-                </td>
-                <td className="p-3.5">
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                    item.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-500' :
-                    item.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' : 'bg-rose-500/10 text-rose-500'
-                  }`}>
-                    {item.status}
-                  </span>
-                </td>
-                <td className="p-3.5 text-right space-x-2">
-                  {item.status === 'Open' && (
-                    <button
-                      type="button"
-                      onClick={() => handleStatusChange(item.id, 'In Progress')}
-                      className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold text-[10px] cursor-pointer"
-                    >
-                      Take Ticket
-                    </button>
-                  )}
-                  {item.status === 'In Progress' && (
-                    <button
-                      type="button"
-                      onClick={() => handleStatusChange(item.id, 'Resolved')}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px] cursor-pointer"
-                    >
-                      Resolve & Close
-                    </button>
-                  )}
-                  {item.status === 'Resolved' && (
-                    <span className="text-[10px] text-[var(--muted)]">Closed</span>
-                  )}
-                </td>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="p-8 text-center text-[var(--muted)]">No support or helpdesk tickets found in queue.</td>
               </tr>
-            ))}
+            ) : (
+              filtered.map((item) => (
+                <tr key={item.id} className="hover:bg-[var(--surface-2)]/30 transition-colors">
+                  <td className="p-3.5 font-mono text-[10px] text-[#12A58E] font-semibold">{item.ticketId}</td>
+                  <td className="p-3.5">
+                    <div className="font-semibold">{item.employee}</div>
+                    <div className="text-[10px] text-[var(--muted)] font-mono">{item.empCode}</div>
+                  </td>
+                  <td className="p-3.5"><span className="px-2 py-0.5 rounded-md bg-[var(--surface-2)] text-[10px] font-medium">{item.category}</span></td>
+                  <td className="p-3.5 max-w-sm font-medium">{item.subject}</td>
+                  <td className="p-3.5">
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                      item.priority === 'High' ? 'bg-rose-500/10 text-rose-500' :
+                      item.priority === 'Medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'
+                    }`}>
+                      {item.priority}
+                    </span>
+                  </td>
+                  <td className="p-3.5">
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                      item.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-500' :
+                      item.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' : 'bg-rose-500/10 text-rose-500'
+                    }`}>
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="p-3.5 text-right space-x-2">
+                    {item.status === 'Open' && (
+                      <button
+                        type="button"
+                        onClick={() => handleStatusChange(item.id, 'In Progress')}
+                        className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold text-[10px] cursor-pointer"
+                      >
+                        Take Ticket
+                      </button>
+                    )}
+                    {item.status === 'In Progress' && (
+                      <button
+                        type="button"
+                        onClick={() => handleStatusChange(item.id, 'Resolved')}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px] cursor-pointer"
+                      >
+                        Resolve & Close
+                      </button>
+                    )}
+                    {item.status === 'Resolved' && (
+                      <span className="text-[10px] text-[var(--muted)]">Closed</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

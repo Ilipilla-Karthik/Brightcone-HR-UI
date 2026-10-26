@@ -11,15 +11,8 @@ interface CompOffRecord {
   status: 'Credited' | 'Availed' | 'Expired';
 }
 
-const INITIAL_COMPOFF: CompOffRecord[] = [
-  { id: 'CO-501', employeeName: 'Deepak S', role: 'DevOps Engineer', workedDate: 'Sunday, Oct 18', hoursEarned: '1 Day (8h)', validUntil: '18 Jan 2027', status: 'Credited' },
-  { id: 'CO-502', employeeName: 'Rahul Varma', role: 'Backend Engineer', workedDate: 'Saturday, Oct 17', hoursEarned: '1 Day (8h)', validUntil: '17 Jan 2027', status: 'Credited' },
-  { id: 'CO-503', employeeName: 'Karthik Reddy', role: 'Principal AI Engineer', workedDate: 'Gandhi Jayanti, Oct 02', hoursEarned: '1 Day (8h)', validUntil: '02 Jan 2027', status: 'Availed' },
-  { id: 'CO-504', employeeName: 'Rohan Verma', role: 'Associate QA Engineer', workedDate: 'Sunday, Sep 20', hoursEarned: '0.5 Day (4h)', validUntil: '20 Dec 2026', status: 'Credited' },
-];
-
 export const CompOffTrackerPage: React.FC = () => {
-  const [records, setRecords] = useState<CompOffRecord[]>(INITIAL_COMPOFF);
+  const [records, setRecords] = useState<CompOffRecord[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({ employeeName: '', workedDate: '', hours: '1 Day (8h)' });
   const [toastMsg, setToastMsg] = useState('');
@@ -93,40 +86,46 @@ export const CompOffTrackerPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {records.map((r) => (
-                <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-4">
-                    <p className="font-semibold text-slate-900">{r.employeeName}</p>
-                    <p className="text-[11px] text-slate-500">{r.role}</p>
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap text-slate-700">{r.workedDate}</td>
-                  <td className="py-3 px-4 font-mono font-bold text-slate-900">{r.hoursEarned}</td>
-                  <td className="py-3 px-4 text-slate-500 whitespace-nowrap">{r.validUntil}</td>
-                  <td className="py-3 px-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      r.status === 'Credited' ? 'bg-emerald-100 text-emerald-800' :
-                      r.status === 'Availed' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'
-                    }`}>
-                      {r.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    {r.status === 'Credited' ? (
-                      <button
-                        onClick={() => {
-                          setRecords(records.map((rec) => (rec.id === r.id ? { ...rec, status: 'Availed' } : rec)));
-                          showToast('Comp-Off marked as availed');
-                        }}
-                        className="px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded font-medium"
-                      >
-                        Avail Comp-Off →
-                      </button>
-                    ) : (
-                      <span className="text-[11px] text-slate-400">Availed</span>
-                    )}
-                  </td>
+              {records.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-sm text-[var(--muted)]">No compensatory off credits on record. Click "Credit Comp-Off" to add.</td>
                 </tr>
-              ))}
+              ) : (
+                records.map((r) => (
+                  <tr key={r.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-4">
+                      <p className="font-semibold text-slate-900">{r.employeeName}</p>
+                      <p className="text-[11px] text-slate-500">{r.role}</p>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap text-slate-700">{r.workedDate}</td>
+                    <td className="py-3 px-4 font-mono font-bold text-slate-900">{r.hoursEarned}</td>
+                    <td className="py-3 px-4 text-slate-500 whitespace-nowrap">{r.validUntil}</td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        r.status === 'Credited' ? 'bg-emerald-100 text-emerald-800' :
+                        r.status === 'Availed' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-800'
+                      }`}>
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      {r.status === 'Credited' ? (
+                        <button
+                          onClick={() => {
+                            setRecords(records.map((rec) => (rec.id === r.id ? { ...rec, status: 'Availed' } : rec)));
+                            showToast('Comp-Off marked as availed');
+                          }}
+                          className="px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded font-medium"
+                        >
+                          Avail Comp-Off →
+                        </button>
+                      ) : (
+                        <span className="text-[11px] text-slate-400">Availed</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

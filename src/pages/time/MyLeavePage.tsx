@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
 
 interface LeaveRequestItem {
@@ -11,16 +11,29 @@ interface LeaveRequestItem {
   status: 'Approved' | 'Pending Review' | 'Rejected';
 }
 
-const DEFAULT_LEAVES: LeaveRequestItem[] = [
-  { id: 'lv-1', type: 'Casual Leave', from: '2026-11-02', to: '2026-11-03', days: 2, reason: 'Personal family occasion', status: 'Pending Review' },
-  { id: 'lv-2', type: 'Sick Leave', from: '2026-09-14', to: '2026-09-14', days: 1, reason: 'Viral fever / doctor consultation', status: 'Approved' },
-  { id: 'lv-3', type: 'Privilege Leave', from: '2026-07-20', to: '2026-07-24', days: 5, reason: 'Annual vacation', status: 'Approved' },
-];
-
 export const MyLeavePage: React.FC = () => {
-  const [requests, setRequests] = useState<LeaveRequestItem[]>(DEFAULT_LEAVES);
+  const [requests, setRequests] = useState<LeaveRequestItem[]>([]);
   const [isApplyOpen, setIsApplyOpen] = useState(false);
   const [form, setForm] = useState({ type: 'Casual Leave' as const, from: '', to: '', reason: '' });
+
+  useEffect(() => {
+    fetch('/api/v1/leave')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: any) => {
+        const list = Array.isArray(data) ? data : data?.value || [];
+        const mapped: LeaveRequestItem[] = list.map((l: any, idx: number) => ({
+          id: l.id ? String(l.id) : `lv-${idx + 1}`,
+          type: l.leave_type || 'Casual Leave',
+          from: l.start_date || '2026-11-01',
+          to: l.end_date || '2026-11-02',
+          days: l.days_count || 1,
+          reason: l.reason || 'Personal time off',
+          status: l.status || 'Pending Review',
+        }));
+        setRequests(mapped);
+      })
+      .catch(() => setRequests([]));
+  }, []);
 
   const handleApply = (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,21 +124,27 @@ export const MyLeavePage: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line)]">
-            {requests.map((r) => (
-              <tr key={r.id} className="hover:bg-[var(--surface-2)]/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-xs text-[var(--text)]">{r.type}</td>
-                <td className="py-3 px-4 text-xs font-mono text-[var(--muted)]">{r.from} → {r.to}</td>
-                <td className="py-3 px-4 text-xs font-mono font-semibold">{r.days} Days</td>
-                <td className="py-3 px-4 text-xs text-[var(--text)]">{r.reason}</td>
-                <td className="py-3 px-4 text-right">
-                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                    r.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                  }`}>
-                    {r.status}
-                  </span>
-                </td>
+            {requests.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-12 text-center text-sm text-[var(--muted)]">No leave applications found. Click "Apply for Leave" to submit a request.</td>
               </tr>
-            ))}
+            ) : (
+              requests.map((r) => (
+                <tr key={r.id} className="hover:bg-[var(--surface-2)]/50 transition-colors">
+                  <td className="py-3 px-4 font-semibold text-xs text-[var(--text)]">{r.type}</td>
+                  <td className="py-3 px-4 text-xs font-mono text-[var(--muted)]">{r.from} → {r.to}</td>
+                  <td className="py-3 px-4 text-xs font-mono font-semibold">{r.days} Days</td>
+                  <td className="py-3 px-4 text-xs text-[var(--text)]">{r.reason}</td>
+                  <td className="py-3 px-4 text-right">
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                      r.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                    }`}>
+                      {r.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

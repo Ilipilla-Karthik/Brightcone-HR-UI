@@ -12,15 +12,8 @@ interface FacilityItem {
   date: string;
 }
 
-const DEFAULT_FACILITIES: FacilityItem[] = [
-  { id: 'FAC-101', category: 'Desk & Seating', title: 'Ergonomic Standing Desk Motor Replacement', raisedBy: 'Karthik Reddy', location: 'AI Research Bay 4', priority: 'Medium', status: 'In Progress', date: '2026-10-22' },
-  { id: 'FAC-102', category: 'HVAC & Lighting', title: 'Conference Room B Air Conditioning Calibration', raisedBy: 'Ananya Rao', location: 'Floor 3 - Boardroom', priority: 'High', status: 'Open', date: '2026-10-24' },
-  { id: 'FAC-103', category: 'Meeting Room Audio', title: 'Zoom Rooms 4K Camera Firmware Update', raisedBy: 'Rahul Varma', location: 'Meeting Room Alpha', priority: 'Low', status: 'Resolved', date: '2026-10-18' },
-  { id: 'FAC-104', category: 'Cafeteria & Pantry', title: 'Espresso Machine Filter Replacement', raisedBy: 'Sneha Patel', location: 'Central Cafeteria', priority: 'Medium', status: 'Resolved', date: '2026-10-15' },
-];
-
 export const FacilitiesPage: React.FC = () => {
-  const [items, setItems] = useState<FacilityItem[]>(DEFAULT_FACILITIES);
+  const [items, setItems] = useState<FacilityItem[]>([]);
   const [filter, setFilter] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newReq, setNewReq] = useState({ category: 'Desk & Seating' as const, title: '', raisedBy: '', location: '', priority: 'Medium' as const });
@@ -111,54 +104,60 @@ export const FacilitiesPage: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line)] text-[var(--text)]">
-            {filtered.map((it) => (
-              <tr key={it.id} className="hover:bg-[var(--surface-2)]/30 transition-colors">
-                <td className="p-3.5 font-mono text-[10px] text-[var(--muted)]">{it.id}</td>
-                <td className="p-3.5 font-semibold text-[var(--text)]">{it.category}</td>
-                <td className="p-3.5 max-w-sm font-medium">{it.title}</td>
-                <td className="p-3.5 text-[var(--muted)]">{it.location}</td>
-                <td className="p-3.5">{it.raisedBy}</td>
-                <td className="p-3.5">
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                    it.priority === 'High' ? 'bg-rose-500/10 text-rose-500' :
-                    it.priority === 'Medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'
-                  }`}>
-                    {it.priority}
-                  </span>
-                </td>
-                <td className="p-3.5">
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                    it.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-500' :
-                    it.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' : 'bg-rose-500/10 text-rose-500'
-                  }`}>
-                    {it.status}
-                  </span>
-                </td>
-                <td className="p-3.5 text-right space-x-2">
-                  {it.status === 'Open' && (
-                    <button
-                      type="button"
-                      onClick={() => handleStatusChange(it.id, 'In Progress')}
-                      className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold text-[10px] cursor-pointer"
-                    >
-                      Assign Tech
-                    </button>
-                  )}
-                  {it.status === 'In Progress' && (
-                    <button
-                      type="button"
-                      onClick={() => handleStatusChange(it.id, 'Resolved')}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px] cursor-pointer"
-                    >
-                      Resolve
-                    </button>
-                  )}
-                  {it.status === 'Resolved' && (
-                    <span className="text-[10px] text-[var(--muted)]">Completed</span>
-                  )}
-                </td>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={8} className="p-8 text-center text-[var(--muted)]">No facility or workplace maintenance requests found.</td>
               </tr>
-            ))}
+            ) : (
+              filtered.map((it) => (
+                <tr key={it.id} className="hover:bg-[var(--surface-2)]/30 transition-colors">
+                  <td className="p-3.5 font-mono text-[10px] text-[var(--muted)]">{it.id}</td>
+                  <td className="p-3.5 font-semibold text-[var(--text)]">{it.category}</td>
+                  <td className="p-3.5 max-w-sm font-medium">{it.title}</td>
+                  <td className="p-3.5 text-[var(--muted)]">{it.location}</td>
+                  <td className="p-3.5">{it.raisedBy}</td>
+                  <td className="p-3.5">
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                      it.priority === 'High' ? 'bg-rose-500/10 text-rose-500' :
+                      it.priority === 'Medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'
+                    }`}>
+                      {it.priority}
+                    </span>
+                  </td>
+                  <td className="p-3.5">
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                      it.status === 'Resolved' ? 'bg-emerald-500/10 text-emerald-500' :
+                      it.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' : 'bg-rose-500/10 text-rose-500'
+                    }`}>
+                      {it.status}
+                    </span>
+                  </td>
+                  <td className="p-3.5 text-right space-x-2">
+                    {it.status === 'Open' && (
+                      <button
+                        type="button"
+                        onClick={() => handleStatusChange(it.id, 'In Progress')}
+                        className="px-2.5 py-1 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-semibold text-[10px] cursor-pointer"
+                      >
+                        Assign Tech
+                      </button>
+                    )}
+                    {it.status === 'In Progress' && (
+                      <button
+                        type="button"
+                        onClick={() => handleStatusChange(it.id, 'Resolved')}
+                        className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px] cursor-pointer"
+                      >
+                        Resolve
+                      </button>
+                    )}
+                    {it.status === 'Resolved' && (
+                      <span className="text-[10px] text-[var(--muted)]">Completed</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

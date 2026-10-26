@@ -36,13 +36,8 @@ export const PayrollAdminPage: React.FC = () => {
   const [variances, setVariances] = useState<VarianceItem[]>([]);
   const [registerList, setRegisterList] = useState<RegisterItem[]>([]);
 
-  const [currentStep, setCurrentStep] = useState<number>(3);
-  const [inputs, setInputs] = useState<OneTimeInput[]>([
-    { id: "IN-1", emp: "Karthik Reddy", type: "Performance Bonus", amt: 150000, notes: "Q3 Top Achiever" },
-    { id: "IN-2", emp: "Arjun Nair", type: "Travel Reimbursement", amt: 48200, notes: "Client Visit Mumbai" },
-    { id: "IN-3", emp: "Pooja Hegde", type: "Referral Bonus", amt: 35000, notes: "Backend Eng Hire" },
-    { id: "IN-4", emp: "Sameer Joshi", type: "Notice Period Deduction", amt: -12500, notes: "Shortfall recovery" },
-  ]);
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [inputs, setInputs] = useState<OneTimeInput[]>([]);
 
   const [showAddInputModal, setShowAddInputModal] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);

@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Plus, X } from "lucide-react";
 import { type OneTimeInput, formatINR } from "./types";
 
@@ -49,41 +49,49 @@ export const AdjustmentsStep: React.FC<Props> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 font-sans">
-            {inputs.map((item) => (
-              <tr key={item.id} className="hover:bg-slate-50/50">
-                <td className="py-3 px-4 font-semibold text-slate-900">{item.emp}</td>
-                <td className="py-3 px-4">
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                      item.amt >= 0
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                        : "bg-rose-50 text-rose-700 border border-rose-200"
+            {inputs.length === 0 ? (
+              <tr>
+                <td colSpan={isLocked ? 4 : 5} className="py-8 text-center text-slate-400">
+                  No one-time bonuses or deductions added for this cycle. Click &apos;Add One-Time Input&apos; to add adjustments.
+                </td>
+              </tr>
+            ) : (
+              inputs.map((item) => (
+                <tr key={item.id} className="hover:bg-slate-50/50">
+                  <td className="py-3 px-4 font-semibold text-slate-900">{item.emp}</td>
+                  <td className="py-3 px-4">
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                        item.amt >= 0
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : "bg-rose-50 text-rose-700 border border-rose-200"
+                      }`}
+                    >
+                      {item.type}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-slate-600">{item.notes || "—"}</td>
+                  <td
+                    className={`py-3 px-4 text-right font-bold tabular-nums ${
+                      item.amt >= 0 ? "text-emerald-600" : "text-rose-600"
                     }`}
                   >
-                    {item.type}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-slate-600">{item.notes || "—"}</td>
-                <td
-                  className={`py-3 px-4 text-right font-bold tabular-nums ${
-                    item.amt >= 0 ? "text-emerald-600" : "text-rose-600"
-                  }`}
-                >
-                  {item.amt >= 0 ? `+${formatINR(item.amt)}` : `-${formatINR(Math.abs(item.amt))}`}
-                </td>
-                {!isLocked && (
-                  <td className="py-3 px-4 text-center">
-                    <button
-                      onClick={() => onRemoveInput(item.id)}
-                      className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                      title="Delete"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    {item.amt >= 0 ? `+${formatINR(item.amt)}` : `-${formatINR(Math.abs(item.amt))}`}
                   </td>
-                )}
-              </tr>
-            ))}
+                  {!isLocked && (
+                    <td className="py-3 px-4 text-center">
+                      <button
+                        onClick={() => onRemoveInput(item.id)}
+                        className="p-1 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                        title="Delete"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

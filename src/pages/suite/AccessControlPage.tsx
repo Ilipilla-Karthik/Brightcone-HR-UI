@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
+import { fetchEmployees } from '../../services/peopleApi';
 
 interface AdminUser {
   id: string;
@@ -21,17 +22,21 @@ export const AccessControlPage: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
-    api.get('/admin/users')
-      .then(r => { if (mounted) setUsers(r.data || []); })
+    fetchEmployees()
+      .then(emps => {
+        if (mounted) {
+          setUsers(emps.map(e => ({
+            id: e.employee_code,
+            name: e.full_name,
+            email: e.work_email,
+            role: e.department === 'Leadership' || e.department === 'People Ops' ? 'hr_admin' : e.manager_name ? 'employee' : 'manager',
+            status: e.status?.toLowerCase() === 'active' ? 'active' : 'inactive',
+            last_login: e.joined || 'Recent',
+          })));
+        }
+      })
       .catch(() => {
-        if (mounted) setUsers([
-          { id: 'u1', name: 'Naresh Vemparala', email: 'naresh@brightcone.ai', role: 'hr_admin', status: 'active', last_login: '2026-10-26 08:00' },
-          { id: 'u2', name: 'Ananya Rao', email: 'ananya.rao@brightcone.ai', role: 'hr_admin', status: 'active', last_login: '2026-10-26 07:45' },
-          { id: 'u3', name: 'Rahul Sharma', email: 'rahul@brightcone.ai', role: 'employee', status: 'active', last_login: '2026-10-25 18:30' },
-          { id: 'u4', name: 'Priya Nair', email: 'priya@brightcone.ai', role: 'employee', status: 'active', last_login: '2026-10-25 17:10' },
-          { id: 'u5', name: 'Vikram Singh', email: 'vikram@brightcone.ai', role: 'manager', status: 'active', last_login: '2026-10-24 14:20' },
-          { id: 'u6', name: 'Deepa Krishnan', email: 'deepa@brightcone.ai', role: 'employee', status: 'inactive', last_login: '2026-10-10 09:00' },
-        ]);
+        if (mounted) setUsers([]);
       })
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };

@@ -1,21 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ic } from '../../components/icons';
-
-const APPS = [
-  { key: 'people', name: 'People', color: '#12A58E', desc: 'Employee directory, profiles and org chart', metric: '148', metricLabel: 'team members', to: '/people' },
-  { key: 'recruit', name: 'Recruit', color: '#7C5CFF', desc: 'Job postings, candidates and interview pipeline', metric: '18', metricLabel: 'active candidates', to: '/recruit' },
-  { key: 'payroll', name: 'Payroll', color: '#0F9F6E', desc: 'Salary register, statutory filings and payslips', metric: '₹42.8L', metricLabel: 'October payroll', to: '/payroll' },
-  { key: 'expense', name: 'Expense', color: '#E07A1D', desc: 'Employee reimbursement claims and travel receipts', metric: '8', metricLabel: 'claims to review', to: '/expense' },
-  { key: 'sign', name: 'Sign', color: '#D9466F', desc: 'Offers, NDAs and policies for e-signature', metric: '12', metricLabel: 'pending envelopes', to: '/doc-sign/dashboard' },
-  { key: 'connect', name: 'Connect', color: '#0BA6CC', desc: 'Company feed, celebrations, kudos and announcements', metric: '4', metricLabel: 'kudos this week', to: '/engagement' },
-  { key: 'learn', name: 'Learn', color: '#6366F1', desc: 'Mandatory compliance training and certifications', metric: '84%', metricLabel: 'compliance rate', to: '/learn' },
-  { key: 'shift', name: 'Shift', color: '#3B82C4', desc: 'Rosters, shift swaps, overtime and digital clock cards', metric: '24', metricLabel: 'on duty now', to: '/time' },
-  { key: 'plus', name: 'People Plus', color: '#0B87FF', desc: 'Cross-app analytics, executive search and suite audit', metric: '9', metricLabel: 'active modules', to: '/advanced-hr' },
-];
+import { fetchEmployees, type EmployeeApiItem } from '../../services/peopleApi';
+import { recruitApi, Candidate } from '../../services/recruitApi';
 
 export const AdminSuiteDashboard: React.FC<{ onOpenLauncher?: () => void }> = ({ onOpenLauncher }) => {
   const navigate = useNavigate();
+  const [employees, setEmployees] = useState<EmployeeApiItem[]>([]);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+
+  useEffect(() => {
+    fetchEmployees().then(setEmployees).catch(() => {});
+    recruitApi.getCandidates().then(setCandidates).catch(() => {});
+  }, []);
+
+  const apps = [
+    { key: 'people', name: 'People', color: '#12A58E', desc: 'Employee directory, profiles and org chart', metric: `${employees.length}`, metricLabel: 'team members', to: '/people' },
+    { key: 'recruit', name: 'Recruit', color: '#7C5CFF', desc: 'Job postings, candidates and interview pipeline', metric: `${candidates.length}`, metricLabel: 'active candidates', to: '/recruit' },
+    { key: 'payroll', name: 'Payroll', color: '#0F9F6E', desc: 'Salary register, statutory filings and payslips', metric: '₹42.8L', metricLabel: 'monthly payroll', to: '/payroll' },
+    { key: 'expense', name: 'Expense', color: '#E07A1D', desc: 'Employee reimbursement claims and travel receipts', metric: '0', metricLabel: 'claims to review', to: '/expense' },
+    { key: 'sign', name: 'Sign', color: '#D9466F', desc: 'Offers, NDAs and policies for e-signature', metric: '0', metricLabel: 'pending envelopes', to: '/doc-sign/dashboard' },
+    { key: 'connect', name: 'Connect', color: '#0BA6CC', desc: 'Company feed, celebrations, kudos and announcements', metric: '4', metricLabel: 'kudos this week', to: '/engagement' },
+    { key: 'learn', name: 'Learn', color: '#6366F1', desc: 'Mandatory compliance training and certifications', metric: '100%', metricLabel: 'compliance rate', to: '/learn' },
+    { key: 'shift', name: 'Shift', color: '#3B82C4', desc: 'Rosters, shift swaps, overtime and digital clock cards', metric: '4', metricLabel: 'shifts scheduled', to: '/time' },
+    { key: 'plus', name: 'People Plus', color: '#0B87FF', desc: 'Cross-app analytics, executive search and suite audit', metric: '9', metricLabel: 'active modules', to: '/advanced-hr' },
+  ];
+
   const h = new Date().getHours();
   const greeting = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   const todayStr = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -41,22 +51,22 @@ export const AdminSuiteDashboard: React.FC<{ onOpenLauncher?: () => void }> = ({
       <div className="grid g4 mb-6">
         <div className="card stat">
           <div className="k"><i>{ic('users', 16)}</i>Headcount</div>
-          <div className="v font-['Sora']">148</div>
-          <div className="d text-muted">4 on probation, 2 serving notice</div>
+          <div className="v font-['Sora']">{employees.length}</div>
+          <div className="d text-muted">All active database records</div>
         </div>
         <div className="card stat">
           <div className="k"><i>{ic('inbox', 16)}</i>Pending approvals</div>
-          <div className="v font-['Sora'] text-amber-500">7</div>
-          <div className="d text-muted">Across all apps</div>
+          <div className="v font-['Sora'] text-emerald-600">0</div>
+          <div className="d text-muted">All requests resolved</div>
         </div>
         <div className="card stat">
           <div className="k"><i>{ic('pay', 16)}</i>Payroll, October</div>
-          <div className="v font-['Sora'] text-emerald-600">Step 1 of 5</div>
+          <div className="v font-['Sora'] text-emerald-600">Active</div>
           <div className="d text-muted">Draft register</div>
         </div>
         <div className="card stat">
           <div className="k"><i>{ic('shield', 16)}</i>Training compliance</div>
-          <div className="v font-['Sora'] text-[#6366F1]">84%</div>
+          <div className="v font-['Sora'] text-[#6366F1]">100%</div>
           <div className="d text-muted">Mandatory courses</div>
         </div>
       </div>
@@ -64,7 +74,7 @@ export const AdminSuiteDashboard: React.FC<{ onOpenLauncher?: () => void }> = ({
       {/* 9 Suite Apps */}
       <h2 className="sect text-sm font-bold uppercase tracking-wider text-[var(--muted)] mb-3">Apps</h2>
       <div className="apps-grid mb-6">
-        {APPS.map((a) => (
+        {apps.map((a) => (
           <div
             key={a.key}
             className="app-card cursor-pointer"
@@ -118,30 +128,14 @@ export const AdminSuiteDashboard: React.FC<{ onOpenLauncher?: () => void }> = ({
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-[var(--text)]">Approvals waiting</h3>
-            <button type="button" className="link text-xs text-[var(--brand)] hover:underline" onClick={() => navigate('/people')}>
-              Review all 7
+            <button type="button" className="link text-xs text-[var(--brand)] hover:underline" onClick={() => navigate('/suite/approvals')}>
+              Review all
             </button>
           </div>
           <div className="list divide-y divide-[var(--line)]">
-            {[
-              { emp: 'Divya Kulkarni', mod: 'Leave', what: 'Casual leave, Oct 28 - 29 (2 days)' },
-              { emp: 'Farhan Ali', mod: 'Expense', what: 'Client dinner reimb. ₹3,420' },
-              { emp: 'Sneha Iyer', mod: 'Attendance', what: 'Regularise check-in for Oct 22' },
-              { emp: 'Vikram Singh', mod: 'DocSign', what: 'IP Agreement awaiting HR counter-sign' },
-            ].map((appr, idx) => (
-              <div key={idx} className="row py-2.5 flex items-center gap-3">
-                <span className="av w-7 h-7 rounded-full bg-[var(--brand)] text-white text-xs font-bold flex items-center justify-center shrink-0">
-                  {appr.emp.split(' ').map(n => n[0]).join('')}
-                </span>
-                <div className="grow min-w-0">
-                  <div className="flex items-center gap-2">
-                    <b className="text-xs text-[var(--text)] truncate">{appr.emp}</b>
-                    <span className="pill text-[10px] px-2 py-0.5 rounded-full bg-[var(--surface-2)] text-[var(--muted)] font-semibold">{appr.mod}</span>
-                  </div>
-                  <div className="text-[11px] text-[var(--muted)] truncate">{appr.what}</div>
-                </div>
-              </div>
-            ))}
+            <div className="py-6 text-center text-xs text-[var(--muted)]">
+              No pending approvals requiring immediate action.
+            </div>
           </div>
         </div>
       </div>
@@ -174,7 +168,7 @@ export const AdminSuiteDashboard: React.FC<{ onOpenLauncher?: () => void }> = ({
           <div className="list divide-y divide-[var(--line)]">
             {[
               { name: 'Karthik Reddy', type: 'Work Anniversary', detail: '3 years at Brightcone' },
-              { name: 'Emily Carter', type: 'Birthday', detail: 'October 29' },
+              { name: 'Ananya Rao', type: 'Birthday', detail: 'October 29' },
               { name: 'Rahul Varma', type: 'Work Anniversary', detail: '2 years at Brightcone' },
             ].map((c, i) => (
               <div key={i} className="row py-2 flex items-center gap-3">

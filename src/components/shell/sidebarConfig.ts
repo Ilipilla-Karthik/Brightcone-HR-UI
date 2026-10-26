@@ -64,14 +64,14 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
   // 1. Sign Module
   if (p.startsWith('/doc-sign') || p.startsWith('/sign') || p.startsWith('/doc_sign')) {
     if (role === 'employee') {
-      return [{ title: 'DOCUMENTS', items: [{ label: 'My documents', to: '/doc-sign/flow', badge: 'Action', icon: ic('pen', 15) }] }];
+      return [{ title: 'DOCUMENTS', items: [{ label: 'My documents', to: '/doc-sign/flow', icon: ic('pen', 15) }] }];
     }
     return [
       { title: 'OVERVIEW', items: [{ label: 'Dashboard', to: '/doc-sign/dashboard', icon: ic('dashboard', 15) }] },
       {
         title: 'DOCUMENTS',
         items: [
-          { label: 'Documents', to: '/doc-sign/requests', badge: 4, icon: ic('pen', 15) },
+          { label: 'Documents', to: '/doc-sign/requests', icon: ic('pen', 15) },
           { label: 'Templates', to: '/doc-sign/templates', icon: ic('doc', 15) },
         ],
       },
@@ -134,7 +134,7 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
         title: 'PAYROLL OPERATIONS',
         items: [
           { label: 'Payroll overview', to: '/payroll', icon: ic('dashboard', 15) },
-          { label: 'Run payroll wizard', to: '/payroll/admin', badge: 'Run', icon: ic('pay', 15) },
+          { label: 'Run payroll wizard', to: '/payroll/admin', icon: ic('pay', 15) },
           { label: 'Monthly payroll', to: '/payroll/monthly', icon: ic('doc', 15) },
           { label: 'Payslip records', to: '/payroll/records', icon: ic('receipt', 15) },
         ],
@@ -167,7 +167,7 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
       {
         title: 'EXPENSE MANAGEMENT',
         items: [
-          { label: 'Approval queue', to: '/expense/finance', badge: 3, icon: ic('receipt', 15) },
+          { label: 'Approval queue', to: '/expense/finance', icon: ic('receipt', 15) },
           { label: 'Office expenses', to: '/expense/office', icon: ic('pay', 15) },
           { label: 'Submit claim', to: '/expense', icon: ic('plus', 15) },
         ],
@@ -181,9 +181,7 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
       return [
         {
           title: 'LEARNING',
-          items: [
-            { label: 'My Learning', to: '/learn/my-learning', icon: ic('learn', 15) },
-          ],
+          items: [{ label: 'My Learning', to: '/learn/my-learning', icon: ic('learn', 15) }],
         },
         {
           title: 'SKILLS & RECORDS',
@@ -276,7 +274,7 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
         items: [
           { label: 'Employees', to: '/people', icon: ic('users', 15) },
           { label: 'Org structure', to: '/people/org-chart', icon: ic('org', 15) },
-          { label: 'Onboarding', to: '/people/onboarding', badge: 2, icon: ic('plus', 15) },
+          { label: 'Onboarding', to: '/people/onboarding', icon: ic('plus', 15) },
           { label: 'Exits & offboarding', to: '/people/exit', icon: ic('logout', 15) },
         ],
       },
@@ -310,19 +308,6 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
           { label: 'Vendor management', to: '/people/vendors', icon: ic('briefcase', 15) },
         ],
       },
-      {
-        title: 'TIME OFF',
-        items: [{ label: 'Leave management', to: '/time/leave', icon: ic('calendar', 15) }],
-      },
-      {
-        title: 'OPERATIONS',
-        items: [
-          { label: 'Performance', to: '/people/performance', icon: ic('chart', 15) },
-          { label: 'Assets', to: '/people/assets', icon: ic('laptop', 15) },
-          { label: 'Documents & letters', to: '/people/documents', icon: ic('doc', 15) },
-          { label: 'Helpdesk queue', to: '/people/helpdesk', icon: ic('chat', 15) },
-        ],
-      },
     ];
   }
 
@@ -341,10 +326,10 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
         title: 'PIPELINE & SOURCING',
         items: [
           { label: 'Recruit dashboard', to: '/recruit/dashboard', icon: ic('dashboard', 15) },
-          { label: 'Candidate tracker', to: '/recruit/candidate-tracker', badge: 8, icon: ic('users', 15) },
+          { label: 'Candidate tracker', to: '/recruit/candidate-tracker', icon: ic('users', 15) },
           { label: 'Interview scheduling', to: '/recruit/interviews', icon: ic('clock', 15) },
           { label: 'Manpower requisitions', to: '/recruit/manpower', icon: ic('briefcase', 15) },
-          { label: 'Jobs & pipelines', to: '/recruit/admin', badge: 4, icon: ic('briefcase', 15) },
+          { label: 'Jobs & pipelines', to: '/recruit/admin', icon: ic('briefcase', 15) },
         ],
       },
       {
@@ -368,7 +353,7 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
         title: 'OVERVIEW',
         items: [
           { label: 'Suite dashboard', to: '/suite', icon: ic('grid', 15) },
-          { label: 'Approvals inbox', to: '/suite/approvals', badge: 10, icon: ic('inbox', 15) },
+          { label: 'Approvals inbox', to: '/suite/approvals', icon: ic('inbox', 15) },
           { label: 'Reports & analytics', to: '/suite/reports', icon: ic('chart', 15) },
         ],
       },
@@ -403,7 +388,7 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
       title: 'EXECUTIVE SUITE',
       items: [
         { label: 'Suite dashboard', to: '/suite', icon: ic('grid', 15) },
-        { label: 'Approvals inbox', to: '/suite/approvals', badge: 10, icon: ic('inbox', 15) },
+        { label: 'Approvals inbox', to: '/suite/approvals', icon: ic('inbox', 15) },
         { label: 'Reports & analytics', to: '/suite/reports', icon: ic('chart', 15) },
       ],
     },

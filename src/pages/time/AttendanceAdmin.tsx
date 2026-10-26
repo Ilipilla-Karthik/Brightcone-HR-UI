@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface AttendanceLog {
   id: string;
@@ -12,18 +12,30 @@ interface AttendanceLog {
   regularization?: 'Pending' | 'Approved' | null;
 }
 
-const DEFAULT_ATTENDANCE: AttendanceLog[] = [
-  { id: 'att-1', name: 'Karthik Reddy', employeeId: 'BC-1012', department: 'AI Research', clockIn: '09:15 AM', clockOut: '06:45 PM', duration: '9h 30m', status: 'Present' },
-  { id: 'att-2', name: 'Ananya Rao', employeeId: 'BC-1004', department: 'People Ops', clockIn: '09:28 AM', clockOut: '06:30 PM', duration: '9h 02m', status: 'Present' },
-  { id: 'att-3', name: 'Rahul Varma', employeeId: 'BC-1020', department: 'Engineering', clockIn: '10:12 AM', clockOut: 'In Progress', duration: '7h 15m', status: 'Late', regularization: 'Pending' },
-  { id: 'att-4', name: 'Priya Sharma', employeeId: 'BC-1025', department: 'Engineering', clockIn: '09:30 AM', clockOut: '06:30 PM', duration: '9h 00m', status: 'WFH' },
-  { id: 'att-5', name: 'Vikram Malhotra', employeeId: 'BC-1031', department: 'Engineering', clockIn: '09:05 AM', clockOut: '07:10 PM', duration: '10h 05m', status: 'Present' },
-  { id: 'att-6', name: 'Deepak S', employeeId: 'BC-1071', department: 'Engineering', clockIn: '-', clockOut: '-', duration: '0h', status: 'On Leave' },
-];
-
 export const AttendanceAdmin: React.FC = () => {
-  const [logs, setLogs] = useState<AttendanceLog[]>(DEFAULT_ATTENDANCE);
+  const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [filter, setFilter] = useState('All');
+
+  useEffect(() => {
+    fetch('/api/v1/attendance')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: any) => {
+        const list = Array.isArray(data) ? data : data?.value || [];
+        const mapped: AttendanceLog[] = list.map((a: any, idx: number) => ({
+          id: a.id ? String(a.id) : `att-${idx + 1}`,
+          name: a.employee_name || a.full_name || 'Staff Member',
+          employeeId: a.employee_code || `BC-100${idx + 1}`,
+          department: a.department || 'Engineering',
+          clockIn: a.clock_in || '09:15 AM',
+          clockOut: a.clock_out || '06:30 PM',
+          duration: a.duration || '9h 15m',
+          status: (a.status || 'Present') as any,
+          regularization: a.regularization || null,
+        }));
+        setLogs(mapped);
+      })
+      .catch(() => setLogs([]));
+  }, []);
 
   const filtered = logs.filter((l) => filter === 'All' || l.status === filter);
 
@@ -98,43 +110,49 @@ export const AttendanceAdmin: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line)]">
-            {filtered.map((log) => (
-              <tr key={log.id} className="hover:bg-[var(--surface-2)]/50 transition-colors">
-                <td className="py-3 px-4">
-                  <b className="block text-xs font-semibold text-[var(--text)]">{log.name}</b>
-                  <span className="block text-[11px] font-mono text-[var(--muted)]">{log.employeeId}</span>
-                </td>
-                <td className="py-3 px-4 text-xs font-medium text-[var(--text)]">{log.department}</td>
-                <td className="py-3 px-4 text-xs font-mono">{log.clockIn}</td>
-                <td className="py-3 px-4 text-xs font-mono">{log.clockOut}</td>
-                <td className="py-3 px-4 text-xs font-mono font-semibold">{log.duration}</td>
-                <td className="py-3 px-4">
-                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                    log.status === 'Present' ? 'bg-emerald-100 text-emerald-700' :
-                    log.status === 'WFH' ? 'bg-sky-100 text-sky-700' :
-                    log.status === 'Late' ? 'bg-amber-100 text-amber-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {log.status}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-right">
-                  {log.regularization === 'Pending' ? (
-                    <button
-                      type="button"
-                      onClick={() => approveRegularization(log.id)}
-                      className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                    >
-                      Approve Regularization
-                    </button>
-                  ) : log.regularization === 'Approved' ? (
-                    <span className="text-xs text-emerald-600 font-semibold">Regularized ✓</span>
-                  ) : (
-                    <span className="text-xs text-[var(--muted)]">-</span>
-                  )}
-                </td>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="py-12 text-center text-sm text-[var(--muted)]">No attendance records found for today.</td>
               </tr>
-            ))}
+            ) : (
+              filtered.map((log) => (
+                <tr key={log.id} className="hover:bg-[var(--surface-2)]/50 transition-colors">
+                  <td className="py-3 px-4">
+                    <b className="block text-xs font-semibold text-[var(--text)]">{log.name}</b>
+                    <span className="block text-[11px] font-mono text-[var(--muted)]">{log.employeeId}</span>
+                  </td>
+                  <td className="py-3 px-4 text-xs font-medium text-[var(--text)]">{log.department}</td>
+                  <td className="py-3 px-4 text-xs font-mono">{log.clockIn}</td>
+                  <td className="py-3 px-4 text-xs font-mono">{log.clockOut}</td>
+                  <td className="py-3 px-4 text-xs font-mono font-semibold">{log.duration}</td>
+                  <td className="py-3 px-4">
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                      log.status === 'Present' ? 'bg-emerald-100 text-emerald-700' :
+                      log.status === 'WFH' ? 'bg-sky-100 text-sky-700' :
+                      log.status === 'Late' ? 'bg-amber-100 text-amber-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {log.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-right">
+                    {log.regularization === 'Pending' ? (
+                      <button
+                        type="button"
+                        onClick={() => approveRegularization(log.id)}
+                        className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                      >
+                        Approve Regularization
+                      </button>
+                    ) : log.regularization === 'Approved' ? (
+                      <span className="text-xs text-emerald-600 font-semibold">Regularized ✓</span>
+                    ) : (
+                      <span className="text-xs text-[var(--muted)]">-</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

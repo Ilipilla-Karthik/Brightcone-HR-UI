@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { Sparkles, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import type { SalaryRevision } from "./types";
 
@@ -44,56 +44,64 @@ export const RevisionsTab: React.FC<Props> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-line/60">
-              {revisions.map((rev) => (
-                <tr key={rev.id} className="hover:bg-surface-secondary/50 transition-colors">
-                  <td className="p-3.5 pl-5 font-mono font-semibold text-txt">{rev.id}</td>
-                  <td className="p-3.5 font-medium text-txt">{rev.employee_name}</td>
-                  <td className="p-3.5 font-sora text-txt-muted">
-                    ₹{rev.current_gross.toLocaleString("en-IN")}
-                  </td>
-                  <td className="p-3.5 font-sora font-semibold text-txt">
-                    ₹{rev.proposed_gross.toLocaleString("en-IN")}
-                  </td>
-                  <td className="p-3.5">
-                    <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
-                      <ArrowUpRight className="w-3.5 h-3.5" />
-                      +{rev.increment_percent}%
-                    </span>
-                  </td>
-                  <td className="p-3.5 text-txt-faint">{rev.effective_date}</td>
-                  <td className="p-3.5">
-                    <span className="px-2 py-0.5 rounded-md bg-surface-secondary border border-line text-txt-muted font-medium">
-                      {rev.reason}
-                    </span>
-                  </td>
-                  <td className="p-3.5">
-                    <span
-                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                        rev.status === "Approved"
-                          ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400"
-                          : "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400"
-                      }`}
-                    >
-                      {rev.status}
-                    </span>
-                  </td>
-                  <td className="p-3.5 pr-5 text-right">
-                    {rev.status === "Approved" ? (
-                      <span className="text-[11px] text-txt-faint inline-flex items-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        Approved
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => onApproveRevision(rev.id)}
-                        className="px-3 py-1 rounded-xl bg-brand hover:bg-brand/90 text-white font-semibold shadow-sm transition-all text-xs"
-                      >
-                        Approve Revision
-                      </button>
-                    )}
+              {revisions.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="p-8 text-center text-txt-muted text-xs">
+                    No pending salary revision proposals. Use &apos;Propose Revision&apos; to initiate a review.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                revisions.map((rev) => (
+                  <tr key={rev.id} className="hover:bg-surface-secondary/50 transition-colors">
+                    <td className="p-3.5 pl-5 font-mono font-semibold text-txt">{rev.id}</td>
+                    <td className="p-3.5 font-medium text-txt">{rev.employee_name}</td>
+                    <td className="p-3.5 font-sora text-txt-muted">
+                      ₹{rev.current_gross.toLocaleString("en-IN")}
+                    </td>
+                    <td className="p-3.5 font-sora font-semibold text-txt">
+                      ₹{rev.proposed_gross.toLocaleString("en-IN")}
+                    </td>
+                    <td className="p-3.5">
+                      <span className="inline-flex items-center gap-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                        <ArrowUpRight className="w-3.5 h-3.5" />
+                        +{rev.increment_percent}%
+                      </span>
+                    </td>
+                    <td className="p-3.5 text-txt-faint">{rev.effective_date}</td>
+                    <td className="p-3.5">
+                      <span className="px-2 py-0.5 rounded-md bg-surface-secondary border border-line text-txt-muted font-medium">
+                        {rev.reason}
+                      </span>
+                    </td>
+                    <td className="p-3.5">
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+                          rev.status === "Approved"
+                            ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400"
+                            : "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400"
+                        }`}
+                      >
+                        {rev.status}
+                      </span>
+                    </td>
+                    <td className="p-3.5 pr-5 text-right">
+                      {rev.status === "Approved" ? (
+                        <span className="text-[11px] text-txt-faint inline-flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Approved
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => onApproveRevision(rev.id)}
+                          className="px-3 py-1 rounded-xl bg-brand hover:bg-brand/90 text-white font-semibold shadow-sm transition-all text-xs"
+                        >
+                          Approve Revision
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

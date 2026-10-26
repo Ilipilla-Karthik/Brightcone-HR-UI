@@ -10,15 +10,8 @@ interface WFHRequest {
   status: 'Approved' | 'Pending' | 'Rejected';
 }
 
-const INITIAL_WFH: WFHRequest[] = [
-  { id: 'WFH-101', employeeName: 'Karthik Reddy', role: 'Principal AI Engineer', date: 'Tomorrow, Oct 26', reason: 'Focus day for deep learning architecture benchmarks', status: 'Approved' },
-  { id: 'WFH-102', employeeName: 'Priya Sharma', role: 'Senior Frontend Engineer', date: 'Oct 28, 2026', reason: 'Home broadband fiber maintenance', status: 'Approved' },
-  { id: 'WFH-103', employeeName: 'Deepak S', role: 'DevOps Engineer', date: 'Oct 29, 2026', reason: 'On-call nocturnal release deployment shift', status: 'Pending' },
-  { id: 'WFH-104', employeeName: 'Rohan Verma', role: 'Associate QA Engineer', date: 'Oct 30, 2026', reason: 'Personal errands', status: 'Pending' },
-];
-
 export const WorkFromHomePage: React.FC = () => {
-  const [requests, setRequests] = useState<WFHRequest[]>(INITIAL_WFH);
+  const [requests, setRequests] = useState<WFHRequest[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({ date: '', reason: '' });
   const [toastMsg, setToastMsg] = useState('');
@@ -96,38 +89,44 @@ export const WorkFromHomePage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {requests.map((r) => (
-                <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-4">
-                    <p className="font-semibold text-slate-900">{r.employeeName}</p>
-                    <p className="text-[11px] text-slate-500">{r.role}</p>
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-700">{r.date}</td>
-                  <td className="py-3 px-4 text-slate-600 max-w-sm truncate">{r.reason}</td>
-                  <td className="py-3 px-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      r.status === 'Approved' ? 'bg-emerald-100 text-emerald-800' :
-                      r.status === 'Pending' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
-                    }`}>
-                      {r.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right whitespace-nowrap space-x-1.5">
-                    {r.status === 'Pending' ? (
-                      <>
-                        <button onClick={() => handleAction(r.id, 'Approved')} className="px-2 py-1 bg-emerald-600 text-white hover:bg-emerald-700 rounded text-[11px] font-semibold">
-                          Approve
-                        </button>
-                        <button onClick={() => handleAction(r.id, 'Rejected')} className="px-2 py-1 text-rose-600 hover:bg-rose-50 rounded text-[11px]">
-                          Decline
-                        </button>
-                      </>
-                    ) : (
-                      <span className="text-[11px] text-slate-400">Processed</span>
-                    )}
-                  </td>
+              {requests.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-sm text-[var(--muted)]">No active work from home applications found. Click "Apply for WFH" to submit.</td>
                 </tr>
-              ))}
+              ) : (
+                requests.map((r) => (
+                  <tr key={r.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-4">
+                      <p className="font-semibold text-slate-900">{r.employeeName}</p>
+                      <p className="text-[11px] text-slate-500">{r.role}</p>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-700">{r.date}</td>
+                    <td className="py-3 px-4 text-slate-600 max-w-sm truncate">{r.reason}</td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        r.status === 'Approved' ? 'bg-emerald-100 text-emerald-800' :
+                        r.status === 'Pending' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'
+                      }`}>
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right whitespace-nowrap space-x-1.5">
+                      {r.status === 'Pending' ? (
+                        <>
+                          <button onClick={() => handleAction(r.id, 'Approved')} className="px-2 py-1 bg-emerald-600 text-white hover:bg-emerald-700 rounded text-[11px] font-semibold">
+                            Approve
+                          </button>
+                          <button onClick={() => handleAction(r.id, 'Rejected')} className="px-2 py-1 text-rose-600 hover:bg-rose-50 rounded text-[11px]">
+                            Decline
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-[11px] text-slate-400">Processed</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

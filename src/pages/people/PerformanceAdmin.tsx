@@ -11,17 +11,9 @@ interface GoalItem {
   status: 'In Progress' | 'Achieved' | 'Behind';
 }
 
-const DEFAULT_GOALS: GoalItem[] = [
-  { id: 'G-101', employee: 'Rahul Varma (BC-1020)', title: 'Achieve Sub-50ms API Latency on Microservices', category: 'Engineering', progress: 75, status: 'In Progress' },
-  { id: 'G-102', employee: 'Priya Sharma (BC-1025)', title: 'Design System Migration to Tailwind v4 Pure CSS', category: 'Engineering', progress: 90, status: 'In Progress' },
-  { id: 'G-103', employee: 'Karthik Reddy (BC-1012)', title: 'Fine-tune Domain-Specific LLM on HR & Payroll Data', category: 'Company Impact', progress: 100, status: 'Achieved' },
-  { id: 'G-104', employee: 'Ananya Rao (BC-1004)', title: 'Reduce Employee Onboarding Turnaround to <48 Hours', category: 'Productivity', progress: 60, status: 'In Progress' },
-  { id: 'G-105', employee: 'Sneha Patel (BC-1044)', title: 'Automate Tax Withholding & Form 16 Generation', category: 'Company Impact', progress: 40, status: 'Behind' },
-];
-
 export const PerformanceAdmin: React.FC = () => {
   const [tab, setTab] = useState<'overview' | 'goals' | 'reviews'>('overview');
-  const [goals, setGoals] = useState<GoalItem[]>(DEFAULT_GOALS);
+  const [goals, setGoals] = useState<GoalItem[]>([]);
   const [summary, setSummary] = useState({ active: 8, reviews_in_progress: 3, completed_appraisals: 12 });
   const [isGoalModal, setIsGoalModal] = useState(false);
   const [newGoal, setNewGoal] = useState({ employee: 'Rahul Varma', title: '', category: 'Engineering' as const });
@@ -30,19 +22,20 @@ export const PerformanceAdmin: React.FC = () => {
     fetchPerformanceSummary().then((s) => s && setSummary(s)).catch(() => {});
     fetchPerformanceGoals()
       .then((res) => {
-        if (Array.isArray(res) && res.length > 0) {
-          const mapped: GoalItem[] = res.map((g, idx) => ({
-            id: `G-${idx + 101}`,
-            employee: g.employee_name || 'Engineering Team',
-            title: g.title || 'Quarterly OKR Deliverable',
-            category: 'Engineering',
-            progress: g.progress || 50,
-            status: g.status === 'Achieved' ? 'Achieved' : 'In Progress',
-          }));
-          setGoals(mapped);
-        }
+        const list = Array.isArray(res) ? res : (res as any)?.value || [];
+        const mapped: GoalItem[] = list.map((g: any, idx: number) => ({
+          id: `G-${idx + 101}`,
+          employee: g.employee_name || 'Engineering Team',
+          title: g.title || 'Quarterly OKR Deliverable',
+          category: 'Engineering',
+          progress: g.progress || 50,
+          status: g.status === 'Achieved' ? 'Achieved' : 'In Progress',
+        }));
+        setGoals(mapped);
       })
-      .catch(() => {});
+      .catch(() => {
+        setGoals([]);
+      });
   }, []);
 
   const handleAddGoal = (e: React.FormEvent) => {
@@ -171,30 +164,36 @@ export const PerformanceAdmin: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)] text-[var(--text)]">
-              {goals.map((g) => (
-                <tr key={g.id} className="hover:bg-[var(--surface-2)]/30 transition-colors">
-                  <td className="p-3.5 font-mono text-[10px] text-[var(--muted)]">{g.id}</td>
-                  <td className="p-3.5 font-semibold">{g.employee}</td>
-                  <td className="p-3.5 font-medium max-w-sm truncate">{g.title}</td>
-                  <td className="p-3.5"><span className="px-2 py-0.5 rounded-md bg-[var(--surface-2)] text-[10px] font-medium">{g.category}</span></td>
-                  <td className="p-3.5">
-                    <div className="flex items-center gap-2">
-                      <div className="w-24 bg-[var(--line)] rounded-full h-1.5 overflow-hidden">
-                        <div className="bg-[#12A58E] h-1.5 rounded-full" style={{ width: `${g.progress}%` }} />
-                      </div>
-                      <span className="text-[10px] font-mono text-[var(--muted)]">{g.progress}%</span>
-                    </div>
-                  </td>
-                  <td className="p-3.5 text-right">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                      g.status === 'Achieved' ? 'bg-emerald-500/10 text-emerald-500' :
-                      g.status === 'Behind' ? 'bg-rose-500/10 text-rose-500' : 'bg-blue-500/10 text-blue-500'
-                    }`}>
-                      {g.status}
-                    </span>
-                  </td>
+              {goals.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-8 text-center text-[var(--muted)]">No performance goals set yet. Click "Set OKR / Goal" to add one.</td>
                 </tr>
-              ))}
+              ) : (
+                goals.map((g) => (
+                  <tr key={g.id} className="hover:bg-[var(--surface-2)]/30 transition-colors">
+                    <td className="p-3.5 font-mono text-[10px] text-[var(--muted)]">{g.id}</td>
+                    <td className="p-3.5 font-semibold">{g.employee}</td>
+                    <td className="p-3.5 font-medium max-w-sm truncate">{g.title}</td>
+                    <td className="p-3.5"><span className="px-2 py-0.5 rounded-md bg-[var(--surface-2)] text-[10px] font-medium">{g.category}</span></td>
+                    <td className="p-3.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 bg-[var(--line)] rounded-full h-1.5 overflow-hidden">
+                          <div className="bg-[#12A58E] h-1.5 rounded-full" style={{ width: `${g.progress}%` }} />
+                        </div>
+                        <span className="text-[10px] font-mono text-[var(--muted)]">{g.progress}%</span>
+                      </div>
+                    </td>
+                    <td className="p-3.5 text-right">
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                        g.status === 'Achieved' ? 'bg-emerald-500/10 text-emerald-500' :
+                        g.status === 'Behind' ? 'bg-rose-500/10 text-rose-500' : 'bg-blue-500/10 text-blue-500'
+                      }`}>
+                        {g.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

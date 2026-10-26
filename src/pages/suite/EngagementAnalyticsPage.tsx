@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../services/api';
+import { fetchEmployees } from '../../services/peopleApi';
 
 interface SurveyResult {
   department: string;
@@ -35,13 +35,13 @@ const Card: React.FC<{ label: string; value: string | number; sub?: string; colo
 const scoreColor = (s: number) => s >= 80 ? '#16a34a' : s >= 65 ? '#f59e0b' : '#dc2626';
 
 export const EngagementAnalyticsPage: React.FC = () => {
-  const [totalEmployees, setTotalEmployees] = useState<number>(45);
+  const [totalEmployees, setTotalEmployees] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
-    api.get('/dashboard/summary')
-      .then(r => { if (mounted && r.data?.total_employees) setTotalEmployees(r.data.total_employees); })
+    fetchEmployees()
+      .then(emps => { if (mounted) setTotalEmployees(emps.length); })
       .catch(() => {})
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };

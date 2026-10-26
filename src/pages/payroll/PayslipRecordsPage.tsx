@@ -4,12 +4,11 @@ import { useNavigate } from 'react-router-dom'
 import { Download, Plus, Search, Users, Eye, Trash2, CheckCircle2, FileText } from 'lucide-react'
 import { formatINR, exportToCSV } from './payroll-data'
 import type { PayslipRecord } from './payslip-records-types'
-import { INITIAL_PAYSLIPS } from './payslip-records-types'
 import { AddPayslipModal, ViewPayslipModal, BatchGeneratePayslipModal } from './PayslipRecordsModals'
 
 export const PayslipRecordsPage: React.FC = () => {
   const navigate = useNavigate()
-  const [records, setRecords] = useState<PayslipRecord[]>(INITIAL_PAYSLIPS)
+  const [records, setRecords] = useState<PayslipRecord[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [showArchived, setShowArchived] = useState(false)

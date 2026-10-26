@@ -13,13 +13,8 @@ interface SwapRequest {
   status: 'Pending' | 'Approved' | 'Declined';
 }
 
-const DEFAULT_SWAPS: SwapRequest[] = [
-  { id: 'sw-1', requester: 'Rahul Varma', peer: 'Deepak S', myDate: '2026-10-28', myShift: 'General (09:30-18:30)', peerDate: '2026-10-29', peerShift: 'Morning (06:00-14:00)', reason: 'Doctor appointment on Wednesday morning', status: 'Pending' },
-  { id: 'sw-2', requester: 'Priya Sharma', peer: 'Rohan Verma', myDate: '2026-10-18', myShift: 'General (09:30-18:30)', peerDate: '2026-10-19', peerShift: 'General (09:30-18:30)', reason: 'Personal errands', status: 'Approved' },
-];
-
 export const ShiftSwapPage: React.FC = () => {
-  const [swaps, setSwaps] = useState<SwapRequest[]>(DEFAULT_SWAPS);
+  const [swaps, setSwaps] = useState<SwapRequest[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({ peer: 'Deepak S', myDate: '', peerDate: '', reason: '' });
 
@@ -78,46 +73,52 @@ export const ShiftSwapPage: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line)]">
-            {swaps.map((s) => (
-              <tr key={s.id} className="hover:bg-[var(--surface-2)]/50 transition-colors">
-                <td className="py-3 px-4 font-semibold text-xs text-[var(--text)]">{s.requester}</td>
-                <td className="py-3 px-4 text-xs font-mono">{s.myDate}<br /><span className="text-[11px] text-[var(--muted)]">{s.myShift}</span></td>
-                <td className="py-3 px-4 font-semibold text-xs text-[var(--text)]">{s.peer}</td>
-                <td className="py-3 px-4 text-xs font-mono">{s.peerDate}<br /><span className="text-[11px] text-[var(--muted)]">{s.peerShift}</span></td>
-                <td className="py-3 px-4 text-xs text-[var(--muted)]">{s.reason}</td>
-                <td className="py-3 px-4">
-                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                    s.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' :
-                    s.status === 'Declined' ? 'bg-red-100 text-red-700' :
-                    'bg-amber-100 text-amber-700'
-                  }`}>
-                    {s.status}
-                  </span>
-                </td>
-                <td className="py-3 px-4 text-right">
-                  {s.status === 'Pending' ? (
-                    <div className="flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleAction(s.id, 'Approved')}
-                        className="text-xs px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-semibold"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleAction(s.id, 'Declined')}
-                        className="text-xs px-2.5 py-1 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 font-semibold"
-                      >
-                        Decline
-                      </button>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-[var(--muted)] font-medium">Completed</span>
-                  )}
-                </td>
+            {swaps.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="py-12 text-center text-sm text-[var(--muted)]">No shift swap requests found. Click "Request Shift Swap" to submit one.</td>
               </tr>
-            ))}
+            ) : (
+              swaps.map((s) => (
+                <tr key={s.id} className="hover:bg-[var(--surface-2)]/50 transition-colors">
+                  <td className="py-3 px-4 font-semibold text-xs text-[var(--text)]">{s.requester}</td>
+                  <td className="py-3 px-4 text-xs font-mono">{s.myDate}<br /><span className="text-[11px] text-[var(--muted)]">{s.myShift}</span></td>
+                  <td className="py-3 px-4 font-semibold text-xs text-[var(--text)]">{s.peer}</td>
+                  <td className="py-3 px-4 text-xs font-mono">{s.peerDate}<br /><span className="text-[11px] text-[var(--muted)]">{s.peerShift}</span></td>
+                  <td className="py-3 px-4 text-xs text-[var(--muted)]">{s.reason}</td>
+                  <td className="py-3 px-4">
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                      s.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' :
+                      s.status === 'Declined' ? 'bg-red-100 text-red-700' :
+                      'bg-amber-100 text-amber-700'
+                    }`}>
+                      {s.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4 text-right">
+                    {s.status === 'Pending' ? (
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleAction(s.id, 'Approved')}
+                          className="text-xs px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-semibold"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleAction(s.id, 'Declined')}
+                          className="text-xs px-2.5 py-1 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 font-semibold"
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-[var(--muted)] font-medium">Completed</span>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

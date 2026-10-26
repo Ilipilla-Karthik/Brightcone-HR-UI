@@ -14,95 +14,8 @@ interface AuditRecord {
   status: 'Success' | 'Warning' | 'Failed';
 }
 
-const INITIAL_LOGS: AuditRecord[] = [
-  {
-    id: 'AUD-8821',
-    timestamp: '2026-10-25 11:42:15',
-    actorName: 'Naresh Vemparala',
-    actorEmail: 'naresh@brightcone.ai',
-    actorRole: 'Founder & CEO',
-    action: 'PAYROLL_RUN_APPROVED',
-    category: 'Payroll',
-    target: 'October 2026 Salary Batch (#PR-2026-10)',
-    ipAddress: '106.51.78.214',
-    status: 'Success',
-  },
-  {
-    id: 'AUD-8820',
-    timestamp: '2026-10-25 10:15:33',
-    actorName: 'Ananya Rao',
-    actorEmail: 'ananya.rao@brightcone.ai',
-    actorRole: 'People Ops Lead',
-    action: 'EMPLOYEE_ONBOARDED',
-    category: 'People',
-    target: 'Rohan Verma (Associate QA)',
-    ipAddress: '14.139.112.5',
-    status: 'Success',
-  },
-  {
-    id: 'AUD-8819',
-    timestamp: '2026-10-25 09:30:11',
-    actorName: 'Karthik Reddy',
-    actorEmail: 'karthik.reddy@brightcone.ai',
-    actorRole: 'Principal AI Engineer',
-    action: 'DOCUMENT_ELECTRONICALLY_SIGNED',
-    category: 'Sign',
-    target: 'Mutual NDA & IP Assignment (#ENV-2026-09)',
-    ipAddress: '49.205.144.18',
-    status: 'Success',
-  },
-  {
-    id: 'AUD-8818',
-    timestamp: '2026-10-25 08:12:04',
-    actorName: 'System Security Watchdog',
-    actorEmail: 'security-bot@brightcone.ai',
-    actorRole: 'Automated Bot',
-    action: 'MULTIPLE_FAILED_LOGIN_ATTEMPTS',
-    category: 'Security',
-    target: 'IP Temporary Rate Limited',
-    ipAddress: '185.220.101.52',
-    status: 'Warning',
-  },
-  {
-    id: 'AUD-8817',
-    timestamp: '2026-10-24 16:50:22',
-    actorName: 'Naresh Vemparala',
-    actorEmail: 'naresh@brightcone.ai',
-    actorRole: 'Founder & CEO',
-    action: 'ROLE_PERMISSION_UPDATED',
-    category: 'Access',
-    target: 'Promoted Vikram Malhotra to Org Admin',
-    ipAddress: '106.51.78.214',
-    status: 'Success',
-  },
-  {
-    id: 'AUD-8816',
-    timestamp: '2026-10-24 14:15:40',
-    actorName: 'Sneha Patel',
-    actorEmail: 'sneha.patel@brightcone.ai',
-    actorRole: 'Head of Finance',
-    action: 'STATUTORY_FILING_EXPORTED',
-    category: 'Payroll',
-    target: 'PF Electronic Challan Return (ECR September)',
-    ipAddress: '115.99.192.8',
-    status: 'Success',
-  },
-  {
-    id: 'AUD-8815',
-    timestamp: '2026-10-24 11:05:19',
-    actorName: 'Ananya Rao',
-    actorEmail: 'ananya.rao@brightcone.ai',
-    actorRole: 'People Ops Lead',
-    action: 'HARDWARE_ASSET_ASSIGNED',
-    category: 'People',
-    target: 'MacBook Pro 16" M3 Max to Priya Sharma',
-    ipAddress: '14.139.112.5',
-    status: 'Success',
-  },
-];
-
 export const AuditLogPage: React.FC = () => {
-  const [logs] = useState<AuditRecord[]>(INITIAL_LOGS);
+  const [logs] = useState<AuditRecord[]>([]);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<string>('All');
@@ -193,14 +106,18 @@ export const AuditLogPage: React.FC = () => {
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Security Alerts
           </p>
-          <p className="text-2xl font-bold text-amber-600 mt-1 font-['Sora']">1</p>
-          <p className="text-[11px] text-slate-500 mt-0.5">Rate limit auto-triggered</p>
+          <p className="text-2xl font-bold text-amber-600 mt-1 font-['Sora']">
+            {logs.filter(l => l.category === 'Security' || l.status === 'Warning' || l.status === 'Failed').length}
+          </p>
+          <p className="text-[11px] text-slate-500 mt-0.5">Rate limits & alerts</p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Financial Events
           </p>
-          <p className="text-2xl font-bold text-slate-900 mt-1 font-['Sora']">2</p>
+          <p className="text-2xl font-bold text-slate-900 mt-1 font-['Sora']">
+            {logs.filter(l => l.category === 'Payroll').length}
+          </p>
           <p className="text-[11px] text-slate-500 mt-0.5">Payroll runs & filings</p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -270,48 +187,60 @@ export const AuditLogPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {filteredLogs.map((log) => (
-                <tr key={log.id} className="hover:bg-slate-50/70 transition-colors">
-                  <td className="py-3 px-4 font-mono text-[11px] text-slate-500 whitespace-nowrap">
-                    {log.timestamp}
-                  </td>
-                  <td className="py-3 px-4">
-                    <p className="font-semibold text-slate-900">{log.actorName}</p>
-                    <p className="text-[11px] text-slate-400">{log.actorRole}</p>
-                  </td>
-                  <td className="py-3 px-4 font-mono font-medium text-slate-900">
-                    {log.action}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${getCategoryBadge(
-                        log.category
-                      )}`}
-                    >
-                      {log.category}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 max-w-xs truncate text-slate-600 font-medium">
-                    {log.target}
-                  </td>
-                  <td className="py-3 px-4 font-mono text-slate-500 text-[11px]">
-                    {log.ipAddress}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        log.status === 'Success'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : log.status === 'Warning'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-rose-100 text-rose-800'
-                      }`}
-                    >
-                      {log.status}
-                    </span>
+              {filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <span className="text-xl">🛡️</span>
+                      <p className="font-semibold text-slate-700 text-sm">No Audit Logs Found</p>
+                      <p className="text-xs text-slate-400">System actions and compliance events will be logged here automatically.</p>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredLogs.map((log) => (
+                  <tr key={log.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="py-3 px-4 font-mono text-[11px] text-slate-500 whitespace-nowrap">
+                      {log.timestamp}
+                    </td>
+                    <td className="py-3 px-4">
+                      <p className="font-semibold text-slate-900">{log.actorName}</p>
+                      <p className="text-[11px] text-slate-400">{log.actorRole}</p>
+                    </td>
+                    <td className="py-3 px-4 font-mono font-medium text-slate-900">
+                      {log.action}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${getCategoryBadge(
+                          log.category
+                        )}`}
+                      >
+                        {log.category}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 max-w-xs truncate text-slate-600 font-medium">
+                      {log.target}
+                    </td>
+                    <td className="py-3 px-4 font-mono text-slate-500 text-[11px]">
+                      {log.ipAddress}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          log.status === 'Success'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : log.status === 'Warning'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-rose-100 text-rose-800'
+                        }`}
+                      >
+                        {log.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

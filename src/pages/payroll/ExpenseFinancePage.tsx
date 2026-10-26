@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import {
   CheckCircle2,
@@ -26,56 +26,8 @@ interface ExpenseClaim {
   created_at: string;
 }
 
-const defaultClaims: ExpenseClaim[] = [
-  {
-    id: "E-101",
-    employee_id: "EMP-001",
-    employee_name: "Ananya Rao",
-    category: "Travel",
-    amount: 3450,
-    date: "2026-10-12",
-    description: "Client visit cab fare and regional rail",
-    status: "Approved",
-    created_at: "2026-10-12T09:30:00Z",
-  },
-  {
-    id: "E-102",
-    employee_id: "EMP-001",
-    employee_name: "Ananya Rao",
-    category: "Internet",
-    amount: 1499,
-    date: "2026-10-05",
-    description: "Monthly broadband reimbursement - WFH",
-    status: "Paid",
-    paid_at: "2026-10-08T14:20:00Z",
-    created_at: "2026-10-05T10:15:00Z",
-  },
-  {
-    id: "E-103",
-    employee_id: "EMP-002",
-    employee_name: "Karthik Nair",
-    category: "Meals",
-    amount: 2150,
-    date: "2026-10-14",
-    description: "Team sprint completion lunch",
-    status: "Pending",
-    created_at: "2026-10-14T15:45:00Z",
-  },
-  {
-    id: "E-104",
-    employee_id: "EMP-003",
-    employee_name: "Priya Sharma",
-    category: "Learning",
-    amount: 5000,
-    date: "2026-10-10",
-    description: "Cloud Architecture Certification Exam Voucher",
-    status: "Pending",
-    created_at: "2026-10-10T11:00:00Z",
-  },
-];
-
 export const ExpenseFinancePage: React.FC = () => {
-  const [claims, setClaims] = useState<ExpenseClaim[]>(defaultClaims);
+  const [claims, setClaims] = useState<ExpenseClaim[]>([]);
   const [filter, setFilter] = useState<string>("All");
   const [search, setSearch] = useState("");
   const { addNotification } = useNotifications();

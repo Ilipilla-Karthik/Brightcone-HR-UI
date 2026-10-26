@@ -13,65 +13,8 @@ interface FilingRecord {
   status: 'Filed' | 'Pending' | 'Ready to File';
 }
 
-const INITIAL_FILINGS: FilingRecord[] = [
-  {
-    id: 'FIL-PF-2026-09',
-    name: 'EPFO Monthly Electronic Challan Return (ECR)',
-    period: 'September 2026',
-    category: 'PF',
-    dueDate: '15 Oct 2026',
-    totalEmployees: 24,
-    totalAmount: '₹1,94,400',
-    challanRef: 'TRRN-883019284102',
-    status: 'Filed',
-  },
-  {
-    id: 'FIL-ESI-2026-09',
-    name: 'ESIC Monthly Contribution Return',
-    period: 'September 2026',
-    category: 'ESI',
-    dueDate: '15 Oct 2026',
-    totalEmployees: 6,
-    totalAmount: '₹18,240',
-    challanRef: 'ESIC-CP-491028',
-    status: 'Filed',
-  },
-  {
-    id: 'FIL-TDS-2026-Q2',
-    name: 'Income Tax Form 24Q (Salary TDS Return)',
-    period: 'Q2 (Jul - Sep 2026)',
-    category: 'TDS',
-    dueDate: '31 Oct 2026',
-    totalEmployees: 24,
-    totalAmount: '₹4,82,600',
-    challanRef: 'BSR-0291048-CH10',
-    status: 'Ready to File',
-  },
-  {
-    id: 'FIL-PT-2026-09',
-    name: 'Telangana Professional Tax Monthly Return',
-    period: 'September 2026',
-    category: 'PT',
-    dueDate: '10 Oct 2026',
-    totalEmployees: 20,
-    totalAmount: '₹4,000',
-    challanRef: 'TG-PT-992014',
-    status: 'Filed',
-  },
-  {
-    id: 'FIL-PF-2026-10',
-    name: 'EPFO Monthly Electronic Challan Return (ECR)',
-    period: 'October 2026',
-    category: 'PF',
-    dueDate: '15 Nov 2026',
-    totalEmployees: 25,
-    totalAmount: '₹2,02,500',
-    status: 'Pending',
-  },
-];
-
 export const StatutoryFilings: React.FC = () => {
-  const [filings, setFilings] = useState<FilingRecord[]>(INITIAL_FILINGS);
+  const [filings, setFilings] = useState<FilingRecord[]>([]);
   const [filterCat, setFilterCat] = useState<string>('All');
   const [toastMsg, setToastMsg] = useState('');
 
@@ -127,32 +70,48 @@ export const StatutoryFilings: React.FC = () => {
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Total PF Remitted (YTD)
           </p>
-          <p className="text-2xl font-bold text-slate-900 mt-1 font-mono">₹11,64,000</p>
-          <p className="text-[11px] text-emerald-600 mt-0.5">All months on schedule</p>
+          <p className="text-2xl font-bold text-slate-900 mt-1 font-mono">
+            {filings.filter(f => f.category === 'PF' && f.status === 'Filed').length > 0 ? '₹11,64,000' : '₹0'}
+          </p>
+          <p className="text-[11px] text-emerald-600 mt-0.5">
+            {filings.length > 0 ? 'All months on schedule' : 'No filings recorded'}
+          </p>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Quarterly TDS Liability
           </p>
-          <p className="text-2xl font-bold text-slate-900 mt-1 font-mono">₹4,82,600</p>
-          <p className="text-[11px] text-amber-600 mt-0.5">Due on 31 Oct 2026</p>
+          <p className="text-2xl font-bold text-slate-900 mt-1 font-mono">
+            {filings.filter(f => f.category === 'TDS').length > 0 ? '₹4,82,600' : '₹0'}
+          </p>
+          <p className="text-[11px] text-amber-600 mt-0.5">
+            {filings.length > 0 ? 'Due on 31 Oct 2026' : 'No pending TDS'}
+          </p>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             ESIC Compliance
           </p>
-          <p className="text-2xl font-bold text-slate-900 mt-1 font-mono">100%</p>
-          <p className="text-[11px] text-slate-500 mt-0.5">6 eligible covered employees</p>
+          <p className="text-2xl font-bold text-slate-900 mt-1 font-mono">
+            {filings.length > 0 ? '100%' : '—'}
+          </p>
+          <p className="text-[11px] text-slate-500 mt-0.5">
+            {filings.length > 0 ? 'Eligible employees covered' : 'No returns filed'}
+          </p>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Next Statutory Deadline
           </p>
-          <p className="text-2xl font-bold text-blue-600 mt-1 font-['Sora']">31 Oct</p>
-          <p className="text-[11px] text-slate-500 mt-0.5">Form 24Q Q2 Return</p>
+          <p className="text-2xl font-bold text-blue-600 mt-1 font-['Sora']">
+            {filings.find(f => f.status !== 'Filed')?.dueDate || '—'}
+          </p>
+          <p className="text-[11px] text-slate-500 mt-0.5">
+            {filings.find(f => f.status !== 'Filed')?.name || 'No upcoming deadlines'}
+          </p>
         </div>
       </div>
 
@@ -193,62 +152,74 @@ export const StatutoryFilings: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {filteredFilings.map((filing) => (
-                <tr key={filing.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-4">
-                    <p className="font-semibold text-slate-900">{filing.name}</p>
-                    <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-700 mt-0.5">
-                      {filing.category}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-600">
-                    {filing.period}
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap text-slate-500">{filing.dueDate}</td>
-                  <td className="py-3 px-4 text-slate-600 font-mono">{filing.totalEmployees}</td>
-                  <td className="py-3 px-4 font-mono font-bold text-slate-900">
-                    {filing.totalAmount}
-                  </td>
-                  <td className="py-3 px-4 font-mono text-[11px] text-slate-500">
-                    {filing.challanRef || '—'}
-                  </td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        filing.status === 'Filed'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : filing.status === 'Ready to File'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }`}
-                    >
-                      {filing.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right whitespace-nowrap">
-                    {filing.status === 'Ready to File' && (
-                      <button
-                        onClick={() => handleFileNow(filing.id)}
-                        className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
-                      >
-                        Submit Filing
-                      </button>
-                    )}
-                    {filing.status === 'Filed' && (
-                      <button
-                        onClick={() => showToast(`Downloaded Challan receipt for ${filing.name}`)}
-                        className="px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors inline-flex items-center gap-1"
-                      >
-                        <span className="w-3.5 h-3.5">{ic('download', 14)}</span>
-                        Receipt
-                      </button>
-                    )}
-                    {filing.status === 'Pending' && (
-                      <span className="text-[11px] text-slate-400 italic">Awaiting Payroll</span>
-                    )}
+              {filteredFilings.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <span className="text-xl">🏛️</span>
+                      <p className="font-semibold text-slate-700 text-sm">No Statutory Filings Found</p>
+                      <p className="text-xs text-slate-400">Generated PF, ESI, TDS (24Q), and PT returns will appear here.</p>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredFilings.map((filing) => (
+                  <tr key={filing.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-4">
+                      <p className="font-semibold text-slate-900">{filing.name}</p>
+                      <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-700 mt-0.5">
+                        {filing.category}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-600">
+                      {filing.period}
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap text-slate-500">{filing.dueDate}</td>
+                    <td className="py-3 px-4 text-slate-600 font-mono">{filing.totalEmployees}</td>
+                    <td className="py-3 px-4 font-mono font-bold text-slate-900">
+                      {filing.totalAmount}
+                    </td>
+                    <td className="py-3 px-4 font-mono text-[11px] text-slate-500">
+                      {filing.challanRef || '—'}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          filing.status === 'Filed'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : filing.status === 'Ready to File'
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        {filing.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right whitespace-nowrap">
+                      {filing.status === 'Ready to File' && (
+                        <button
+                          onClick={() => handleFileNow(filing.id)}
+                          className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
+                        >
+                          Submit Filing
+                        </button>
+                      )}
+                      {filing.status === 'Filed' && (
+                        <button
+                          onClick={() => showToast(`Downloaded Challan receipt for ${filing.name}`)}
+                          className="px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors inline-flex items-center gap-1"
+                        >
+                          <span className="w-3.5 h-3.5">{ic('download', 14)}</span>
+                          Receipt
+                        </button>
+                      )}
+                      {filing.status === 'Pending' && (
+                        <span className="text-[11px] text-slate-400 italic">Awaiting Payroll</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

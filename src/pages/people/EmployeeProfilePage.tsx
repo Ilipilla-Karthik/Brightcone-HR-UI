@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchEmployees } from '../../services/peopleApi';
 
 interface ProfileRecord {
   id: string;
@@ -17,77 +18,38 @@ interface ProfileRecord {
   verificationStatus: 'Verified' | 'Pending';
 }
 
-const DEFAULT_PROFILES: ProfileRecord[] = [
-  {
-    id: 'BC-1001',
-    name: 'Naresh Vemparala',
-    role: 'Founder & CEO',
-    dept: 'Leadership',
-    personalEmail: 'naresh.v@gmail.com',
-    phone: '+91 98765 43210',
-    address: 'Plot 42, Jubilee Hills, Hyderabad',
-    emergencyContact: 'Lakshmi Vemparala',
-    emergencyRelation: 'Spouse',
-    emergencyPhone: '+91 98765 11111',
-    bloodGroup: 'O+',
-    panMasked: 'ABCDE****F',
-    aadhaarLast4: '8849',
-    verificationStatus: 'Verified',
-  },
-  {
-    id: 'BC-1004',
-    name: 'Ananya Rao',
-    role: 'People Ops Lead',
-    dept: 'People Ops',
-    personalEmail: 'ananya.rao@gmail.com',
-    phone: '+91 98765 43211',
-    address: 'Tower 3, Hitec City, Hyderabad',
-    emergencyContact: 'Kavita Rao',
-    emergencyRelation: 'Mother',
-    emergencyPhone: '+91 98765 22222',
-    bloodGroup: 'B+',
-    panMasked: 'BNXPR****K',
-    aadhaarLast4: '3410',
-    verificationStatus: 'Verified',
-  },
-  {
-    id: 'BC-1012',
-    name: 'Karthik Reddy',
-    role: 'Principal AI Engineer',
-    dept: 'AI Research',
-    personalEmail: 'karthik.r@outlook.com',
-    phone: '+91 98765 43212',
-    address: 'Gachibowli Financial District, Hyderabad',
-    emergencyContact: 'Ramesh Reddy',
-    emergencyRelation: 'Father',
-    emergencyPhone: '+91 98765 33333',
-    bloodGroup: 'A+',
-    panMasked: 'CRRPK****L',
-    aadhaarLast4: '9921',
-    verificationStatus: 'Verified',
-  },
-  {
-    id: 'BC-1020',
-    name: 'Rahul Varma',
-    role: 'Backend Engineer',
-    dept: 'Engineering',
-    personalEmail: 'rahul.varma@gmail.com',
-    phone: '+91 98765 43213',
-    address: 'Kondapur, Hyderabad',
-    emergencyContact: 'Sunil Varma',
-    emergencyRelation: 'Brother',
-    emergencyPhone: '+91 98765 44444',
-    bloodGroup: 'AB+',
-    panMasked: 'DRVMK****M',
-    aadhaarLast4: '1092',
-    verificationStatus: 'Pending',
-  },
-];
-
 export const EmployeeProfilePage: React.FC = () => {
-  const [profiles] = useState<ProfileRecord[]>(DEFAULT_PROFILES);
+  const [profiles, setProfiles] = useState<ProfileRecord[]>([]);
   const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<ProfileRecord>(DEFAULT_PROFILES[0]);
+  const [selected, setSelected] = useState<ProfileRecord | null>(null);
+
+  useEffect(() => {
+    fetchEmployees()
+      .then((data: any) => {
+        const list = Array.isArray(data) ? data : data?.value || [];
+        const mapped: ProfileRecord[] = list.map((e: any) => ({
+          id: e.employee_code || 'BC-1000',
+          name: e.full_name || 'Employee',
+          role: e.job_title || 'Specialist',
+          dept: e.department || 'General',
+          personalEmail: e.work_email || 'emp@brightcone.ai',
+          phone: e.phone || '+91 98765 43210',
+          address: e.address || `${e.location || 'Hyderabad'} Campus, India`,
+          emergencyContact: e.emergency_contact_name || 'Primary Contact',
+          emergencyRelation: e.emergency_contact_relation || 'Family',
+          emergencyPhone: e.emergency_contact_phone || '+91 98765 00000',
+          bloodGroup: e.blood_group || 'O+',
+          panMasked: 'ABCDE****F',
+          aadhaarLast4: '8849',
+          verificationStatus: 'Verified' as const,
+        }));
+        setProfiles(mapped);
+        if (mapped.length > 0) setSelected(mapped[0]);
+      })
+      .catch(() => {
+        setProfiles([]);
+      });
+  }, []);
 
   const filtered = profiles.filter((p) => {
     const q = search.toLowerCase();
@@ -119,7 +81,7 @@ export const EmployeeProfilePage: React.FC = () => {
                 key={item.id}
                 onClick={() => setSelected(item)}
                 className={`w-full p-4 rounded-2xl border text-left transition-all cursor-pointer ${
-                  selected.id === item.id
+                  selected?.id === item.id
                     ? 'bg-[#12A58E]/10 border-[#12A58E] shadow-sm'
                     : 'bg-[var(--surface)] border-[var(--line)] hover:bg-[var(--surface-2)]'
                 }`}

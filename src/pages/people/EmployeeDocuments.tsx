@@ -13,17 +13,8 @@ interface DocumentRecord {
   status: 'Verified' | 'Pending Review';
 }
 
-const DEFAULT_DOCS: DocumentRecord[] = [
-  { id: 'doc-1', title: 'Employment Contract - Rahul Varma', type: 'Employment Contract', employeeName: 'Rahul Varma', employeeId: 'BC-1020', uploadDate: '2023-06-10', size: '1.2 MB', status: 'Verified' },
-  { id: 'doc-2', title: 'Aadhaar Card - Priya Sharma', type: 'Identity Proof', employeeName: 'Priya Sharma', employeeId: 'BC-1025', uploadDate: '2023-08-02', size: '850 KB', status: 'Verified' },
-  { id: 'doc-3', title: 'FY 2026-27 Form 12BB Investment Declaration', type: 'Tax Declaration', employeeName: 'Karthik Reddy', employeeId: 'BC-1012', uploadDate: '2026-10-18', size: '640 KB', status: 'Verified' },
-  { id: 'doc-4', title: 'Mutual NDA Agreement - Vikram Malhotra', type: 'Non-Disclosure', employeeName: 'Vikram Malhotra', employeeId: 'BC-1031', uploadDate: '2021-09-02', size: '420 KB', status: 'Verified' },
-  { id: 'doc-5', title: 'Master Degree Certificate - Rohan Verma', type: 'Degree Certificate', employeeName: 'Rohan Verma', employeeId: 'BC-1060', uploadDate: '2026-08-16', size: '2.4 MB', status: 'Pending Review' },
-  { id: 'doc-6', title: 'PAN Card Copy - Meera Nambiar', type: 'Identity Proof', employeeName: 'Meera Nambiar', employeeId: 'BC-1065', uploadDate: '2026-09-02', size: '510 KB', status: 'Pending Review' },
-];
-
 export const EmployeeDocuments: React.FC = () => {
-  const [docs, setDocs] = useState<DocumentRecord[]>(DEFAULT_DOCS);
+  const [docs, setDocs] = useState<DocumentRecord[]>([]);
   const [filterType, setFilterType] = useState('All');
   const [search, setSearch] = useState('');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -32,21 +23,22 @@ export const EmployeeDocuments: React.FC = () => {
   useEffect(() => {
     fetchDocuments()
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          const mapped: DocumentRecord[] = data.map((d, i) => ({
-            id: String(d.id || i + 1),
-            title: d.title || 'Official Document',
-            type: (d.document_type || 'Employment Contract') as any,
-            employeeName: d.employee_code === 'BC-1001' ? 'Naresh Vemparala' : 'Rahul Varma',
-            employeeId: d.employee_code || `BC-100${i + 1}`,
-            uploadDate: d.issued_date || '2026-10-01',
-            size: d.file_size || '240 KB',
-            status: 'Verified',
-          }));
-          setDocs(mapped);
-        }
+        const list = Array.isArray(data) ? data : (data as any)?.value || [];
+        const mapped: DocumentRecord[] = list.map((d: any, i: number) => ({
+          id: String(d.id || i + 1),
+          title: d.title || 'Official Document',
+          type: (d.document_type || 'Employment Contract') as any,
+          employeeName: d.employee_code === 'BC-1001' ? 'Naresh Vemparala' : 'Rahul Varma',
+          employeeId: d.employee_code || `BC-100${i + 1}`,
+          uploadDate: d.issued_date || '2026-10-01',
+          size: d.file_size || '240 KB',
+          status: 'Verified',
+        }));
+        setDocs(mapped);
       })
-      .catch(() => {});
+      .catch(() => {
+        setDocs([]);
+      });
   }, []);
 
   const types = ['All', 'Employment Contract', 'Identity Proof', 'Tax Declaration', 'Non-Disclosure', 'Degree Certificate'];
@@ -191,6 +183,9 @@ export const EmployeeDocuments: React.FC = () => {
             ))}
           </tbody>
         </table>
+        {filtered.length === 0 && (
+          <div className="py-12 text-center text-sm text-[var(--muted)]">No employee documents found. Click "Upload Document" to add records.</div>
+        )}
       </div>
 
       {/* Upload Modal */}

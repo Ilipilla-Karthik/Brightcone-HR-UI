@@ -13,15 +13,8 @@ interface Intern {
   ppoStatus: 'Eligible for PPO' | 'PPO Extended' | 'Under Review' | 'Completed';
 }
 
-const INITIAL_INTERNS: Intern[] = [
-  { id: 'INT-01', name: 'Rohan Sharma', college: 'IIT Hyderabad', track: 'AI Research (LLMs)', mentor: 'Karthik Reddy', stipend: '₹45,000 / mo', duration: 'Jul - Dec 2026', performanceScore: 4.8, ppoStatus: 'PPO Extended' },
-  { id: 'INT-02', name: 'Sneha Kulkarni', college: 'BITS Pilani', track: 'Distributed Systems', mentor: 'Vikram Malhotra', stipend: '₹40,000 / mo', duration: 'Aug - Jan 2027', performanceScore: 4.6, ppoStatus: 'Eligible for PPO' },
-  { id: 'INT-03', name: 'Varun Nair', college: 'NIT Warangal', track: 'Frontend UI/UX', mentor: 'Priya Sharma', stipend: '₹35,000 / mo', duration: 'Jul - Dec 2026', performanceScore: 4.2, ppoStatus: 'Under Review' },
-  { id: 'INT-04', name: 'Ananya Deshmukh', college: 'IIIT Hyderabad', track: 'Data Engineering', mentor: 'Rahul Varma', stipend: '₹40,000 / mo', duration: 'Aug - Jan 2027', performanceScore: 4.5, ppoStatus: 'Eligible for PPO' },
-];
-
 export const InternshipManagementPage: React.FC = () => {
-  const [interns, setInterns] = useState<Intern[]>(INITIAL_INTERNS);
+  const [interns, setInterns] = useState<Intern[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
 
@@ -86,18 +79,26 @@ export const InternshipManagementPage: React.FC = () => {
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">PPO Conversion Rate</p>
-          <p className="text-2xl font-bold text-emerald-600 mt-1 font-['Sora']">75%</p>
-          <p className="text-[11px] text-slate-500 mt-0.5">3 PPO eligible</p>
+          <p className="text-2xl font-bold text-emerald-600 mt-1 font-['Sora']">
+            {interns.length > 0 ? `${Math.round((interns.filter(i => i.ppoStatus === 'PPO Extended').length / interns.length) * 100)}%` : '0%'}
+          </p>
+          <p className="text-[11px] text-slate-500 mt-0.5">
+            {interns.filter(i => i.ppoStatus === 'Eligible for PPO' || i.ppoStatus === 'PPO Extended').length} PPO eligible
+          </p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Avg Performance Score</p>
-          <p className="text-2xl font-bold text-slate-900 mt-1 font-['Sora']">4.5 / 5.0</p>
-          <p className="text-[11px] text-emerald-600 mt-0.5">Exceeding expectations</p>
+          <p className="text-2xl font-bold text-slate-900 mt-1 font-['Sora']">
+            {interns.length > 0 ? (interns.reduce((acc, i) => acc + i.performanceScore, 0) / interns.length).toFixed(1) : '—'}
+          </p>
+          <p className="text-[11px] text-emerald-600 mt-0.5">
+            {interns.length > 0 ? 'Cohort evaluations' : 'No evaluations yet'}
+          </p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cohort Duration</p>
           <p className="text-2xl font-bold text-purple-600 mt-1 font-['Sora']">6 Months</p>
-          <p className="text-[11px] text-slate-500 mt-0.5">Ending Dec 2026</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">Standard Cohort Term</p>
         </div>
       </div>
 
@@ -116,41 +117,53 @@ export const InternshipManagementPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {interns.map((i) => (
-                <tr key={i.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-4 font-semibold text-slate-900">{i.name}</td>
-                  <td className="py-3 px-4 text-slate-600 font-medium">{i.college}</td>
-                  <td className="py-3 px-4 text-slate-800">{i.track}</td>
-                  <td className="py-3 px-4 text-slate-600 font-medium">{i.mentor}</td>
-                  <td className="py-3 px-4 font-mono font-medium text-slate-700">{i.stipend}</td>
-                  <td className="py-3 px-4">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                      i.ppoStatus === 'PPO Extended' ? 'bg-emerald-100 text-emerald-800' :
-                      i.ppoStatus === 'Eligible for PPO' ? 'bg-purple-100 text-purple-800' :
-                      'bg-slate-100 text-slate-800'
-                    }`}>
-                      {i.ppoStatus}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right whitespace-nowrap">
-                    {i.ppoStatus === 'Eligible for PPO' ? (
-                      <button
-                        onClick={() => extendPPO(i.id)}
-                        className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
-                      >
-                        Extend PPO ★
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => showToast(`Evaluated project work for ${i.name}`)}
-                        className="px-2.5 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
-                      >
-                        Score Project
-                      </button>
-                    )}
+              {interns.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-slate-500">
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <span className="text-xl">🎓</span>
+                      <p className="font-semibold text-slate-700 text-sm">No Active Interns</p>
+                      <p className="text-xs text-slate-400">Enroll new campus interns to track cohorts and PPO evaluations.</p>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                interns.map((i) => (
+                  <tr key={i.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-4 font-semibold text-slate-900">{i.name}</td>
+                    <td className="py-3 px-4 text-slate-600 font-medium">{i.college}</td>
+                    <td className="py-3 px-4 text-slate-800">{i.track}</td>
+                    <td className="py-3 px-4 text-slate-600 font-medium">{i.mentor}</td>
+                    <td className="py-3 px-4 font-mono font-medium text-slate-700">{i.stipend}</td>
+                    <td className="py-3 px-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        i.ppoStatus === 'PPO Extended' ? 'bg-emerald-100 text-emerald-800' :
+                        i.ppoStatus === 'Eligible for PPO' ? 'bg-purple-100 text-purple-800' :
+                        'bg-slate-100 text-slate-800'
+                      }`}>
+                        {i.ppoStatus}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-right whitespace-nowrap">
+                      {i.ppoStatus === 'Eligible for PPO' ? (
+                        <button
+                          onClick={() => extendPPO(i.id)}
+                          className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
+                        >
+                          Extend PPO ★
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => showToast(`Evaluated project work for ${i.name}`)}
+                          className="px-2.5 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
+                        >
+                          Score Project
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

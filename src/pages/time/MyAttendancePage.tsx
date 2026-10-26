@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface AttendanceDay {
   date: string;
@@ -8,19 +8,28 @@ interface AttendanceDay {
   status: 'Present' | 'Late' | 'WFH' | 'Holiday' | 'Weekend';
 }
 
-const DEFAULT_DAYS: AttendanceDay[] = [
-  { date: '2026-10-23 (Fri)', inTime: '09:28 AM', outTime: '06:35 PM', duration: '9h 07m', status: 'Present' },
-  { date: '2026-10-22 (Thu)', inTime: '09:30 AM', outTime: '06:30 PM', duration: '9h 00m', status: 'Present' },
-  { date: '2026-10-21 (Wed)', inTime: '10:05 AM', outTime: '07:15 PM', duration: '9h 10m', status: 'Late' },
-  { date: '2026-10-20 (Tue)', inTime: '09:35 AM', outTime: '06:40 PM', duration: '9h 05m', status: 'WFH' },
-  { date: '2026-10-19 (Mon)', inTime: '09:20 AM', outTime: '06:30 PM', duration: '9h 10m', status: 'Present' },
-];
-
 export const MyAttendancePage: React.FC = () => {
   const [clockedIn, setClockedIn] = useState(true);
   const [punchTime, setPunchTime] = useState('09:30 AM');
-  const [days] = useState<AttendanceDay[]>(DEFAULT_DAYS);
+  const [days, setDays] = useState<AttendanceDay[]>([]);
   const [toast, setToast] = useState('');
+
+  useEffect(() => {
+    fetch('/api/v1/attendance')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: any) => {
+        const list = Array.isArray(data) ? data : data?.value || [];
+        const mapped: AttendanceDay[] = list.map((a: any) => ({
+          date: a.date || 'Today',
+          inTime: a.clock_in || '09:30 AM',
+          outTime: a.clock_out || '06:30 PM',
+          duration: a.duration || '9h 00m',
+          status: (a.status || 'Present') as any,
+        }));
+        setDays(mapped);
+      })
+      .catch(() => setDays([]));
+  }, []);
 
   const togglePunch = () => {
     if (clockedIn) {
@@ -104,23 +113,29 @@ export const MyAttendancePage: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line)]">
-            {days.map((d) => (
-              <tr key={d.date} className="hover:bg-[var(--surface-2)]/50 transition-colors">
-                <td className="py-3 px-4 font-mono text-xs font-semibold text-[var(--text)]">{d.date}</td>
-                <td className="py-3 px-4 font-mono text-xs text-[var(--text)]">{d.inTime}</td>
-                <td className="py-3 px-4 font-mono text-xs text-[var(--text)]">{d.outTime}</td>
-                <td className="py-3 px-4 font-mono text-xs font-semibold text-[var(--text)]">{d.duration}</td>
-                <td className="py-3 px-4">
-                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                    d.status === 'Present' ? 'bg-emerald-100 text-emerald-700' :
-                    d.status === 'WFH' ? 'bg-sky-100 text-sky-700' :
-                    'bg-amber-100 text-amber-700'
-                  }`}>
-                    {d.status}
-                  </span>
-                </td>
+            {days.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-12 text-center text-sm text-[var(--muted)]">No attendance punch history logged yet. Use the punch button above to log attendance.</td>
               </tr>
-            ))}
+            ) : (
+              days.map((d) => (
+                <tr key={d.date} className="hover:bg-[var(--surface-2)]/50 transition-colors">
+                  <td className="py-3 px-4 font-mono text-xs font-semibold text-[var(--text)]">{d.date}</td>
+                  <td className="py-3 px-4 font-mono text-xs text-[var(--text)]">{d.inTime}</td>
+                  <td className="py-3 px-4 font-mono text-xs text-[var(--text)]">{d.outTime}</td>
+                  <td className="py-3 px-4 font-mono text-xs font-semibold text-[var(--text)]">{d.duration}</td>
+                  <td className="py-3 px-4">
+                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                      d.status === 'Present' ? 'bg-emerald-100 text-emerald-700' :
+                      d.status === 'WFH' ? 'bg-sky-100 text-sky-700' :
+                      'bg-amber-100 text-amber-700'
+                    }`}>
+                      {d.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

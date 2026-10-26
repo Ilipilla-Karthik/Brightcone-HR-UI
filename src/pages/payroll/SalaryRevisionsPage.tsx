@@ -1,14 +1,13 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Download, Plus, Search, Users, Check, X as CloseIcon, Edit2, Trash2, CheckCircle2 } from 'lucide-react'
 import { formatINR, exportToCSV } from './payroll-data'
 import type { SalaryRevisionRecord } from './salary-revisions-types'
-import { INITIAL_REVISIONS } from './salary-revisions-types'
 import { AddSalaryRevisionModal } from './SalaryRevisionsModal'
 
 export const SalaryRevisionsPage: React.FC = () => {
   const navigate = useNavigate()
-  const [records, setRecords] = useState<SalaryRevisionRecord[]>(INITIAL_REVISIONS)
+  const [records, setRecords] = useState<SalaryRevisionRecord[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [showArchived, setShowArchived] = useState(false)

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
+import { fetchEmployees, fetchDepartments, fetchDocuments } from '../../services/peopleApi';
+import { recruitApi } from '../../services/recruitApi';
 
 interface ExportRecord {
   entity: string;
@@ -16,26 +18,25 @@ export const DataBackupPage: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
-    api.get('/dashboard/summary')
-      .then(r => {
-        if (!mounted) return;
-        const d = r.data || {};
-        setSummary([
-          { entity: 'Employees', count: d.total_employees ?? 45, last_exported: '2026-10-25 06:00' },
-          { entity: 'Departments', count: d.department_count ?? 8, last_exported: '2026-10-25 06:00' },
-          { entity: 'Job Openings', count: d.active_jobs ?? 4, last_exported: '2026-10-24 18:00' },
-          { entity: 'Documents', count: d.document_count ?? 120, last_exported: '2026-10-23 06:00' },
-        ]);
-      })
-      .catch(() => {
-        if (mounted) setSummary([
-          { entity: 'Employees', count: 45, last_exported: '2026-10-25 06:00' },
-          { entity: 'Departments', count: 8, last_exported: '2026-10-25 06:00' },
-          { entity: 'Job Openings', count: 4, last_exported: '2026-10-24 18:00' },
-          { entity: 'Documents', count: 120, last_exported: '2026-10-23 06:00' },
-        ]);
-      })
-      .finally(() => { if (mounted) setLoading(false); });
+    Promise.allSettled([
+      fetchEmployees(),
+      fetchDepartments(),
+      recruitApi.getJobs(),
+      fetchDocuments(),
+    ]).then(([empRes, deptRes, jobRes, docRes]) => {
+      if (!mounted) return;
+      const empCount = empRes.status === 'fulfilled' ? empRes.value.length : 0;
+      const deptCount = deptRes.status === 'fulfilled' ? deptRes.value.length : 0;
+      const jobCount = jobRes.status === 'fulfilled' ? jobRes.value.length : 0;
+      const docCount = docRes.status === 'fulfilled' ? docRes.value.length : 0;
+
+      setSummary([
+        { entity: 'Employees', count: empCount, last_exported: 'Live Database' },
+        { entity: 'Departments', count: deptCount, last_exported: 'Live Database' },
+        { entity: 'Job Openings', count: jobCount, last_exported: 'Live Database' },
+        { entity: 'Documents', count: docCount, last_exported: 'Live Database' },
+      ]);
+    }).finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, []);
 

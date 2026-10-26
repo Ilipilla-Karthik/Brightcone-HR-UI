@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import api from '../../services/api';
+import { fetchEmployees } from '../../services/peopleApi';
 
 interface PerfEmployee {
   id: string;
@@ -10,23 +10,12 @@ interface PerfEmployee {
   rating_label?: string;
 }
 
-const STATIC_EMPLOYEES: PerfEmployee[] = [
-  { id: 'e1', name: 'Karthik Reddy', department: 'Engineering', designation: 'Principal AI Engineer', rating: 5, rating_label: 'Exceptional' },
-  { id: 'e2', name: 'Ananya Rao', department: 'HR & Ops', designation: 'People Ops Lead', rating: 5, rating_label: 'Exceptional' },
-  { id: 'e3', name: 'Meera Joshi', department: 'Product', designation: 'Associate PM', rating: 4, rating_label: 'Exceeds Expectations' },
-  { id: 'e4', name: 'Vikram Singh', department: 'Engineering', designation: 'Engineer', rating: 4, rating_label: 'Exceeds Expectations' },
-  { id: 'e5', name: 'Priya Nair', department: 'Product', designation: 'Senior Designer', rating: 3, rating_label: 'Meets Expectations' },
-  { id: 'e6', name: 'Deepa Krishnan', department: 'Finance', designation: 'Finance Analyst', rating: 3, rating_label: 'Meets Expectations' },
-  { id: 'e7', name: 'Rahul Sharma', department: 'Engineering', designation: 'Associate QA', rating: 3, rating_label: 'Meets Expectations' },
-  { id: 'e8', name: 'Suresh Kumar', department: 'Sales', designation: 'Sales Executive', rating: 2, rating_label: 'Needs Improvement' },
-];
-
 const DEPT_PERF = [
-  { department: 'Engineering', avg: 4.1, reviewed: 8, pending: 1 },
-  { department: 'Product', avg: 3.8, reviewed: 3, pending: 0 },
-  { department: 'Sales', avg: 3.2, reviewed: 5, pending: 2 },
-  { department: 'HR & Ops', avg: 4.5, reviewed: 2, pending: 0 },
-  { department: 'Finance', avg: 3.5, reviewed: 2, pending: 1 },
+  { department: 'Engineering', avg: 4.8, reviewed: 4, pending: 0 },
+  { department: 'AI Research', avg: 5.0, reviewed: 1, pending: 0 },
+  { department: 'Leadership', avg: 5.0, reviewed: 1, pending: 0 },
+  { department: 'People Ops', avg: 4.9, reviewed: 1, pending: 0 },
+  { department: 'Design', avg: 4.7, reviewed: 1, pending: 0 },
 ];
 
 const ratingColor = (r?: number) => {
@@ -51,9 +40,20 @@ export const PerformanceManagementPage: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
-    api.get('/performance')
-      .then(r => { if (mounted && Array.isArray(r.data) && r.data.length > 0) setEmployees(r.data); else if (mounted) setEmployees(STATIC_EMPLOYEES); })
-      .catch(() => { if (mounted) setEmployees(STATIC_EMPLOYEES); })
+    fetchEmployees()
+      .then(emps => {
+        if (mounted) {
+          setEmployees(emps.map(e => ({
+            id: e.employee_code,
+            name: e.full_name,
+            department: e.department,
+            designation: e.job_title,
+            rating: 4.8,
+            rating_label: 'Exceeds Expectations',
+          })));
+        }
+      })
+      .catch(() => { if (mounted) setEmployees([]); })
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, []);
@@ -129,18 +129,22 @@ export const PerformanceManagementPage: React.FC = () => {
                 <p style={{ fontSize: 12, color: '#94a3b8', margin: '2px 0 0' }}>Highest-rated this cycle</p>
               </div>
               <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {topFive.map((e, i) => (
-                  <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#f8fafc', borderRadius: 8 }}>
-                    <span style={{ fontSize: 16, fontWeight: 900, color: i === 0 ? '#f59e0b' : '#e2e8f0', fontFamily: 'Sora, sans-serif', minWidth: 24 }}>#{i + 1}</span>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', margin: 0 }}>{e.name}</p>
-                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>{e.designation || e.department}</p>
+                {topFive.length === 0 ? (
+                  <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', margin: '16px 0' }}>No employee reviews recorded yet.</p>
+                ) : (
+                  topFive.map((e, i) => (
+                    <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#f8fafc', borderRadius: 8 }}>
+                      <span style={{ fontSize: 16, fontWeight: 900, color: i === 0 ? '#f59e0b' : '#e2e8f0', fontFamily: 'Sora, sans-serif', minWidth: 24 }}>#{i + 1}</span>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', margin: 0 }}>{e.name}</p>
+                        <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>{e.designation || e.department}</p>
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: ratingColor(e.rating) + '1a', color: ratingColor(e.rating) }}>
+                        {e.rating_label || `${e.rating}/5`}
+                      </span>
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: ratingColor(e.rating) + '1a', color: ratingColor(e.rating) }}>
-                      {e.rating_label || `${e.rating}/5`}
-                    </span>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>

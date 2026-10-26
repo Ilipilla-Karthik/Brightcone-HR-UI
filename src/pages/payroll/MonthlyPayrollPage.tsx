@@ -4,12 +4,11 @@ import { useNavigate } from 'react-router-dom'
 import { Download, Plus, Search, Users, Eye, Edit2, Trash2, CheckCircle2 } from 'lucide-react'
 import { formatINR, exportToCSV } from './payroll-data'
 import type { MonthlyPayrollRecord } from './monthly-payroll-types'
-import { INITIAL_RECORDS } from './monthly-payroll-types'
 import { AddPayrollEntryModal, ViewPayrollDetailModal } from './MonthlyPayrollModals'
 
 export const MonthlyPayrollPage: React.FC = () => {
   const navigate = useNavigate()
-  const [records, setRecords] = useState<MonthlyPayrollRecord[]>(INITIAL_RECORDS)
+  const [records, setRecords] = useState<MonthlyPayrollRecord[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [showArchived, setShowArchived] = useState(false)

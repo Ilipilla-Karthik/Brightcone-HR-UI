@@ -15,17 +15,8 @@ interface ApprovalItem {
   priority: 'High' | 'Normal' | 'Low';
 }
 
-const INITIAL_APPROVALS: ApprovalItem[] = [
-  { id: 'APP-101', module: 'Leave', title: 'Paid Annual Leave', requesterName: 'Priya Sharma', requesterRole: 'Senior Frontend Engineer', requesterDept: 'Engineering', details: 'Diwali family vacation · 4 working days (Oct 30 – Nov 03)', amountOrDuration: '4 Days', submittedAt: 'Today, 10:15 AM', status: 'Pending', priority: 'Normal' },
-  { id: 'APP-102', module: 'Expense', title: 'Client Travel & Accommodation', requesterName: 'Amit Joshi', requesterRole: 'Enterprise Account Executive', requesterDept: 'Sales', details: 'Flight tickets + Hotel stay for Mumbai Enterprise Summit', amountOrDuration: '₹28,450', submittedAt: 'Today, 09:40 AM', status: 'Pending', priority: 'High' },
-  { id: 'APP-103', module: 'Shift', title: 'Shift Swap Request', requesterName: 'Deepak S', requesterRole: 'DevOps Engineer', requesterDept: 'Engineering', details: 'Swap Sunday On-call duty with Rahul Varma', amountOrDuration: 'Oct 28 Shift', submittedAt: 'Yesterday, 04:30 PM', status: 'Pending', priority: 'Normal' },
-  { id: 'APP-104', module: 'Sign', title: 'Employment Offer Letter', requesterName: 'Meera Nambiar', requesterRole: 'Product Designer', requesterDept: 'Design', details: 'Candidate signed NDA & joining confirmation package', amountOrDuration: 'DocSign #204', submittedAt: '24 Oct 2026', status: 'Pending', priority: 'High' },
-  { id: 'APP-105', module: 'Expense', title: 'Team Tech Book Purchase', requesterName: 'Rahul Varma', requesterRole: 'Backend Engineer', requesterDept: 'Engineering', details: 'Distributed Systems O\'Reilly learning subscriptions', amountOrDuration: '₹4,890', submittedAt: '23 Oct 2026', status: 'Approved', priority: 'Low' },
-  { id: 'APP-106', module: 'Leave', title: 'Sick Leave', requesterName: 'Rohan Verma', requesterRole: 'Associate QA Engineer', requesterDept: 'Engineering', details: 'Viral fever recovery with prescription attached', amountOrDuration: '2 Days', submittedAt: '22 Oct 2026', status: 'Approved', priority: 'Normal' },
-];
-
 export const ApprovalsInbox: React.FC = () => {
-  const [items, setItems] = useState<ApprovalItem[]>(INITIAL_APPROVALS);
+  const [items, setItems] = useState<ApprovalItem[]>([]);
   const [activeTab, setActiveTab] = useState<'Pending' | 'Approved' | 'Rejected' | 'All'>('Pending');
   const [moduleFilter, setModuleFilter] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');

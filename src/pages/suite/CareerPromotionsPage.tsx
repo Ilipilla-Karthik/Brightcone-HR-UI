@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
+import { fetchEmployees } from '../../services/peopleApi';
 
 interface Employee {
   id: string;
@@ -22,13 +23,6 @@ interface PromotionRequest {
   date: string;
 }
 
-const STATIC_REQUESTS: PromotionRequest[] = [
-  { id: 'p1', employee_name: 'Karthik Reddy', current_role: 'Senior AI Engineer', proposed_role: 'Principal AI Engineer', department: 'Engineering', requested_by: 'Naresh Vemparala', status: 'pending', date: '2026-10-20' },
-  { id: 'p2', employee_name: 'Meera Joshi', current_role: 'Associate Product Manager', proposed_role: 'Product Manager', department: 'Product', requested_by: 'Ananya Rao', status: 'pending', date: '2026-10-18' },
-  { id: 'p3', employee_name: 'Vikram Singh', current_role: 'Senior Sales Executive', proposed_role: 'Sales Manager', department: 'Sales', requested_by: 'Suresh Kumar', status: 'approved', date: '2026-09-30' },
-  { id: 'p4', employee_name: 'Deepa Krishnan', current_role: 'Finance Analyst', proposed_role: 'Senior Finance Analyst', department: 'Finance', requested_by: 'Ananya Rao', status: 'rejected', date: '2026-09-15' },
-];
-
 const CAREER_PATHS = [
   { role: 'Associate Engineer', next: 'Engineer', years: '1–2 yrs' },
   { role: 'Engineer', next: 'Senior Engineer', years: '2–3 yrs' },
@@ -44,22 +38,27 @@ const tenureYears = (doj?: string) => {
 
 export const CareerPromotionsPage: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [requests, setRequests] = useState<PromotionRequest[]>(STATIC_REQUESTS);
+  const [requests, setRequests] = useState<PromotionRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    api.get('/employees')
-      .then(r => { if (mounted) setEmployees(r.data || []); })
+    fetchEmployees()
+      .then(emps => {
+        if (mounted) {
+          setEmployees(emps.map(e => ({
+            id: e.employee_code,
+            name: e.full_name,
+            department: e.department,
+            designation: e.job_title,
+            date_of_joining: e.joined,
+            status: e.status,
+          })));
+        }
+      })
       .catch(() => {
-        if (mounted) setEmployees([
-          { id: 'e1', name: 'Karthik Reddy', department: 'Engineering', designation: 'Senior AI Engineer', date_of_joining: '2020-09-05' },
-          { id: 'e2', name: 'Meera Joshi', department: 'Product', designation: 'Associate PM', date_of_joining: '2022-07-19' },
-          { id: 'e3', name: 'Suresh Kumar', department: 'Sales', designation: 'Sales Executive', date_of_joining: '2025-01-15' },
-          { id: 'e4', name: 'Ananya Rao', department: 'HR & Ops', designation: 'People Ops Lead', date_of_joining: '2021-06-20' },
-          { id: 'e5', name: 'Vikram Singh', department: 'Engineering', designation: 'Engineer', date_of_joining: '2024-02-10' },
-        ]);
+        if (mounted) setEmployees([]);
       })
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
@@ -108,28 +107,36 @@ export const CareerPromotionsPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {requests.map(req => (
-                    <tr key={req.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '11px 14px', fontWeight: 600, color: '#1e293b' }}>{req.employee_name}</td>
-                      <td style={{ padding: '11px 14px', color: '#64748b' }}>{req.current_role}</td>
-                      <td style={{ padding: '11px 14px', color: '#6366f1', fontWeight: 600 }}>{req.proposed_role}</td>
-                      <td style={{ padding: '11px 14px', color: '#64748b' }}>{req.department}</td>
-                      <td style={{ padding: '11px 14px', color: '#94a3b8', fontSize: 12 }}>{req.date}</td>
-                      <td style={{ padding: '11px 14px' }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: statusBg(req.status), color: statusColor(req.status), textTransform: 'uppercase' }}>{req.status}</span>
-                      </td>
-                      <td style={{ padding: '11px 14px' }}>
-                        {req.status === 'pending' ? (
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            <button onClick={() => handleAction(req.id, 'approved')} disabled={acting === req.id}
-                              style={{ padding: '4px 10px', borderRadius: 7, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', background: '#dcfce7', color: '#16a34a' }}>✓ Approve</button>
-                            <button onClick={() => handleAction(req.id, 'rejected')} disabled={acting === req.id}
-                              style={{ padding: '4px 10px', borderRadius: 7, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', background: '#fef2f2', color: '#dc2626' }}>✕ Reject</button>
-                          </div>
-                        ) : <span style={{ fontSize: 12, color: '#94a3b8' }}>—</span>}
+                  {requests.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: '30px 14px', textAlign: 'center', color: '#94a3b8' }}>
+                        No pending or past promotion requests.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    requests.map(req => (
+                      <tr key={req.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '11px 14px', fontWeight: 600, color: '#1e293b' }}>{req.employee_name}</td>
+                        <td style={{ padding: '11px 14px', color: '#64748b' }}>{req.current_role}</td>
+                        <td style={{ padding: '11px 14px', color: '#6366f1', fontWeight: 600 }}>{req.proposed_role}</td>
+                        <td style={{ padding: '11px 14px', color: '#64748b' }}>{req.department}</td>
+                        <td style={{ padding: '11px 14px', color: '#94a3b8', fontSize: 12 }}>{req.date}</td>
+                        <td style={{ padding: '11px 14px' }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 99, background: statusBg(req.status), color: statusColor(req.status), textTransform: 'uppercase' }}>{req.status}</span>
+                        </td>
+                        <td style={{ padding: '11px 14px' }}>
+                          {req.status === 'pending' ? (
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              <button onClick={() => handleAction(req.id, 'approved')} disabled={acting === req.id}
+                                style={{ padding: '4px 10px', borderRadius: 7, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', background: '#dcfce7', color: '#16a34a' }}>✓ Approve</button>
+                              <button onClick={() => handleAction(req.id, 'rejected')} disabled={acting === req.id}
+                                style={{ padding: '4px 10px', borderRadius: 7, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', background: '#fef2f2', color: '#dc2626' }}>✕ Reject</button>
+                            </div>
+                          ) : <span style={{ fontSize: 12, color: '#94a3b8' }}>—</span>}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -143,17 +150,21 @@ export const CareerPromotionsPage: React.FC = () => {
                 <p style={{ fontSize: 12, color: '#94a3b8', margin: '2px 0 0' }}>Tenure ≥ 1 year</p>
               </div>
               <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {eligible.map(e => (
-                  <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8fafc', borderRadius: 8 }}>
-                    <div>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', margin: 0 }}>{e.name}</p>
-                      <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>{e.designation || e.department}</p>
+                {eligible.length === 0 ? (
+                  <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', margin: '16px 0' }}>No eligible employees at this time.</p>
+                ) : (
+                  eligible.map(e => (
+                    <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8fafc', borderRadius: 8 }}>
+                      <div>
+                        <p style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', margin: 0 }}>{e.name}</p>
+                        <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>{e.designation || e.department}</p>
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#6366f1', background: '#6366f11a', padding: '2px 8px', borderRadius: 99 }}>
+                        {Math.floor(tenureYears(e.date_of_joining))}y {Math.floor((tenureYears(e.date_of_joining) % 1) * 12)}m
+                      </span>
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#6366f1', background: '#6366f11a', padding: '2px 8px', borderRadius: 99 }}>
-                      {Math.floor(tenureYears(e.date_of_joining))}y {Math.floor((tenureYears(e.date_of_joining) % 1) * 12)}m
-                    </span>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 

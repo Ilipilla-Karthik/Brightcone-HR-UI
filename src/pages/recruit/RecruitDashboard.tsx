@@ -17,18 +17,19 @@ export const RecruitDashboard: React.FC = () => {
       .catch(() => {});
   }, []);
 
-  const appliedCount = candidates.filter((c) => c.stage?.toLowerCase() === 'applied').length || 2;
-  const screenCount = candidates.filter((c) => c.stage?.toLowerCase() === 'screening').length || 2;
-  const interviewCount = candidates.filter((c) => c.stage?.toLowerCase() === 'interview').length || 2;
-  const offerCount = candidates.filter((c) => c.stage?.toLowerCase() === 'offer').length || 1;
-  const hiredCount = candidates.filter((c) => c.stage?.toLowerCase() === 'hired').length || 1;
+  const appliedCount = candidates.filter((c) => c.stage?.toLowerCase() === 'applied').length;
+  const screenCount = candidates.filter((c) => c.stage?.toLowerCase() === 'screening').length;
+  const interviewCount = candidates.filter((c) => c.stage?.toLowerCase() === 'interview').length;
+  const offerCount = candidates.filter((c) => c.stage?.toLowerCase() === 'offer').length;
+  const hiredCount = candidates.filter((c) => c.stage?.toLowerCase() === 'hired').length;
+  const totalCount = candidates.length || 1;
 
   const pipeline = [
-    { stage: 'Applied', count: appliedCount, pct: 100, color: '#7C5CFF' },
-    { stage: 'Screening', count: screenCount, pct: 75, color: '#0B6FDB' },
-    { stage: 'Interview', count: interviewCount, pct: 50, color: '#12A58E' },
-    { stage: 'Offer', count: offerCount, pct: 25, color: '#E07A1D' },
-    { stage: 'Hired', count: hiredCount, pct: 15, color: '#15A36B' },
+    { stage: 'Applied', count: appliedCount, pct: Math.round((appliedCount / totalCount) * 100), color: '#7C5CFF' },
+    { stage: 'Screening', count: screenCount, pct: Math.round((screenCount / totalCount) * 100), color: '#0B6FDB' },
+    { stage: 'Interview', count: interviewCount, pct: Math.round((interviewCount / totalCount) * 100), color: '#12A58E' },
+    { stage: 'Offer', count: offerCount, pct: Math.round((offerCount / totalCount) * 100), color: '#E07A1D' },
+    { stage: 'Hired', count: hiredCount, pct: Math.round((hiredCount / totalCount) * 100), color: '#15A36B' },
   ];
 
   return (
@@ -64,12 +65,12 @@ export const RecruitDashboard: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-2xs">
           <span className="text-xs text-[var(--muted)] font-medium">Open Positions</span>
-          <p className="text-3xl font-bold font-['Sora'] text-[var(--text)] mt-1">{jobs.length || 4}</p>
+          <p className="text-3xl font-bold font-['Sora'] text-[var(--text)] mt-1">{jobs.length}</p>
           <span className="text-[11px] text-[#7C5CFF] font-medium mt-2 block">Live in backend database</span>
         </div>
         <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-2xs">
           <span className="text-xs text-[var(--muted)] font-medium">Total Candidates</span>
-          <p className="text-3xl font-bold font-['Sora'] text-[#0B6FDB] mt-1">{candidates.length || 8}</p>
+          <p className="text-3xl font-bold font-['Sora'] text-[#0B6FDB] mt-1">{candidates.length}</p>
           <span className="text-[11px] text-[var(--muted)] mt-2 block">Across all stages</span>
         </div>
         <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-2xs">
@@ -124,19 +125,27 @@ export const RecruitDashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--line)] text-[var(--text)]">
-              {candidates.slice(0, 5).map((c) => (
-                <tr key={c.cand_id || c.id} className="hover:bg-[var(--surface-muted)]/50">
-                  <td className="p-3.5 font-bold">{c.full_name}</td>
-                  <td className="p-3.5">{c.job_title}</td>
-                  <td className="p-3.5">
-                    <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700">
-                      {c.stage}
-                    </span>
+              {candidates.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="p-8 text-center text-[var(--muted)]">
+                    No candidates found in recruitment pipeline.
                   </td>
-                  <td className="p-3.5 text-[var(--muted)]">{c.source}</td>
-                  <td className="p-3.5 text-right font-mono font-bold text-[#7C5CFF]">{c.match_score || 85}%</td>
                 </tr>
-              ))}
+              ) : (
+                candidates.slice(0, 5).map((c) => (
+                  <tr key={c.cand_id || c.id} className="hover:bg-[var(--surface-muted)]/50">
+                    <td className="p-3.5 font-bold">{c.full_name}</td>
+                    <td className="p-3.5">{c.job_title}</td>
+                    <td className="p-3.5">
+                      <span className="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700">
+                        {c.stage}
+                      </span>
+                    </td>
+                    <td className="p-3.5 text-[var(--muted)]">{c.source}</td>
+                    <td className="p-3.5 text-right font-mono font-bold text-[#7C5CFF]">{c.match_score || 85}%</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

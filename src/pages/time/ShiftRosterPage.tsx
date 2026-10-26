@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface EmployeeShift {
   name: string;
@@ -11,18 +11,34 @@ interface EmployeeShift {
   sat: string;
 }
 
-const DEFAULT_ROSTER: EmployeeShift[] = [
-  { name: 'Rahul Varma', dept: 'Engineering', mon: 'General', tue: 'General', wed: 'General', thu: 'General', fri: 'General', sat: 'Off' },
-  { name: 'Priya Sharma', dept: 'Engineering', mon: 'General', tue: 'General', wed: 'General', thu: 'General', fri: 'General', sat: 'Off' },
-  { name: 'Deepak S', dept: 'Engineering', mon: 'Morning', tue: 'Morning', wed: 'Morning', thu: 'Morning', fri: 'Morning', sat: 'Morning' },
-  { name: 'Rohan Verma', dept: 'Engineering', mon: 'General', tue: 'General', wed: 'General', thu: 'General', fri: 'General', sat: 'Off' },
-  { name: 'Karthik Reddy', dept: 'AI Research', mon: 'General', tue: 'General', wed: 'General', thu: 'General', fri: 'General', sat: 'Off' },
-  { name: 'Ananya Rao', dept: 'People Ops', mon: 'General', tue: 'General', wed: 'General', thu: 'General', fri: 'General', sat: 'Off' },
-];
-
 export const ShiftRosterPage: React.FC = () => {
-  const [roster] = useState<EmployeeShift[]>(DEFAULT_ROSTER);
+  const [roster, setRoster] = useState<EmployeeShift[]>([]);
   const [week] = useState('Oct 26 - Nov 01, 2026');
+
+  useEffect(() => {
+    fetch('/api/v1/roster')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data: any) => {
+        const list = Array.isArray(data) ? data : data?.value || [];
+        const shiftMap = (code: string) => {
+          if (code === 'MORN') return 'Morning';
+          if (code === 'EVE') return 'Evening';
+          return 'General';
+        };
+        const mapped: EmployeeShift[] = list.map((r: any) => ({
+          name: r.employeeName || r.employee_name || 'Staff Member',
+          dept: 'Engineering',
+          mon: shiftMap(r.shiftCode || r.shift_code),
+          tue: shiftMap(r.shiftCode || r.shift_code),
+          wed: shiftMap(r.shiftCode || r.shift_code),
+          thu: shiftMap(r.shiftCode || r.shift_code),
+          fri: shiftMap(r.shiftCode || r.shift_code),
+          sat: 'Off',
+        }));
+        setRoster(mapped);
+      })
+      .catch(() => setRoster([]));
+  }, []);
 
   const shiftBadge = (shift: string) => {
     if (shift === 'Off') return <span className="text-[10px] text-[var(--muted)]">Off</span>;
@@ -76,20 +92,26 @@ export const ShiftRosterPage: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line)]">
-            {roster.map((r) => (
-              <tr key={r.name} className="hover:bg-[var(--surface-2)]/50 transition-colors">
-                <td className="py-3 px-4">
-                  <b className="block text-xs font-semibold text-[var(--text)]">{r.name}</b>
-                  <span className="block text-[11px] text-[var(--muted)]">{r.dept}</span>
-                </td>
-                <td className="py-3 px-3">{shiftBadge(r.mon)}</td>
-                <td className="py-3 px-3">{shiftBadge(r.tue)}</td>
-                <td className="py-3 px-3">{shiftBadge(r.wed)}</td>
-                <td className="py-3 px-3">{shiftBadge(r.thu)}</td>
-                <td className="py-3 px-3">{shiftBadge(r.fri)}</td>
-                <td className="py-3 px-3">{shiftBadge(r.sat)}</td>
+            {roster.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="py-12 text-center text-sm text-[var(--muted)]">No weekly shift roster published for this cycle.</td>
               </tr>
-            ))}
+            ) : (
+              roster.map((r) => (
+                <tr key={r.name} className="hover:bg-[var(--surface-2)]/50 transition-colors">
+                  <td className="py-3 px-4">
+                    <b className="block text-xs font-semibold text-[var(--text)]">{r.name}</b>
+                    <span className="block text-[11px] text-[var(--muted)]">{r.dept}</span>
+                  </td>
+                  <td className="py-3 px-3">{shiftBadge(r.mon)}</td>
+                  <td className="py-3 px-3">{shiftBadge(r.tue)}</td>
+                  <td className="py-3 px-3">{shiftBadge(r.wed)}</td>
+                  <td className="py-3 px-3">{shiftBadge(r.thu)}</td>
+                  <td className="py-3 px-3">{shiftBadge(r.fri)}</td>
+                  <td className="py-3 px-3">{shiftBadge(r.sat)}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

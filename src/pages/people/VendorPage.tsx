@@ -12,15 +12,8 @@ interface VendorItem {
   status: 'Active' | 'Under Renewal' | 'Terminated';
 }
 
-const DEFAULT_VENDORS: VendorItem[] = [
-  { id: 'VEN-01', name: 'Dell Enterprise Solutions', category: 'IT Hardware', contactPerson: 'Suresh Kumar', email: 'suresh.k@dell.partner.in', phone: '+91 80 4123 4567', contractExpiry: '2027-03-31', status: 'Active' },
-  { id: 'VEN-02', name: 'Apple India Corporate', category: 'IT Hardware', contactPerson: 'Pooja Hegde', email: 'corporate@apple.in', phone: '+91 22 6123 8899', contractExpiry: '2026-12-31', status: 'Active' },
-  { id: 'VEN-03', name: 'SecureGuard Facility Services', category: 'Facilities & Security', contactPerson: 'Major R. Sharma', email: 'operations@secureguard.co.in', phone: '+91 40 2311 0044', contractExpiry: '2026-11-15', status: 'Under Renewal' },
-  { id: 'VEN-04', name: 'FreshBeans Gourmet Pantry', category: 'Catering & Supplies', contactPerson: 'Arun V.', email: 'orders@freshbeans.in', phone: '+91 99887 76655', contractExpiry: '2027-06-30', status: 'Active' },
-];
-
 export const VendorPage: React.FC = () => {
-  const [vendors, setVendors] = useState<VendorItem[]>(DEFAULT_VENDORS);
+  const [vendors, setVendors] = useState<VendorItem[]>([]);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newVendor, setNewVendor] = useState({ name: '', category: 'IT Hardware' as const, contactPerson: '', email: '', phone: '', contractExpiry: '' });
@@ -107,28 +100,34 @@ export const VendorPage: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line)] text-[var(--text)]">
-            {filtered.map((item) => (
-              <tr key={item.id} className="hover:bg-[var(--surface-2)]/30 transition-colors">
-                <td className="p-3.5">
-                  <div className="font-semibold">{item.name}</div>
-                  <div className="text-[10px] text-[var(--muted)] font-mono">{item.id}</div>
-                </td>
-                <td className="p-3.5 font-medium">{item.category}</td>
-                <td className="p-3.5">{item.contactPerson}</td>
-                <td className="p-3.5 text-[var(--muted)]">
-                  <div>{item.email}</div>
-                  <div className="text-[10px]">{item.phone}</div>
-                </td>
-                <td className="p-3.5 font-medium">{item.contractExpiry}</td>
-                <td className="p-3.5 text-right">
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                    item.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
-                  }`}>
-                    {item.status}
-                  </span>
-                </td>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="p-8 text-center text-[var(--muted)]">No vendors registered in registry. Click "Onboard New Vendor" to add one.</td>
               </tr>
-            ))}
+            ) : (
+              filtered.map((item) => (
+                <tr key={item.id} className="hover:bg-[var(--surface-2)]/30 transition-colors">
+                  <td className="p-3.5">
+                    <div className="font-semibold">{item.name}</div>
+                    <div className="text-[10px] text-[var(--muted)] font-mono">{item.id}</div>
+                  </td>
+                  <td className="p-3.5 font-medium">{item.category}</td>
+                  <td className="p-3.5">{item.contactPerson}</td>
+                  <td className="p-3.5 text-[var(--muted)]">
+                    <div>{item.email}</div>
+                    <div className="text-[10px]">{item.phone}</div>
+                  </td>
+                  <td className="p-3.5 font-medium">{item.contractExpiry}</td>
+                  <td className="p-3.5 text-right">
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                      item.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
+                    }`}>
+                      {item.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

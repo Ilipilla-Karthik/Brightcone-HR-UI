@@ -14,18 +14,8 @@ interface AssetRecord {
   status: 'Assigned' | 'Available' | 'Maintenance';
 }
 
-const DEFAULT_ASSETS: AssetRecord[] = [
-  { id: 'ast-1', tag: 'BC-MBP-01', name: 'MacBook Pro 16" M3 Max', category: 'Laptop', serial: 'C02G4012MD6T', assignedTo: 'Karthik Reddy', department: 'AI Research', condition: 'Excellent', status: 'Assigned' },
-  { id: 'ast-2', tag: 'BC-MBP-02', name: 'MacBook Pro 14" M3 Pro', category: 'Laptop', serial: 'C02H1023MD6T', assignedTo: 'Ananya Rao', department: 'People Ops', condition: 'Excellent', status: 'Assigned' },
-  { id: 'ast-3', tag: 'BC-DELL-01', name: 'Dell XPS 15 9530', category: 'Laptop', serial: 'DL992384110A', assignedTo: 'Rahul Varma', department: 'Engineering', condition: 'Good', status: 'Assigned' },
-  { id: 'ast-4', tag: 'BC-MON-01', name: 'Dell UltraSharp 27" 4K', category: 'Monitor', serial: 'CN092348501', assignedTo: 'Priya Sharma', department: 'Engineering', condition: 'Excellent', status: 'Assigned' },
-  { id: 'ast-5', tag: 'BC-KEY-01', name: 'YubiKey 5C NFC Security Key', category: 'Access Device', serial: 'YK-88294101', assignedTo: 'Karthik Reddy', department: 'AI Research', condition: 'Excellent', status: 'Assigned' },
-  { id: 'ast-6', tag: 'BC-MBP-03', name: 'MacBook Air 15" M2', category: 'Laptop', serial: 'C02K9910MD6T', assignedTo: 'Unassigned', department: 'IT Inventory', condition: 'Excellent', status: 'Available' },
-  { id: 'ast-7', tag: 'BC-MON-02', name: 'LG 34" UltraWide Curve', category: 'Monitor', serial: 'LG-34882190', assignedTo: 'Unassigned', department: 'IT Inventory', condition: 'Good', status: 'Available' },
-];
-
 export const AssetsAdminPage: React.FC = () => {
-  const [assets, setAssets] = useState<AssetRecord[]>(DEFAULT_ASSETS);
+  const [assets, setAssets] = useState<AssetRecord[]>([]);
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -34,22 +24,23 @@ export const AssetsAdminPage: React.FC = () => {
   useEffect(() => {
     fetchAssets()
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          const mapped: AssetRecord[] = data.map((d, i) => ({
-            id: String(d.id || i + 1),
-            tag: d.serial_number || `BC-AST-${100 + i}`,
-            name: d.model_name || 'Hardware Asset',
-            category: (d.asset_type === 'Monitor' ? 'Monitor' : d.asset_type === 'Peripherals' ? 'Access Device' : 'Laptop') as any,
-            serial: d.serial_number || `SN-${i}`,
-            assignedTo: d.employee_code || 'Unassigned',
-            department: 'IT Equipment',
-            condition: 'Excellent',
-            status: d.status?.includes('Active') || d.status?.includes('Assigned') ? 'Assigned' : 'Available',
-          }));
-          setAssets(mapped);
-        }
+        const list = Array.isArray(data) ? data : (data as any)?.value || [];
+        const mapped: AssetRecord[] = list.map((d: any, i: number) => ({
+          id: String(d.id || i + 1),
+          tag: d.serial_number || `BC-AST-${100 + i}`,
+          name: d.model_name || 'Hardware Asset',
+          category: (d.asset_type === 'Monitor' ? 'Monitor' : d.asset_type === 'Peripherals' ? 'Access Device' : 'Laptop') as any,
+          serial: d.serial_number || `SN-${i}`,
+          assignedTo: d.employee_code || 'Unassigned',
+          department: 'IT Equipment',
+          condition: 'Excellent',
+          status: d.status?.includes('Active') || d.status?.includes('Assigned') ? 'Assigned' : 'Available',
+        }));
+        setAssets(mapped);
       })
-      .catch(() => {});
+      .catch(() => {
+        setAssets([]);
+      });
   }, []);
 
   const categories = ['All', 'Laptop', 'Monitor', 'Access Device', 'Phone'];
@@ -187,6 +178,9 @@ export const AssetsAdminPage: React.FC = () => {
             ))}
           </tbody>
         </table>
+        {filtered.length === 0 && (
+          <div className="py-12 text-center text-sm text-[var(--muted)]">No hardware assets registered in database.</div>
+        )}
       </div>
 
       {/* Add Modal */}

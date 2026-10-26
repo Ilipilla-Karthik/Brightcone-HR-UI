@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
+import { fetchEmployees } from '../../services/peopleApi';
 
 interface CardItem {
   id: string;
@@ -11,19 +12,31 @@ interface CardItem {
   status: 'Active' | 'Blocked' | 'Returned';
 }
 
-const DEFAULT_CARDS: CardItem[] = [
-  { id: 'c-1', cardNum: 'BC-NFC-0912', employee: 'Naresh Vemparala', empCode: 'BC-1001', zone: 'All Floors & Executive Suites', issuedOn: '2022-01-15', status: 'Active' },
-  { id: 'c-2', cardNum: 'BC-NFC-0914', employee: 'Karthik Reddy', empCode: 'BC-1012', zone: 'AI Lab & Server Room (Tier 4)', issuedOn: '2022-04-18', status: 'Active' },
-  { id: 'c-3', cardNum: 'BC-NFC-0925', employee: 'Rahul Varma', empCode: 'BC-1020', zone: 'Engineering Floor (Level 2)', issuedOn: '2023-06-10', status: 'Active' },
-  { id: 'c-4', cardNum: 'BC-NFC-0931', employee: 'Priya Sharma', empCode: 'BC-1025', zone: 'Engineering Floor (Level 2)', issuedOn: '2023-08-01', status: 'Active' },
-  { id: 'c-5', cardNum: 'BC-NFC-0940', employee: 'Deepak S', empCode: 'BC-1071', zone: 'General Office', issuedOn: '2024-01-10', status: 'Returned' },
-];
-
 export const AccessCardPage: React.FC = () => {
-  const [cards, setCards] = useState<CardItem[]>(DEFAULT_CARDS);
+  const [cards, setCards] = useState<CardItem[]>([]);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCard, setNewCard] = useState({ cardNum: '', employee: '', empCode: '', zone: 'General Office (Level 1)' });
+
+  useEffect(() => {
+    fetchEmployees()
+      .then((data: any) => {
+        const list = Array.isArray(data) ? data : data?.value || [];
+        const mapped: CardItem[] = list.map((e: any, idx: number) => ({
+          id: `c-${idx + 1}`,
+          cardNum: `BC-NFC-${1000 + (e.id || idx + 1)}`,
+          employee: e.full_name || 'Staff Member',
+          empCode: e.employee_code || `BC-100${idx + 1}`,
+          zone: e.department === 'AI Research' ? 'AI Lab & Server Room' : e.department === 'Leadership' ? 'Executive & All Floors' : 'Engineering Level 2',
+          issuedOn: e.joined || '2022-01-15',
+          status: 'Active' as const,
+        }));
+        setCards(mapped);
+      })
+      .catch(() => {
+        setCards([]);
+      });
+  }, []);
 
   const handleToggleStatus = (id: string) => {
     setCards(cards.map((c) => (c.id === id ? { ...c, status: c.status === 'Active' ? 'Blocked' : 'Active' } : c)));
@@ -110,38 +123,44 @@ export const AccessCardPage: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line)] text-[var(--text)]">
-            {filtered.map((item) => (
-              <tr key={item.id} className="hover:bg-[var(--surface-2)]/30 transition-colors">
-                <td className="p-3.5 font-mono font-semibold text-[#12A58E]">{item.cardNum}</td>
-                <td className="p-3.5">
-                  <div className="font-semibold">{item.employee}</div>
-                  <div className="text-[10px] text-[var(--muted)] font-mono">{item.empCode}</div>
-                </td>
-                <td className="p-3.5 text-[var(--muted)]">{item.zone}</td>
-                <td className="p-3.5 font-medium">{item.issuedOn}</td>
-                <td className="p-3.5">
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                    item.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' :
-                    item.status === 'Blocked' ? 'bg-rose-500/10 text-rose-500' : 'bg-zinc-500/10 text-[var(--muted)]'
-                  }`}>
-                    {item.status}
-                  </span>
-                </td>
-                <td className="p-3.5 text-right">
-                  <button
-                    type="button"
-                    onClick={() => handleToggleStatus(item.id)}
-                    className={`px-2.5 py-1 rounded-lg font-semibold text-[10px] cursor-pointer ${
-                      item.status === 'Active'
-                        ? 'bg-rose-500/10 text-rose-600 hover:bg-rose-500/20'
-                        : 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20'
-                    }`}
-                  >
-                    {item.status === 'Active' ? 'Block Card' : 'Unblock Card'}
-                  </button>
-                </td>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="p-8 text-center text-[var(--muted)]">No active NFC access cards registered.</td>
               </tr>
-            ))}
+            ) : (
+              filtered.map((item) => (
+                <tr key={item.id} className="hover:bg-[var(--surface-2)]/30 transition-colors">
+                  <td className="p-3.5 font-mono font-semibold text-[#12A58E]">{item.cardNum}</td>
+                  <td className="p-3.5">
+                    <div className="font-semibold">{item.employee}</div>
+                    <div className="text-[10px] text-[var(--muted)] font-mono">{item.empCode}</div>
+                  </td>
+                  <td className="p-3.5 text-[var(--muted)]">{item.zone}</td>
+                  <td className="p-3.5 font-medium">{item.issuedOn}</td>
+                  <td className="p-3.5">
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                      item.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' :
+                      item.status === 'Blocked' ? 'bg-rose-500/10 text-rose-500' : 'bg-zinc-500/10 text-[var(--muted)]'
+                    }`}>
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="p-3.5 text-right">
+                    <button
+                      type="button"
+                      onClick={() => handleToggleStatus(item.id)}
+                      className={`px-2.5 py-1 rounded-lg font-semibold text-[10px] cursor-pointer ${
+                        item.status === 'Active'
+                          ? 'bg-rose-500/10 text-rose-600 hover:bg-rose-500/20'
+                          : 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20'
+                      }`}
+                    >
+                      {item.status === 'Active' ? 'Block Card' : 'Unblock Card'}
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

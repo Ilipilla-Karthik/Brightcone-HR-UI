@@ -31,17 +31,7 @@ export const ActionsRemindersPage: React.FC = () => {
     api.get('/notifications')
       .then(r => { if (mounted) setItems(r.data || []); })
       .catch(() => {
-        if (mounted) setItems([
-          { id: 'n1', title: 'Probation review due — Rohan Verma', message: 'Complete the 3-month probation review for Rohan Verma (Associate QA).', priority: 'high', due_date: '2026-10-27', status: 'pending', category: 'People' },
-          { id: 'n2', title: 'October payroll approval pending', message: 'Finance team is waiting for HR sign-off on October salary batch.', priority: 'high', due_date: '2026-10-26', status: 'pending', category: 'Payroll' },
-          { id: 'n3', title: 'POSH training completion reminder', message: '6 employees haven\'t completed mandatory POSH training.', priority: 'high', due_date: '2026-10-30', status: 'pending', category: 'Compliance' },
-          { id: 'n4', title: 'Offer letter awaiting issuance — Neha Gupta', message: 'Offer accepted but letter not yet issued.', priority: 'medium', due_date: '2026-10-28', status: 'pending', category: 'Recruit' },
-          { id: 'n5', title: 'Equipment return — Ramesh Babu (exit)', message: 'Laptop and access card return pending from Ramesh Babu.', priority: 'medium', due_date: '2026-10-29', status: 'pending', category: 'Assets' },
-          { id: 'n6', title: 'Q3 performance reviews to be finalized', message: 'Deadline for finalising Q3 appraisal cycle is next week.', priority: 'medium', due_date: '2026-11-02', status: 'pending', category: 'Performance' },
-          { id: 'n7', title: 'Update holiday calendar for 2027', message: 'Add regional holidays for FY 2026-27 before November.', priority: 'low', due_date: '2026-11-15', status: 'pending', category: 'Admin' },
-          { id: 'n8', title: 'Benefits enrolment window closing', message: 'Annual benefits enrolment closes end of month.', priority: 'low', due_date: '2026-10-31', status: 'pending', category: 'Payroll' },
-          { id: 'n9', title: 'BGV completed — Sita Lakshmi', message: 'Background verification cleared. Update onboarding status.', priority: 'low', due_date: '2026-10-26', status: 'done', category: 'Recruit' },
-        ]);
+        if (mounted) setItems([]);
       })
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };

@@ -13,15 +13,8 @@ interface ShiftItem {
   isActive: boolean;
 }
 
-const DEFAULT_SHIFTS: ShiftItem[] = [
-  { id: 'S1', name: 'General Engineering Shift', code: 'GEN', startTime: '09:00', endTime: '18:00', breakMins: 60, graceMins: 15, isOvernight: false, isActive: true },
-  { id: 'S2', name: 'Morning Operations Shift', code: 'MORN', startTime: '06:00', endTime: '15:00', breakMins: 45, graceMins: 10, isOvernight: false, isActive: true },
-  { id: 'S3', name: 'Evening Support Shift', code: 'EVE', startTime: '14:00', endTime: '23:00', breakMins: 45, graceMins: 10, isOvernight: false, isActive: true },
-  { id: 'S4', name: 'Night Infrastructure Shift', code: 'NIGHT', startTime: '22:00', endTime: '07:00', breakMins: 60, graceMins: 15, isOvernight: true, isActive: true },
-];
-
 export const ShiftsPage: React.FC = () => {
-  const [shifts, setShifts] = useState<ShiftItem[]>(DEFAULT_SHIFTS);
+  const [shifts, setShifts] = useState<ShiftItem[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({ name: '', code: '', startTime: '09:00', endTime: '18:00', breakMins: 60 });
   const [toastMsg, setToastMsg] = useState('');
@@ -35,22 +28,21 @@ export const ShiftsPage: React.FC = () => {
     fetch('/api/v1/shifts')
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          const mapped = data.map((d: any) => ({
-            id: d.shift_id || d.id,
-            name: d.name,
-            code: d.code,
-            startTime: d.start_time,
-            endTime: d.end_time,
-            breakMins: d.break_duration_minutes || 60,
-            graceMins: d.grace_period_minutes || 15,
-            isOvernight: d.is_overnight || false,
-            isActive: d.is_active ?? true,
-          }));
-          setShifts(mapped);
-        }
+        const list = Array.isArray(data) ? data : data?.value || [];
+        const mapped = list.map((d: any) => ({
+          id: d.shiftId || d.shift_id || String(d.id),
+          name: d.name,
+          code: d.code,
+          startTime: d.startTime || d.start_time || '09:00',
+          endTime: d.endTime || d.end_time || '18:00',
+          breakMins: d.breakDurationMinutes || d.break_duration_minutes || 60,
+          graceMins: d.gracePeriodMinutes || d.grace_period_minutes || 15,
+          isOvernight: d.isOvernight || d.is_overnight || false,
+          isActive: d.isActive ?? d.is_active ?? true,
+        }));
+        setShifts(mapped);
       })
-      .catch(() => {});
+      .catch(() => setShifts([]));
   }, []);
 
   const handleAdd = (e: React.FormEvent) => {
@@ -122,6 +114,11 @@ export const ShiftsPage: React.FC = () => {
             </div>
           </div>
         ))}
+        {shifts.length === 0 && (
+          <div className="md:col-span-2 p-12 text-center text-sm text-[var(--muted)] rounded-2xl bg-[var(--surface)] border border-[var(--line)]">
+            No shift timings configured in database. Click "Add Shift Timing" to create one.
+          </div>
+        )}
       </div>
 
       {isModalOpen && (

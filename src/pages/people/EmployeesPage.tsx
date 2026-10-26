@@ -14,22 +14,9 @@ interface EmployeeRecord {
   joiningDate?: string;
 }
 
-const DEFAULT_EMPLOYEES: EmployeeRecord[] = [
-  { id: 'BC-1001', name: 'Naresh Vemparala', role: 'Founder & CEO', department: 'Leadership', email: 'naresh@brightcone.ai', location: 'Hyderabad', status: 'Active', manager: 'Board of Directors', joiningDate: '2021-01-15' },
-  { id: 'BC-1004', name: 'Ananya Rao', role: 'People Ops Lead', department: 'People Ops', email: 'ananya.rao@brightcone.ai', location: 'Hyderabad', status: 'Active', manager: 'Naresh Vemparala', joiningDate: '2022-03-01' },
-  { id: 'BC-1012', name: 'Karthik Reddy', role: 'Principal AI Engineer', department: 'AI Research', email: 'karthik.reddy@brightcone.ai', location: 'Hyderabad', status: 'Active', manager: 'Naresh Vemparala', joiningDate: '2022-04-18' },
-  { id: 'BC-1020', name: 'Rahul Varma', role: 'Backend Engineer', department: 'Engineering', email: 'rahul.varma@brightcone.ai', location: 'Hyderabad', status: 'Active', manager: 'Vikram Malhotra', joiningDate: '2023-06-10' },
-  { id: 'BC-1025', name: 'Priya Sharma', role: 'Senior Frontend Engineer', department: 'Engineering', email: 'priya.sharma@brightcone.ai', location: 'Bengaluru', status: 'Active', manager: 'Vikram Malhotra', joiningDate: '2023-08-01' },
-  { id: 'BC-1031', name: 'Vikram Malhotra', role: 'Head of Engineering', department: 'Engineering', email: 'vikram.m@brightcone.ai', location: 'Hyderabad', status: 'Active', manager: 'Naresh Vemparala', joiningDate: '2021-09-01' },
-  { id: 'BC-1044', name: 'Sneha Patel', role: 'Head of Finance', department: 'Finance', email: 'sneha.patel@brightcone.ai', location: 'Mumbai', status: 'Active', manager: 'Naresh Vemparala', joiningDate: '2022-11-15' },
-  { id: 'BC-1052', name: 'Amit Joshi', role: 'Enterprise Account Executive', department: 'Sales', email: 'amit.joshi@brightcone.ai', location: 'Delhi NCR', status: 'Active', manager: 'Naresh Vemparala', joiningDate: '2023-02-20' },
-  { id: 'BC-1060', name: 'Rohan Verma', role: 'Associate QA Engineer', department: 'Engineering', email: 'rohan.v@brightcone.ai', location: 'Hyderabad', status: 'Probation', manager: 'Vikram Malhotra', joiningDate: '2026-08-15' },
-  { id: 'BC-1065', name: 'Meera Nambiar', role: 'Product Designer', department: 'Product', email: 'meera.n@brightcone.ai', location: 'Bengaluru', status: 'Probation', manager: 'Karthik Reddy', joiningDate: '2026-09-01' },
-  { id: 'BC-1071', name: 'Deepak S', role: 'DevOps Engineer', department: 'Engineering', email: 'deepak.s@brightcone.ai', location: 'Hyderabad', status: 'On Leave', manager: 'Vikram Malhotra', joiningDate: '2024-01-10' },
-];
-
 export const EmployeesPage: React.FC = () => {
-  const [employees, setEmployees] = useState<EmployeeRecord[]>(DEFAULT_EMPLOYEES);
+  const [employees, setEmployees] = useState<EmployeeRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [deptFilter, setDeptFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -38,26 +25,27 @@ export const EmployeesPage: React.FC = () => {
   const [newEmp, setNewEmp] = useState({ name: '', role: '', department: 'Engineering', email: '', location: 'Hyderabad' });
 
   useEffect(() => {
+    setLoading(true);
     fetchEmployees()
       .then((data: any) => {
-        if (Array.isArray(data) && data.length > 0) {
-          const mapped: EmployeeRecord[] = data.map((d: any, idx: number) => ({
-            id: d.employee_code || (typeof d.id === 'string' ? d.id : `BC-${1000 + idx}`),
-            name: d.full_name || d.name || `${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Employee',
-            role: d.job_title || d.role || 'Engineer',
-            department: d.department || 'Engineering',
-            email: d.work_email || d.email || `emp${idx}@brightcone.ai`,
-            location: d.location || 'Hyderabad',
-            status: d.status === 'Probation' ? 'Probation' : d.status === 'On Leave' ? 'On Leave' : 'Active',
-            manager: d.manager_name || 'Naresh Vemparala',
-            joiningDate: d.joined || d.joining_date || '2023-01-01',
-          }));
-          setEmployees(mapped);
-        }
+        const list = Array.isArray(data) ? data : data?.value || [];
+        const mapped: EmployeeRecord[] = list.map((d: any, idx: number) => ({
+          id: d.employee_code || (typeof d.id === 'string' ? d.id : `BC-${1000 + idx}`),
+          name: d.full_name || d.name || `${d.first_name || ''} ${d.last_name || ''}`.trim() || 'Employee',
+          role: d.job_title || d.role || 'Engineer',
+          department: d.department || 'Engineering',
+          email: d.work_email || d.email || `emp${idx}@brightcone.ai`,
+          location: d.location || 'Hyderabad',
+          status: d.status === 'Probation' ? 'Probation' : d.status === 'On Leave' ? 'On Leave' : 'Active',
+          manager: d.manager_name || 'Naresh Vemparala',
+          joiningDate: d.joined || d.joining_date || '2023-01-01',
+        }));
+        setEmployees(mapped);
       })
       .catch(() => {
-        // Fallback kept
-      });
+        setEmployees([]);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const departments = ['All', 'Leadership', 'Engineering', 'AI Research', 'People Ops', 'Finance', 'Sales', 'Product'];
@@ -218,7 +206,7 @@ export const EmployeesPage: React.FC = () => {
           </tbody>
         </table>
         {filtered.length === 0 && (
-          <div className="py-12 text-center text-sm text-[var(--muted)]">No employees found matching your criteria.</div>
+          <div className="py-12 text-center text-sm text-[var(--muted)]">{loading ? 'Loading live employee records from database...' : 'No employees found matching your criteria.'}</div>
         )}
       </div>
 

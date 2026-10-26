@@ -9,34 +9,22 @@ interface DepartmentRow {
   headcount: number;
 }
 
-const DEFAULT_DEPTS: DepartmentRow[] = [
-  { id: 1, code: 'LEA', name: 'Leadership', description: 'Executive and founder leadership', headcount: 1 },
-  { id: 2, code: 'PEO', name: 'People Ops', description: 'Human resources, culture, and talent', headcount: 3 },
-  { id: 3, code: 'AI', name: 'AI Research', description: 'Core LLM and machine learning research', headcount: 4 },
-  { id: 4, code: 'ENG', name: 'Engineering', description: 'Frontend, backend, infrastructure, QA', headcount: 12 },
-  { id: 5, code: 'FIN', name: 'Finance', description: 'Corporate finance and payroll', headcount: 3 },
-  { id: 6, code: 'SAL', name: 'Sales', description: 'Enterprise customer acquisitions', headcount: 5 },
-  { id: 7, code: 'DES', name: 'Design', description: 'Product design and UI systems', headcount: 3 },
-  { id: 8, code: 'CUS', name: 'Customer Success', description: 'Customer support and implementation', headcount: 4 },
-];
-
 export const OrgStructureAdmin: React.FC = () => {
-  const [departments, setDepartments] = useState<DepartmentRow[]>(DEFAULT_DEPTS);
+  const [departments, setDepartments] = useState<DepartmentRow[]>([]);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     fetchDepartments()
       .then((data: DepartmentApiItem[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          const mapped: DepartmentRow[] = data.map((d) => ({
-            id: d.id,
-            code: d.code.trim(),
-            name: d.name,
-            description: d.description || `${d.name} department at Brightcone`,
-            headcount: d.name === 'Engineering' ? 12 : d.name === 'AI Research' ? 4 : 3,
-          }));
-          setDepartments(mapped);
-        }
+        const list = Array.isArray(data) ? data : (data as any)?.value || [];
+        const mapped: DepartmentRow[] = list.map((d: any) => ({
+          id: d.id,
+          code: (d.code || 'DEP').trim(),
+          name: d.name,
+          description: d.description || `${d.name} department at Brightcone`,
+          headcount: d.name === 'Engineering' ? 12 : d.name === 'AI Research' ? 4 : 3,
+        }));
+        setDepartments(mapped);
       })
       .catch(() => {});
   }, []);
@@ -96,14 +84,20 @@ export const OrgStructureAdmin: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--line)] text-[var(--text)]">
-            {filtered.map((item) => (
-              <tr key={item.id} className="hover:bg-[var(--surface-2)]/30 transition-colors">
-                <td className="p-3.5 font-mono font-bold text-[#12A58E]">{item.code}</td>
-                <td className="p-3.5 font-semibold text-[var(--text)]">{item.name}</td>
-                <td className="p-3.5 text-[var(--muted)]">{item.description}</td>
-                <td className="p-3.5 text-right font-medium">{item.headcount} Team Members</td>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="p-8 text-center text-[var(--muted)]">No departments found.</td>
               </tr>
-            ))}
+            ) : (
+              filtered.map((item) => (
+                <tr key={item.id} className="hover:bg-[var(--surface-2)]/30 transition-colors">
+                  <td className="p-3.5 font-mono font-bold text-[#12A58E]">{item.code}</td>
+                  <td className="p-3.5 font-semibold text-[var(--text)]">{item.name}</td>
+                  <td className="p-3.5 text-[var(--muted)]">{item.description}</td>
+                  <td className="p-3.5 text-right font-medium">{item.headcount} Team Members</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

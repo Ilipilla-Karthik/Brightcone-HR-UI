@@ -1,13 +1,13 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Building2, Plus, Search } from "lucide-react";
 import { useNotifications } from "../../services/NotificationsContext";
-import { type OfficeExpense, defaultExpenses, categories } from "./office-expense/types";
+import { type OfficeExpense, categories } from "./office-expense/types";
 import { ExpenseStats } from "./office-expense/ExpenseStats";
 import { AddExpenseModal } from "./office-expense/AddExpenseModal";
 
 export const OfficeExpensePage: React.FC = () => {
-  const [expenses, setExpenses] = useState<OfficeExpense[]>(defaultExpenses);
+  const [expenses, setExpenses] = useState<OfficeExpense[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [search, setSearch] = useState("");

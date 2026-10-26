@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ic } from '../../components/icons';
+import { api } from '../../services/api';
 
 const APPS = [
   { key: 'sign', name: 'Sign', color: '#D9466F', desc: 'Review & sign employment documents and policies', metric: '2', metricLabel: 'waiting for you', to: '/doc-sign/flow' },
@@ -16,6 +17,16 @@ export const EmployeeSuiteDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [clockedIn, setClockedIn] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [holidays, setHolidays] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get('/holidays')
+      .then((res) => {
+        const data = Array.isArray(res.data) ? res.data : (res.data as any)?.value || [];
+        setHolidays(data.slice(-3));
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let timer: any;
@@ -195,21 +206,21 @@ export const EmployeeSuiteDashboard: React.FC = () => {
         <div className="card">
           <h3 className="text-sm font-bold text-[var(--text)] mb-3">Holidays ahead</h3>
           <div className="list divide-y divide-[var(--line)]">
-            {[
-              { name: 'Diwali', date: 'October 31, 2026', type: 'Mandatory' },
-              { name: 'Guru Nanak Jayanti', date: 'November 15, 2026', type: 'Optional' },
-              { name: 'Christmas', date: 'December 25, 2026', type: 'Mandatory' },
-            ].map((h, i) => (
-              <div key={i} className="row py-2 flex items-center justify-between gap-2">
-                <div>
-                  <b className="text-xs text-[var(--text)] block">{h.name}</b>
-                  <span className="text-[11px] text-[var(--muted)]">{h.date}</span>
+            {holidays.length === 0 ? (
+              <div className="py-4 text-center text-xs text-[var(--muted)]">No upcoming holidays scheduled.</div>
+            ) : (
+              holidays.map((h, i) => (
+                <div key={i} className="row py-2 flex items-center justify-between gap-2">
+                  <div>
+                    <b className="text-xs text-[var(--text)] block">{h.name}</b>
+                    <span className="text-[11px] text-[var(--muted)]">{h.holidayDate || h.holiday_date}</span>
+                  </div>
+                  <span className={`pill text-[10px] px-2 py-0.5 rounded-full font-semibold ${h.isRecurring || h.is_recurring ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}`}>
+                    {h.isRecurring || h.is_recurring ? 'Mandatory' : 'Holiday'}
+                  </span>
                 </div>
-                <span className={`pill text-[10px] px-2 py-0.5 rounded-full font-semibold ${h.type === 'Mandatory' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}`}>
-                  {h.type}
-                </span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
