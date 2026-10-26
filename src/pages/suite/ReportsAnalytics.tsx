@@ -3,11 +3,16 @@ import api from '../../services/api';
 
 interface DashboardSummary {
   total_employees?: number;
+  active_employees?: number;
+  employees_on_leave?: number;
+  open_jobs?: number;
+  total_candidates?: number;
   this_month_joiners?: number;
   this_month_exits?: number;
   open_positions?: number;
   active_jobs?: number;
-  upcoming_interviews?: number;
+  upcoming_interviews_count?: number;
+  upcoming_interviews?: Array<Record<string, unknown>> | number;
   pending_approvals?: number;
 }
 
@@ -17,12 +22,19 @@ interface Department {
   employee_count?: number;
 }
 
-const StatCard: React.FC<{ label: string; value: string | number; sub?: string; color?: string }> = ({
+const safeVal = (v: unknown): string | number => {
+  if (v === null || v === undefined) return '—';
+  if (Array.isArray(v)) return v.length;
+  if (typeof v === 'object') return Object.keys(v).length;
+  return v as string | number;
+};
+
+const StatCard: React.FC<{ label: string; value: unknown; sub?: string; color?: string }> = ({
   label, value, sub, color = '#1e293b',
 }) => (
   <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 3px rgba(0,0,0,.05)' }}>
     <p style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>{label}</p>
-    <p style={{ fontSize: 28, fontWeight: 800, color, margin: '6px 0 2px', fontFamily: 'Sora, sans-serif' }}>{value}</p>
+    <p style={{ fontSize: 28, fontWeight: 800, color, margin: '6px 0 2px', fontFamily: 'Sora, sans-serif' }}>{safeVal(value)}</p>
     {sub && <p style={{ fontSize: 11, color: '#64748b', margin: 0 }}>{sub}</p>}
   </div>
 );
@@ -94,13 +106,17 @@ export const ReportsAnalytics: React.FC = () => {
             <StatCard label="Joined This Month" value={summary?.this_month_joiners ?? '—'} sub="New hires" color="#16a34a" />
             <StatCard label="Exits This Month" value={summary?.this_month_exits ?? '—'} sub="Departures" color="#dc2626" />
             <StatCard label="Attrition Rate" value={`${attrition}%`} sub="Exits ÷ Total × 100" color="#d97706" />
-            <StatCard label="Open Positions" value={summary?.open_positions ?? summary?.active_jobs ?? '—'} sub="Active job openings" color="#6366f1" />
+            <StatCard label="Open Positions" value={summary?.open_positions ?? summary?.open_jobs ?? summary?.active_jobs ?? '—'} sub="Active job openings" color="#6366f1" />
           </div>
 
           {/* Quick Stats Row */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24 }}>
-            <StatCard label="Active Jobs" value={summary?.active_jobs ?? '—'} sub="Open requisitions" />
-            <StatCard label="Upcoming Interviews" value={summary?.upcoming_interviews ?? '—'} sub="Next 7 days" />
+            <StatCard label="Active Jobs" value={summary?.open_jobs ?? summary?.active_jobs ?? '—'} sub="Open requisitions" />
+            <StatCard
+              label="Upcoming Interviews"
+              value={summary?.upcoming_interviews_count ?? (Array.isArray(summary?.upcoming_interviews) ? summary.upcoming_interviews.length : (summary?.upcoming_interviews ?? '—'))}
+              sub="Next 7 days"
+            />
             <StatCard label="Pending Approvals" value={summary?.pending_approvals ?? '—'} sub="Awaiting action" color="#f59e0b" />
           </div>
 
