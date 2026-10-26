@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HandbookRecord } from './types';
 import { ic } from '../../components/icons';
+import { policiesApi } from '../../services/policiesApi';
 
 export const EmployeeHandbookPage: React.FC = () => {
   const [records, setRecords] = useState<HandbookRecord[]>([]);
@@ -20,6 +21,12 @@ export const EmployeeHandbookPage: React.FC = () => {
   const [formFile, setFormFile] = useState('');
   const [formChanges, setFormChanges] = useState('');
   const [formStatus, setFormStatus] = useState<HandbookRecord['status']>('Draft');
+
+  useEffect(() => {
+    policiesApi.getHandbooks().then((data) => {
+      setRecords(data);
+    }).catch(() => setRecords([]));
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);

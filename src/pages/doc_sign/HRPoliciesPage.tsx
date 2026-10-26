@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PolicyRecord } from './types';
 import { ic } from '../../components/icons';
+import { policiesApi } from '../../services/policiesApi';
 
 const CATEGORIES = [
   'Leave',
@@ -33,6 +34,12 @@ export const HRPoliciesPage: React.FC = () => {
   const [formOwner, setFormOwner] = useState('Ananya Rao');
   const [formAckReq, setFormAckReq] = useState(true);
   const [formStatus, setFormStatus] = useState<PolicyRecord['status']>('Draft');
+
+  useEffect(() => {
+    policiesApi.getPolicies().then((data) => {
+      setPolicies(data);
+    }).catch(() => setPolicies([]));
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
