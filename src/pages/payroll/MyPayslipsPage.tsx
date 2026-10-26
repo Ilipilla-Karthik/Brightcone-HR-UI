@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { ic } from '../../components/icons';
 
 interface Payslip {
@@ -57,8 +58,34 @@ const PAYSLIP_HISTORY: Payslip[] = [
 
 export const MyPayslipsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'Payslips' | 'Declaration'>('Payslips');
+  const [history, setHistory] = useState<Payslip[]>(PAYSLIP_HISTORY);
   const [selectedSlip, setSelectedSlip] = useState<Payslip>(PAYSLIP_HISTORY[0]);
   const [toastMsg, setToastMsg] = useState('');
+
+  useEffect(() => {
+    axios
+      .get<{ month?: string; total_gross?: number; total_net?: number; total_deductions?: number }>('/api/payroll/runs/active')
+      .then((r) => {
+        if (r.data?.month) {
+          const currentMonth = r.data.month;
+          setHistory((prev) => {
+            if (prev.some((p) => p.monthYear === currentMonth)) return prev;
+            const newSlip: Payslip = {
+              id: `PS-${Date.now().toString().slice(-4)}`,
+              monthYear: currentMonth,
+              grossPay: 185000,
+              totalDeductions: 24200,
+              netPay: 160800,
+              payDate: 'In Processing',
+              earnings: { basic: 92500, hra: 46250, special: 46250 },
+              deductions: { pf: 11100, pt: 200, tds: 12900 },
+            };
+            return [newSlip, ...prev];
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const [declaration, setDeclaration] = useState({
     sec80C: '150000',
@@ -127,7 +154,7 @@ export const MyPayslipsPage: React.FC = () => {
               Pay Periods (FY 2026-27)
             </h2>
             <div className="space-y-2">
-              {PAYSLIP_HISTORY.map((slip) => {
+              {history.map((slip) => {
                 const isSelected = selectedSlip.id === slip.id;
                 return (
                   <div

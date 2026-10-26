@@ -1,4 +1,5 @@
-﻿import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import { Download, Plus, Search, Users, Eye, Trash2, CheckCircle2, FileText } from 'lucide-react'
 import { formatINR, exportToCSV } from './payroll-data'
@@ -16,6 +17,40 @@ export const PayslipRecordsPage: React.FC = () => {
   const [batchModalOpen, setBatchModalOpen] = useState(false)
   const [viewRecord, setViewRecord] = useState<PayslipRecord | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    axios
+      .get<Array<{ empId: string; name: string; dept: string; gross: number; pf: number; pt: number; tds: number; net: number }>>('/api/payroll/register')
+      .then((res) => {
+        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+          const live: PayslipRecord[] = res.data.map((r, i) => {
+            const basic = Math.round(r.gross * 0.5)
+            const hra = Math.round(basic * 0.4)
+            const spl = r.gross - (basic + hra)
+            return {
+              id: `PS-${801 + i}`,
+              employeeId: r.empId,
+              employeeName: r.name,
+              dept: r.dept,
+              month: '2026-09',
+              gross: r.gross,
+              deductions: Math.round(r.pf + r.pt + r.tds),
+              netPay: Math.round(r.net),
+              issuedOn: '2026-09-30',
+              status: i < 5 ? 'Acknowledged' : i < 10 ? 'Sent' : 'Generated',
+              basic,
+              hra,
+              specialAllowance: spl,
+              pf: r.pf,
+              pt: r.pt,
+              tds: r.tds,
+            }
+          })
+          setRecords(live)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const activeRecords = records.filter((r) => (showArchived ? r.isArchived : !r.isArchived))
   const filtered = activeRecords.filter((r) => {

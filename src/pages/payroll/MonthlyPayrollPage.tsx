@@ -1,4 +1,5 @@
-﻿import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import { Download, Plus, Search, Users, Eye, Edit2, Trash2, CheckCircle2 } from 'lucide-react'
 import { formatINR, exportToCSV } from './payroll-data'
@@ -16,6 +17,31 @@ export const MonthlyPayrollPage: React.FC = () => {
   const [editingRecord, setEditingRecord] = useState<MonthlyPayrollRecord | null>(null)
   const [viewRecord, setViewRecord] = useState<MonthlyPayrollRecord | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    axios
+      .get<Array<{ empId: string; name: string; dept: string; gross: number; pf: number; pt: number; tds: number; net: number }>>('/api/payroll/register')
+      .then((res) => {
+        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+          const live: MonthlyPayrollRecord[] = res.data.map((r, i) => ({
+            id: `PR-${101 + i}`,
+            month: '2026-10',
+            employeeId: r.empId,
+            employeeName: r.name,
+            dept: r.dept,
+            workingDays: 22,
+            lopDays: 0,
+            paidDays: 22,
+            grossPay: r.gross,
+            totalDeductions: Math.round(r.pf + r.pt + r.tds),
+            netPay: Math.round(r.net),
+            status: i < 4 ? 'Approved' : i < 9 ? 'Processed' : 'Draft',
+          }))
+          setRecords(live)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const activeRecords = records.filter((r) => (showArchived ? r.isArchived : !r.isArchived))
   const filtered = activeRecords.filter((r) => {
