@@ -11,6 +11,7 @@ export interface Job {
   status: string;
   referral_bonus: number;
   description?: string;
+  created_at?: string;
 }
 
 export interface Candidate {
@@ -93,6 +94,32 @@ export const recruitApi = {
       body: JSON.stringify(payload),
     });
     if (!res.ok) throw new Error('Failed to create job');
+    return res.json();
+  },
+
+  async deleteJob(id: string): Promise<void> {
+    const res = await fetch(`/api/v1/jobs/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to delete job');
+  },
+
+  async publishJob(id: string): Promise<Job> {
+    const res = await fetch(`/api/v1/jobs/${id}/publish`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to publish job');
+    return res.json();
+  },
+
+  async closeJob(id: string): Promise<Job> {
+    const res = await fetch(`/api/v1/jobs/${id}/close`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to close job');
     return res.json();
   },
 
