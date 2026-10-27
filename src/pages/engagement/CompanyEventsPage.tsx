@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ic } from '../../components/icons';
 import { EventItem } from './types';
 import { NewEventModal } from './components/NewEventModal';
-import { fetchConnectEvents } from '../../services/signConnectApi';
+import { fetchConnectEvents, createConnectEvent, updateConnectEvent, deleteConnectEvent } from '../../services/signConnectApi';
 import { mapEventFromApi } from './apiMapper';
 
 export const CompanyEventsPage: React.FC = () => {
@@ -36,24 +36,46 @@ export const CompanyEventsPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     setEvents((prev) => prev.filter((ev) => ev.id !== id));
     showToast('Event deleted');
+    try {
+      await deleteConnectEvent(id);
+    } catch (err) {
+      console.error('Failed to delete event from DB:', err);
+    }
   };
 
-  const handleSaveEvent = (eventData: Omit<EventItem, 'id'>, id?: string) => {
+  const handleSaveEvent = async (eventData: Omit<EventItem, 'id'>, id?: string) => {
     if (id) {
       setEvents((prev) =>
         prev.map((ev) => (ev.id === id ? { ...eventData, id } : ev))
       );
       showToast('Event updated');
+      try {
+        await updateConnectEvent(id, eventData);
+      } catch (err) {
+        console.error('Failed to update event in DB:', err);
+      }
     } else {
+      const tempId = `EV-${100 + events.length + 1}`;
       const newEv: EventItem = {
-        id: `EV-${100 + events.length + 1}`,
+        id: tempId,
         ...eventData,
       };
       setEvents([newEv, ...events]);
       showToast('Event created');
+      try {
+        const created = await createConnectEvent(eventData);
+        if (created) {
+          const mapped = mapEventFromApi(created);
+          setEvents((prev) =>
+            prev.map((ev) => (ev.id === tempId ? mapped : ev))
+          );
+        }
+      } catch (err) {
+        console.error('Failed to save event to DB:', err);
+      }
     }
   };
 

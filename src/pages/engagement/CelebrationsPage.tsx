@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ic } from '../../components/icons';
 import { CelebrationItem } from './types';
-import { fetchConnectCelebrations } from '../../services/signConnectApi';
+import { fetchConnectCelebrations, sendCelebrationWish } from '../../services/signConnectApi';
 import { mapCelebrationFromApi } from './apiMapper';
 
 const getInitials = (name: string) => {
@@ -39,8 +39,18 @@ export const CelebrationsPage: React.FC = () => {
     setTimeout(() => setToastMsg(''), 3000);
   };
 
-  const handleWish = (name: string) => {
+  const handleWish = async (name: string, occasion: string = 'Celebration') => {
     showToast(`Wish sent to ${name}!`);
+    try {
+      await sendCelebrationWish({
+        recipient_name: name,
+        sender_name: 'Team Brightcone',
+        occasion,
+        message: `Wishing you a very Happy ${occasion}! Have a wonderful year ahead!`,
+      });
+    } catch (err) {
+      console.error('Failed to send celebration wish to DB:', err);
+    }
   };
 
   const filtered = useMemo(() => {
@@ -214,7 +224,7 @@ export const CelebrationsPage: React.FC = () => {
                       <button
                         type="button"
                         className="btn sm"
-                        onClick={() => handleWish(item.name)}
+                        onClick={() => handleWish(item.name, item.occasion)}
                       >
                         Wish
                       </button>

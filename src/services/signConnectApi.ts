@@ -199,3 +199,27 @@ export async function fetchConnectTownhalls(): Promise<any[]> {
   const res = await api.get('/connect/townhalls');
   return res.data;
 }
+
+export async function createConnectEvent(payload: any): Promise<any> {
+  const res = await api.post('/connect/events', payload);
+  return res.data;
+}
+
+export async function updateConnectEvent(id: string, payload: any): Promise<any> {
+  const res = await api.patch(`/connect/events/${id}`, payload);
+  return res.data;
+}
+
+export async function deleteConnectEvent(id: string): Promise<void> {
+  await api.delete(`/connect/events/${id}`);
+}
+
+export async function sendCelebrationWish(payload: {
+  recipient_name: string;
+  sender_name?: string;
+  occasion?: string;
+  message?: string;
+}): Promise<any> {
+  const res = await api.post('/connect/celebrations/wish', payload);
+  return res.data;
+}
