@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { fetchEmployees } from '../../services/peopleApi';
+import { fetchEmployees, updateEmployeeApi } from '../../services/peopleApi';
+import { ic } from '../../components/icons';
 
 interface ProfileRecord {
   id: string;
@@ -22,34 +23,82 @@ export const EmployeeProfilePage: React.FC = () => {
   const [profiles, setProfiles] = useState<ProfileRecord[]>([]);
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<ProfileRecord | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    phone: '',
+    address: '',
+    emergencyContact: '',
+    emergencyRelation: 'Family',
+    emergencyPhone: '',
+    bloodGroup: 'O+',
+  });
 
-  useEffect(() => {
+  const loadProfiles = () => {
     fetchEmployees()
       .then((data: any) => {
         const list = Array.isArray(data) ? data : data?.value || [];
-        const mapped: ProfileRecord[] = list.map((e: any) => ({
-          id: e.employee_code || 'BC-1000',
-          name: e.full_name || 'Employee',
-          role: e.job_title || 'Specialist',
-          dept: e.department || 'General',
-          personalEmail: e.work_email || 'emp@brightcone.ai',
-          phone: e.phone || '+91 98765 43210',
-          address: e.address || `${e.location || 'Hyderabad'} Campus, India`,
-          emergencyContact: e.emergency_contact_name || 'Primary Contact',
-          emergencyRelation: e.emergency_contact_relation || 'Family',
-          emergencyPhone: e.emergency_contact_phone || '+91 98765 00000',
-          bloodGroup: e.blood_group || 'O+',
-          panMasked: 'ABCDE****F',
-          aadhaarLast4: '8849',
-          verificationStatus: 'Verified' as const,
-        }));
+        const mapped: ProfileRecord[] = list.map((e: any, idx: number) => {
+          const numCode = e.employee_code?.replace('BC-', '') || `${1000 + idx}`;
+          return {
+            id: e.employee_code || `BC-${1000 + idx}`,
+            name: e.full_name || 'Employee',
+            role: e.job_title || 'Specialist',
+            dept: e.department || 'General',
+            personalEmail: e.work_email || `emp${idx}@brightcone.ai`,
+            phone: e.phone || `+91 98765 ${10000 + idx}`,
+            address: e.address || `${e.location || 'Hyderabad'} Campus, Tower ${idx % 3 + 1}`,
+            emergencyContact: e.emergency_contact_name || (idx === 0 ? 'Kavitha Vemparala' : 'Primary Family'),
+            emergencyRelation: e.emergency_contact_relation || 'Family',
+            emergencyPhone: e.emergency_contact_phone || `+91 98760 ${20000 + idx}`,
+            bloodGroup: e.blood_group || (idx % 2 === 0 ? 'O+' : 'B+'),
+            panMasked: `ABCDE${numCode.slice(-4)}F`,
+            aadhaarLast4: numCode.slice(-4).padStart(4, '0'),
+            verificationStatus: 'Verified' as const,
+          };
+        });
         setProfiles(mapped);
-        if (mapped.length > 0) setSelected(mapped[0]);
+        if (mapped.length > 0) {
+          setSelected((prev) => (prev ? mapped.find((m) => m.id === prev.id) || mapped[0] : mapped[0]));
+        }
       })
       .catch(() => {
         setProfiles([]);
       });
+  };
+
+  useEffect(() => {
+    loadProfiles();
   }, []);
+
+  const handleOpenEdit = () => {
+    if (!selected) return;
+    setEditForm({
+      phone: selected.phone,
+      address: selected.address,
+      emergencyContact: selected.emergencyContact,
+      emergencyRelation: selected.emergencyRelation,
+      emergencyPhone: selected.emergencyPhone,
+      bloodGroup: selected.bloodGroup,
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selected) return;
+    try {
+      await updateEmployeeApi(selected.id, {
+        phone: editForm.phone,
+        address: editForm.address,
+        emergency_contact_name: editForm.emergencyContact,
+        emergency_contact_relation: editForm.emergencyRelation,
+        emergency_contact_phone: editForm.emergencyPhone,
+        blood_group: editForm.bloodGroup,
+      });
+      loadProfiles();
+    } catch {}
+    setIsEditOpen(false);
+  };
 
   const filtered = profiles.filter((p) => {
     const q = search.toLowerCase();
@@ -110,9 +159,18 @@ export const EmployeeProfilePage: React.FC = () => {
                   <h2 className="text-xl font-bold font-['Sora'] text-[var(--text)]">{selected.name}</h2>
                   <p className="text-xs text-[var(--muted)]">{selected.role} • {selected.dept} • <span className="font-mono text-[#12A58E]">{selected.id}</span></p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${selected.verificationStatus === 'Verified' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
-                  {selected.verificationStatus} Profile
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleOpenEdit}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#12A58E] text-white text-xs font-semibold hover:bg-[#0f8b77] transition-all cursor-pointer"
+                  >
+                    {ic('edit', 14)} Edit Profile
+                  </button>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${selected.verificationStatus === 'Verified' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                    {selected.verificationStatus} Profile
+                  </span>
+                </div>
               </div>
 
               <div>
@@ -172,6 +230,52 @@ export const EmployeeProfilePage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {isEditOpen && selected && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+            <h3 className="font-['Sora'] text-lg font-bold text-[var(--text)]">Edit Profile: {selected.name}</h3>
+            <form onSubmit={handleSaveEdit} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-medium text-[var(--text)] mb-1">Mobile Phone</label>
+                <input required type="text" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
+              </div>
+              <div>
+                <label className="block font-medium text-[var(--text)] mb-1">Residential Address</label>
+                <input required type="text" value={editForm.address} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-medium text-[var(--text)] mb-1">Emergency Contact</label>
+                  <input required type="text" value={editForm.emergencyContact} onChange={(e) => setEditForm({ ...editForm, emergencyContact: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block font-medium text-[var(--text)] mb-1">Relationship</label>
+                  <input required type="text" value={editForm.emergencyRelation} onChange={(e) => setEditForm({ ...editForm, emergencyRelation: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-medium text-[var(--text)] mb-1">Emergency Phone</label>
+                  <input required type="text" value={editForm.emergencyPhone} onChange={(e) => setEditForm({ ...editForm, emergencyPhone: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block font-medium text-[var(--text)] mb-1">Blood Group</label>
+                  <select value={editForm.bloodGroup} onChange={(e) => setEditForm({ ...editForm, bloodGroup: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none">
+                    {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map((bg) => (
+                      <option key={bg} value={bg}>{bg}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-3">
+                <button type="button" onClick={() => setIsEditOpen(false)} className="px-4 py-2 rounded-xl bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--text)]">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-[#12A58E] hover:bg-[#0f8b77] text-white font-semibold">Save Profile</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

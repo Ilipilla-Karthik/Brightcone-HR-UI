@@ -16,6 +16,12 @@ export interface EmployeeApiItem {
   shift?: string;
   joined?: string;
   ctc?: number;
+  address?: string;
+  dob?: string;
+  blood_group?: string;
+  emergency_contact_name?: string;
+  emergency_contact_relation?: string;
+  emergency_contact_phone?: string;
 }
 
 export interface DepartmentApiItem {
@@ -118,6 +124,11 @@ export async function createEmployeeApi(data: Partial<EmployeeApiItem>): Promise
   return res.data;
 }
 
+export async function updateEmployeeApi(id: string | number, data: Partial<EmployeeApiItem>): Promise<EmployeeApiItem> {
+  const res = await api.patch(`/employees/${id}`, data);
+  return res.data;
+}
+
 export async function fetchDepartments(): Promise<DepartmentApiItem[]> {
   try {
     const res = await api.get('/departments');
@@ -191,6 +202,11 @@ export async function fetchPerformanceGoals(): Promise<any[]> {
   } catch {
     return [];
   }
+}
+
+export async function createPerformanceGoal(data: any): Promise<any> {
+  const res = await api.post('/performance/goals', data);
+  return res.data;
 }
 
 export async function fetchHelpdeskTickets(): Promise<HelpdeskTicketApiItem[]> {

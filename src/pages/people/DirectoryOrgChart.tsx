@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
+import { fetchEmployees } from '../../services/peopleApi';
 
 interface OrgNode {
   id: string;
@@ -9,7 +10,7 @@ interface OrgNode {
   reports?: OrgNode[];
 }
 
-const ORG_DATA: OrgNode = {
+const DEFAULT_ORG: OrgNode = {
   id: 'BC-1001',
   name: 'Naresh Vemparala',
   role: 'Founder & CEO',
@@ -33,44 +34,53 @@ const ORG_DATA: OrgNode = {
       reports: [
         { id: 'BC-1020', name: 'Rahul Varma', role: 'Backend Engineer', dept: 'Engineering' },
         { id: 'BC-1025', name: 'Priya Sharma', role: 'Senior Frontend Engineer', dept: 'Engineering' },
-        { id: 'BC-1071', name: 'Deepak S', role: 'DevOps Engineer', dept: 'Engineering' },
-        { id: 'BC-1060', name: 'Rohan Verma', role: 'Associate QA Engineer', dept: 'Engineering' },
-      ],
-    },
-    {
-      id: 'BC-1012',
-      name: 'Karthik Reddy',
-      role: 'Principal AI Engineer',
-      dept: 'AI Research',
-      reports: [
-        { id: 'BC-1088', name: 'Arjun Das', role: 'ML Research Scientist', dept: 'AI Research' },
-        { id: 'BC-1065', name: 'Meera Nambiar', role: 'Product Designer', dept: 'Product' },
-      ],
-    },
-    {
-      id: 'BC-1044',
-      name: 'Sneha Patel',
-      role: 'Head of Finance',
-      dept: 'Finance',
-      reports: [
-        { id: 'BC-1090', name: 'Varun Nair', role: 'Senior Financial Analyst', dept: 'Finance' },
-      ],
-    },
-    {
-      id: 'BC-1052',
-      name: 'Amit Joshi',
-      role: 'Head of Sales',
-      dept: 'Sales',
-      reports: [
-        { id: 'BC-1095', name: 'Neha Gupta', role: 'Account Executive', dept: 'Sales' },
       ],
     },
   ],
 };
 
 export const DirectoryOrgChart: React.FC = () => {
+  const [orgTree, setOrgTree] = useState<OrgNode>(DEFAULT_ORG);
   const [activeDept, setActiveDept] = useState('All');
   const [selectedNode, setSelectedNode] = useState<OrgNode | null>(null);
+
+  useEffect(() => {
+    fetchEmployees()
+      .then((data: any) => {
+        const emps = Array.isArray(data) ? data : data?.value || [];
+        if (emps.length === 0) return;
+        const rootEmp = emps.find((e: any) => e.job_title?.toLowerCase().includes('ceo') || e.department === 'Leadership') || emps[0];
+        const otherEmps = emps.filter((e: any) => e.employee_code !== rootEmp.employee_code);
+        const uniqueDepts = Array.from(new Set(otherEmps.map((e: any) => e.department || 'Engineering')));
+        const leads: OrgNode[] = uniqueDepts.map((d: any) => {
+          const inDept = otherEmps.filter((e: any) => e.department === d);
+          const lead = inDept.find((e: any) => e.job_title?.toLowerCase().includes('head') || e.job_title?.toLowerCase().includes('lead') || e.job_title?.toLowerCase().includes('principal')) || inDept[0];
+          const reports = inDept
+            .filter((e: any) => e.employee_code !== lead.employee_code)
+            .map((sub: any) => ({
+              id: sub.employee_code,
+              name: sub.full_name,
+              role: sub.job_title,
+              dept: sub.department,
+            }));
+          return {
+            id: lead.employee_code,
+            name: lead.full_name,
+            role: lead.job_title,
+            dept: lead.department,
+            reports,
+          };
+        });
+        setOrgTree({
+          id: rootEmp.employee_code,
+          name: rootEmp.full_name,
+          role: rootEmp.job_title,
+          dept: rootEmp.department,
+          reports: leads,
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   const depts = ['All', 'Leadership', 'People Ops', 'Engineering', 'AI Research', 'Finance', 'Sales'];
 
@@ -130,14 +140,14 @@ export const DirectoryOrgChart: React.FC = () => {
       {/* Visual Chart Hierarchy */}
       <div className="space-y-10 py-6 overflow-x-auto">
         {/* Tier 1: CEO */}
-        <div className="flex justify-center">{renderCard(ORG_DATA, true)}</div>
+        <div className="flex justify-center">{renderCard(orgTree, true)}</div>
 
         {/* Connecting line */}
         <div className="w-0.5 h-6 bg-[var(--line)] mx-auto" />
 
         {/* Tier 2: Leads */}
         <div className="flex flex-wrap justify-center gap-6">
-          {ORG_DATA.reports?.map((lead) => (
+          {orgTree.reports?.map((lead) => (
             <div key={lead.id} className="flex flex-col items-center space-y-4">
               {renderCard(lead)}
               {/* Connecting line to reports */}

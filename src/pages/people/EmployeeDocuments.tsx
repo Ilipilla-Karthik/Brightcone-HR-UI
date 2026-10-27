@@ -18,35 +18,45 @@ export const EmployeeDocuments: React.FC = () => {
   const [filterType, setFilterType] = useState('All');
   const [search, setSearch] = useState('');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [employees, setEmployees] = useState<{ code: string; name: string }[]>([]);
   const [newDoc, setNewDoc] = useState({ title: '', type: 'Employment Contract' as const, employeeName: 'Ananya Rao', employeeCode: 'BC-1001' });
+
+  const loadDocs = () => {
+    fetchDocuments()
+      .then((data) => {
+        const list = Array.isArray(data) ? data : (data as any)?.value || [];
+        const mapped: DocumentRecord[] = list.map((d: any, i: number) => {
+          const emp = employees.find((e) => e.code === d.employee_code);
+          return {
+            id: String(d.id || i + 1),
+            title: d.title || 'Official Document',
+            type: (d.document_type || 'Employment Contract') as any,
+            employeeName: emp ? emp.name : d.employee_code === 'BC-1001' ? 'Naresh Vemparala' : 'Brightcone Staff',
+            employeeId: d.employee_code || `BC-100${i + 1}`,
+            uploadDate: d.issued_date || '2026-10-26',
+            size: d.file_size || '750 KB',
+            status: 'Verified',
+          };
+        });
+        setDocs(mapped);
+      })
+      .catch(() => {});
+  };
 
   useEffect(() => {
     fetchEmployees()
       .then((res: any) => {
         const list = Array.isArray(res) ? res : res?.value || [];
-        setEmployees(list.map((e: any) => ({ code: e.employee_code || e.id, name: e.full_name || e.name })));
+        const emps = list.map((e: any) => ({ code: e.employee_code || e.id, name: e.full_name || e.name }));
+        setEmployees(emps);
+        if (emps.length > 0) {
+          setNewDoc((prev) => ({ ...prev, employeeName: emps[0].name, employeeCode: emps[0].code }));
+        }
       })
       .catch(() => {});
 
-    fetchDocuments()
-      .then((data) => {
-        const list = Array.isArray(data) ? data : (data as any)?.value || [];
-        const mapped: DocumentRecord[] = list.map((d: any, i: number) => ({
-          id: String(d.id || i + 1),
-          title: d.title || 'Official Document',
-          type: (d.document_type || 'Employment Contract') as any,
-          employeeName: d.employee_code === 'BC-1001' ? 'Naresh Vemparala' : 'Rahul Varma',
-          employeeId: d.employee_code || `BC-100${i + 1}`,
-          uploadDate: d.issued_date || '2026-10-01',
-          size: d.file_size || '240 KB',
-          status: 'Verified',
-        }));
-        setDocs(mapped);
-      })
-      .catch(() => {
-        setDocs([]);
-      });
+    loadDocs();
   }, []);
 
   const types = ['All', 'Employment Contract', 'Identity Proof', 'Tax Declaration', 'Non-Disclosure', 'Degree Certificate'];
@@ -61,28 +71,32 @@ export const EmployeeDocuments: React.FC = () => {
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDoc.title) return;
-    const empCode = newDoc.employeeCode || 'BC-1001';
+    const empCode = newDoc.employeeCode || (employees.length > 0 ? employees[0].code : 'BC-1001');
+    const fileSize = selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : '640 KB';
     try {
       await createDocumentApi({
         title: newDoc.title,
         document_type: newDoc.type,
         employee_code: empCode,
-        file_size: '950 KB',
+        file_size: fileSize,
       });
-    } catch {}
-    const item: DocumentRecord = {
-      id: `doc-${Date.now()}`,
-      title: newDoc.title,
-      type: newDoc.type,
-      employeeName: newDoc.employeeName,
-      employeeId: empCode,
-      uploadDate: new Date().toISOString().split('T')[0],
-      size: '950 KB',
-      status: 'Verified',
-    };
-    setDocs([item, ...docs]);
+      loadDocs();
+    } catch {
+      const item: DocumentRecord = {
+        id: `doc-${Date.now()}`,
+        title: newDoc.title,
+        type: newDoc.type,
+        employeeName: newDoc.employeeName,
+        employeeId: empCode,
+        uploadDate: new Date().toISOString().split('T')[0],
+        size: fileSize,
+        status: 'Verified',
+      };
+      setDocs([item, ...docs]);
+    }
     setIsUploadOpen(false);
-    setNewDoc({ title: '', type: 'Employment Contract', employeeName: 'Ananya Rao', employeeCode: 'BC-1001' });
+    setSelectedFile(null);
+    setNewDoc({ title: '', type: 'Employment Contract', employeeName: employees[0]?.name || 'Ananya Rao', employeeCode: employees[0]?.code || 'BC-1001' });
   };
 
   const handleDownload = (title: string) => {
@@ -250,9 +264,38 @@ export const EmployeeDocuments: React.FC = () => {
                   ))}
                 </datalist>
               </div>
-              <div className="p-4 border-2 border-dashed border-[var(--line)] rounded-xl text-center text-[var(--muted)]">
-                <span className="block mx-auto mb-1">{ic('upload', 24)}</span>
-                <span className="text-xs">Drag & drop document file (PDF, PNG up to 10MB)</span>
+              <div>
+                <label className="block font-medium text-[var(--text)] mb-1">Select File Document</label>
+                <div className="relative border-2 border-dashed border-[var(--line)] hover:border-[#12A58E] rounded-xl p-4 text-center cursor-pointer transition-colors bg-[var(--surface-2)]/40">
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        setSelectedFile(file);
+                        if (!newDoc.title) {
+                          setNewDoc({ ...newDoc, title: file.name.replace(/\.[^/.]+$/, '') });
+                        }
+                      }
+                    }}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  />
+                  <div className="flex flex-col items-center justify-center space-y-1">
+                    <span>{ic('upload', 24)}</span>
+                    {selectedFile ? (
+                      <div>
+                        <p className="font-semibold text-[#12A58E] text-xs">{selectedFile.name}</p>
+                        <p className="text-[10px] text-[var(--muted)]">{(selectedFile.size / 1024).toFixed(1)} KB · Ready to upload</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-xs text-[var(--text)] font-medium">Click to browse or drop file here</p>
+                        <p className="text-[10px] text-[var(--muted)]">PDF, DOC, PNG, JPG up to 10MB</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
             <div className="pt-2 flex justify-end gap-2 border-t border-[var(--line)]">

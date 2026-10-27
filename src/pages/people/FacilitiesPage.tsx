@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchHelpdeskTickets, createHelpdeskTicketApi, HelpdeskTicketApiItem } from '../../services/peopleApi';
+import { fetchHelpdeskTickets, createHelpdeskTicketApi, fetchEmployees, HelpdeskTicketApiItem } from '../../services/peopleApi';
 import { ic } from '../../components/icons';
 
 interface FacilityItem {
@@ -15,31 +15,43 @@ interface FacilityItem {
 
 export const FacilitiesPage: React.FC = () => {
   const [items, setItems] = useState<FacilityItem[]>([]);
+  const [employees, setEmployees] = useState<{ code: string; name: string }[]>([]);
   const [filter, setFilter] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newReq, setNewReq] = useState({ category: 'Desk & Seating' as const, title: '', raisedBy: '', location: '', priority: 'Medium' as const });
 
-  useEffect(() => {
+  const loadTickets = () => {
     fetchHelpdeskTickets()
       .then((data: HelpdeskTicketApiItem[]) => {
         const list = Array.isArray(data) ? data : (data as any)?.value || [];
-        const facilityTickets = list.filter((t: any) => t.category?.toLowerCase()?.includes('facilit') || t.category?.toLowerCase()?.includes('desk') || t.category?.toLowerCase()?.includes('office'));
-        if (facilityTickets.length > 0) {
-          setItems(
-            facilityTickets.map((t: any) => ({
-              id: t.ticket_code || `FAC-${t.id}`,
-              category: (t.category?.includes('HVAC') ? 'HVAC & Lighting' : t.category?.includes('Meeting') ? 'Meeting Room Audio' : t.category?.includes('Cafeteria') ? 'Cafeteria & Pantry' : 'Desk & Seating') as any,
-              title: t.subject,
-              raisedBy: t.employee_name || 'Staff Member',
-              location: t.description || 'Level 2 Main Bay',
-              priority: (t.priority || 'Medium') as any,
-              status: (t.status === 'Resolved' ? 'Resolved' : t.status === 'In Progress' ? 'In Progress' : 'Open') as any,
-              date: t.created_at?.split('T')[0] || '2026-10-26',
-            }))
-          );
+        const mapped = list.map((t: any) => ({
+          id: t.ticket_code || `FAC-${t.id}`,
+          category: (t.category?.includes('HVAC') ? 'HVAC & Lighting' : t.category?.includes('Meeting') ? 'Meeting Room Audio' : t.category?.includes('Cafeteria') ? 'Cafeteria & Pantry' : 'Desk & Seating') as any,
+          title: t.subject,
+          raisedBy: t.employee_name || 'Staff Member',
+          location: t.description || 'Level 2 Main Bay',
+          priority: (t.priority || 'Medium') as any,
+          status: (t.status === 'Resolved' ? 'Resolved' : t.status === 'In Progress' ? 'In Progress' : 'Open') as any,
+          date: t.created_at?.split('T')[0] || '2026-10-26',
+        }));
+        setItems(mapped);
+      })
+      .catch(() => {});
+
+    fetchEmployees()
+      .then((data: any) => {
+        const list = Array.isArray(data) ? data : data?.value || [];
+        const emps = list.map((e: any) => ({ code: e.employee_code, name: e.full_name }));
+        setEmployees(emps);
+        if (emps.length > 0 && !newReq.raisedBy) {
+          setNewReq((prev) => ({ ...prev, raisedBy: emps[0].name }));
         }
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadTickets();
   }, []);
 
   const handleStatusChange = (id: string, nextStatus: FacilityItem['status']) => {
@@ -50,24 +62,14 @@ export const FacilitiesPage: React.FC = () => {
     e.preventDefault();
     if (!newReq.title || !newReq.raisedBy) return;
     try {
-      const created = await createHelpdeskTicketApi({
+      await createHelpdeskTicketApi({
         category: `Facilities - ${newReq.category}`,
         subject: newReq.title,
         description: newReq.location || 'Level 2 Main Bay',
         employee_name: newReq.raisedBy,
         priority: newReq.priority,
       });
-      const item: FacilityItem = {
-        id: (created as any).ticket_code || (created as any).ticket_id || `FAC-${created.id}`,
-        category: newReq.category,
-        title: newReq.title,
-        raisedBy: newReq.raisedBy,
-        location: newReq.location || 'Level 2 Main Bay',
-        priority: newReq.priority,
-        status: 'Open',
-        date: new Date().toISOString().split('T')[0],
-      };
-      setItems([item, ...items]);
+      loadTickets();
     } catch {
       const created: FacilityItem = {
         id: `FAC-${100 + items.length + 1}`,
@@ -82,7 +84,7 @@ export const FacilitiesPage: React.FC = () => {
       setItems([created, ...items]);
     }
     setIsModalOpen(false);
-    setNewReq({ category: 'Desk & Seating', title: '', raisedBy: '', location: '', priority: 'Medium' });
+    setNewReq({ category: 'Desk & Seating', title: '', raisedBy: employees[0]?.name || '', location: '', priority: 'Medium' });
   };
 
   const filtered = items.filter((i) => filter === 'All' || i.status === filter);
@@ -240,8 +242,12 @@ export const FacilitiesPage: React.FC = () => {
                 <input required type="text" placeholder="e.g. Level 2 Engineering Bay" value={newReq.location} onChange={(e) => setNewReq({ ...newReq, location: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium text-[var(--text)] mb-1">Raised By</label>
-                <input required type="text" placeholder="e.g. Rahul Varma" value={newReq.raisedBy} onChange={(e) => setNewReq({ ...newReq, raisedBy: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
+                <label className="block font-medium text-[var(--text)] mb-1">Raised By (Employee)</label>
+                <select required value={newReq.raisedBy} onChange={(e) => setNewReq({ ...newReq, raisedBy: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none">
+                  {employees.map((emp) => (
+                    <option key={emp.code} value={emp.name}>{emp.name} ({emp.code})</option>
+                  ))}
+                </select>
               </div>
               <div className="flex items-center justify-end gap-2 pt-3">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--text)]">Cancel</button>

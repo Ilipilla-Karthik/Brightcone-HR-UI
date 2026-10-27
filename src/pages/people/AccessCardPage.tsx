@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
-import { fetchEmployees, createAssetApi } from '../../services/peopleApi';
+import { fetchEmployees, fetchAssets, createAssetApi } from '../../services/peopleApi';
 
 interface CardItem {
   id: string;
@@ -14,28 +14,55 @@ interface CardItem {
 
 export const AccessCardPage: React.FC = () => {
   const [cards, setCards] = useState<CardItem[]>([]);
+  const [employees, setEmployees] = useState<{ code: string; name: string }[]>([]);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCard, setNewCard] = useState({ cardNum: '', employee: '', empCode: '', zone: 'General Office (Level 1)' });
 
+  const loadCards = async () => {
+    try {
+      const [empsData, assetsData] = await Promise.all([fetchEmployees(), fetchAssets()]);
+      const emps = Array.isArray(empsData) ? empsData : (empsData as any)?.value || [];
+      const assets = Array.isArray(assetsData) ? assetsData : (assetsData as any)?.value || [];
+      const empList = emps.map((e: any) => ({ code: e.employee_code, name: e.full_name }));
+      setEmployees(empList);
+      if (empList.length > 0 && !newCard.employee) {
+        setNewCard((prev) => ({ ...prev, employee: empList[0].name, empCode: empList[0].code }));
+      }
+
+      const defaultCards: CardItem[] = emps.map((e: any, idx: number) => ({
+        id: `c-${idx + 1}`,
+        cardNum: `BC-NFC-${1000 + (e.id || idx + 1)}`,
+        employee: e.full_name || 'Staff Member',
+        empCode: e.employee_code || `BC-100${idx + 1}`,
+        zone: e.department === 'AI Research' ? 'AI Lab & Server Room' : e.department === 'Leadership' ? 'Executive & All Floors' : 'Engineering Level 2',
+        issuedOn: e.joined || '2022-01-15',
+        status: 'Active' as const,
+      }));
+
+      const dbCards: CardItem[] = assets
+        .filter((a: any) => a.asset_type === 'Access Card')
+        .map((a: any, idx: number) => {
+          const matched = empList.find((e: any) => e.code === a.employee_code);
+          return {
+            id: `db-c-${a.id || idx}`,
+            cardNum: a.serial_number || `BC-NFC-${2000 + idx}`,
+            employee: matched ? matched.name : a.employee_code || 'Employee',
+            empCode: a.employee_code || 'BC-1001',
+            zone: a.model_name || 'General Office (Level 1)',
+            issuedOn: a.assigned_date || '2026-10-16',
+            status: a.status === 'Blocked' ? ('Blocked' as const) : ('Active' as const),
+          };
+        });
+
+      setCards([...dbCards, ...defaultCards]);
+    } catch {
+      setCards([]);
+    }
+  };
+
   useEffect(() => {
-    fetchEmployees()
-      .then((data: any) => {
-        const list = Array.isArray(data) ? data : data?.value || [];
-        const mapped: CardItem[] = list.map((e: any, idx: number) => ({
-          id: `c-${idx + 1}`,
-          cardNum: `BC-NFC-${1000 + (e.id || idx + 1)}`,
-          employee: e.full_name || 'Staff Member',
-          empCode: e.employee_code || `BC-100${idx + 1}`,
-          zone: e.department === 'AI Research' ? 'AI Lab & Server Room' : e.department === 'Leadership' ? 'Executive & All Floors' : 'Engineering Level 2',
-          issuedOn: e.joined || '2022-01-15',
-          status: 'Active' as const,
-        }));
-        setCards(mapped);
-      })
-      .catch(() => {
-        setCards([]);
-      });
+    loadCards();
   }, []);
 
   const handleToggleStatus = (id: string) => {
@@ -45,27 +72,31 @@ export const AccessCardPage: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCard.cardNum || !newCard.employee) return;
+    const emp = employees.find((em) => em.name === newCard.employee || em.code === newCard.empCode);
+    const empCode = emp ? emp.code : newCard.empCode || 'BC-1001';
     try {
       await createAssetApi({
         asset_type: 'Access Card',
         model_name: newCard.zone,
         serial_number: newCard.cardNum,
-        employee_code: newCard.empCode || 'BC-1099',
+        employee_code: empCode,
         status: 'Active',
       });
-    } catch {}
-    const item: CardItem = {
-      id: `c-${cards.length + 1}`,
-      cardNum: newCard.cardNum,
-      employee: newCard.employee,
-      empCode: newCard.empCode || 'BC-1099',
-      zone: newCard.zone,
-      issuedOn: new Date().toISOString().split('T')[0],
-      status: 'Active',
-    };
-    setCards([item, ...cards]);
+      loadCards();
+    } catch {
+      const item: CardItem = {
+        id: `c-${cards.length + 1}`,
+        cardNum: newCard.cardNum,
+        employee: newCard.employee,
+        empCode,
+        zone: newCard.zone,
+        issuedOn: new Date().toISOString().split('T')[0],
+        status: 'Active',
+      };
+      setCards([item, ...cards]);
+    }
     setIsModalOpen(false);
-    setNewCard({ cardNum: '', employee: '', empCode: '', zone: 'General Office (Level 1)' });
+    setNewCard({ cardNum: '', employee: employees[0]?.name || '', empCode: employees[0]?.code || '', zone: 'General Office (Level 1)' });
   };
 
   const filtered = cards.filter((c) => {
@@ -184,8 +215,21 @@ export const AccessCardPage: React.FC = () => {
                 <input required type="text" placeholder="e.g. BC-NFC-0950" value={newCard.cardNum} onChange={(e) => setNewCard({ ...newCard, cardNum: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
               </div>
               <div>
-                <label className="block font-medium text-[var(--text)] mb-1">Employee Name</label>
-                <input required type="text" placeholder="e.g. Rohan Verma" value={newCard.employee} onChange={(e) => setNewCard({ ...newCard, employee: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
+                <label className="block font-medium text-[var(--text)] mb-1">Employee</label>
+                <select
+                  required
+                  value={newCard.empCode}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    const emp = employees.find((em) => em.code === code);
+                    setNewCard({ ...newCard, empCode: code, employee: emp ? emp.name : code });
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none"
+                >
+                  {employees.map((emp) => (
+                    <option key={emp.code} value={emp.code}>{emp.name} ({emp.code})</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block font-medium text-[var(--text)] mb-1">Access Zone</label>

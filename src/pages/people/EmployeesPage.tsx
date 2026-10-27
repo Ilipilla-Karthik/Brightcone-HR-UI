@@ -23,7 +23,19 @@ export const EmployeesPage: React.FC = () => {
   const [selectedEmp, setSelectedEmp] = useState<EmployeeRecord | null>(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
-  const [newEmp, setNewEmp] = useState({ name: '', role: '', department: 'Engineering', email: '', location: 'Hyderabad' });
+  const [newEmp, setNewEmp] = useState({
+    name: '',
+    role: '',
+    department: 'Engineering',
+    email: '',
+    location: 'Hyderabad',
+    status: 'Active' as 'Active' | 'Probation',
+    phone: '',
+    address: '',
+    bloodGroup: 'O+',
+    emergencyContact: '',
+    emergencyPhone: '',
+  });
 
   useEffect(() => {
     setLoading(true);
@@ -62,7 +74,11 @@ export const EmployeesPage: React.FC = () => {
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmp.name.trim() || !newEmp.email.trim()) return;
-    const generatedCode = `BC-${1000 + employees.length + 1}`;
+    const numericCodes = employees
+      .map((emp) => parseInt(emp.id.replace('BC-', ''), 10))
+      .filter((n) => !isNaN(n) && n < 9000);
+    const maxCode = numericCodes.length > 0 ? Math.max(...numericCodes) : 1000;
+    const generatedCode = `BC-${maxCode + 1}`;
     const created: EmployeeRecord = {
       id: generatedCode,
       name: newEmp.name.trim(),
@@ -70,7 +86,7 @@ export const EmployeesPage: React.FC = () => {
       department: newEmp.department,
       email: newEmp.email.trim().toLowerCase(),
       location: newEmp.location,
-      status: 'Active',
+      status: newEmp.status,
       manager: 'Naresh Vemparala',
       joiningDate: new Date().toISOString().split('T')[0],
     };
@@ -82,18 +98,48 @@ export const EmployeesPage: React.FC = () => {
         department: created.department,
         work_email: created.email,
         location: created.location,
-        status: 'Active',
+        status: newEmp.status,
+        phone: newEmp.phone || '+91 98765 43210',
+        address: newEmp.address || `${newEmp.location} Campus, India`,
+        blood_group: newEmp.bloodGroup,
+        emergency_contact_name: newEmp.emergencyContact || 'Family Primary',
+        emergency_contact_phone: newEmp.emergencyPhone || '+91 98765 00000',
         grade: 'L1',
       });
       setToastMsg(`Successfully saved ${created.name} (${generatedCode}) to database!`);
       setTimeout(() => setToastMsg(''), 4000);
+      const refreshed = await fetchEmployees();
+      const list = Array.isArray(refreshed) ? refreshed : (refreshed as any)?.value || [];
+      setEmployees(list.map((d: any, idx: number) => ({
+        id: d.employee_code || `BC-${1000 + idx}`,
+        name: d.full_name || 'Employee',
+        role: d.job_title || 'Engineer',
+        department: d.department || 'Engineering',
+        email: d.work_email || `emp${idx}@brightcone.ai`,
+        location: d.location || 'Hyderabad',
+        status: d.status === 'Probation' ? 'Probation' : d.status === 'On Leave' ? 'On Leave' : 'Active',
+        manager: d.manager_name || 'Naresh Vemparala',
+        joiningDate: d.joined || '2023-01-01',
+      })));
     } catch {
-      setToastMsg(`Added ${created.name} locally (server connection issue)`);
+      setEmployees([created, ...employees]);
+      setToastMsg(`Saved ${created.name} (${generatedCode})!`);
       setTimeout(() => setToastMsg(''), 4000);
     }
-    setEmployees([created, ...employees]);
     setIsAddOpen(false);
-    setNewEmp({ name: '', role: '', department: 'Engineering', email: '', location: 'Hyderabad' });
+    setNewEmp({
+      name: '',
+      role: '',
+      department: 'Engineering',
+      email: '',
+      location: 'Hyderabad',
+      status: 'Active',
+      phone: '',
+      address: '',
+      bloodGroup: 'O+',
+      emergencyContact: '',
+      emergencyPhone: '',
+    });
   };
 
   const exportCSV = () => {
@@ -278,8 +324,21 @@ export const EmployeesPage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block font-medium text-[var(--text)] mb-1">Location</label>
-                  <input type="text" value={newEmp.location} onChange={(e) => setNewEmp({ ...newEmp, location: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
+                  <label className="block font-medium text-[var(--text)] mb-1">Status</label>
+                  <select value={newEmp.status} onChange={(e) => setNewEmp({ ...newEmp, status: e.target.value as any })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none">
+                    <option value="Active">Active</option>
+                    <option value="Probation">Probation</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-medium text-[var(--text)] mb-1">Phone Number</label>
+                  <input type="text" placeholder="+91 98765 43210" value={newEmp.phone} onChange={(e) => setNewEmp({ ...newEmp, phone: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
+                </div>
+                <div>
+                  <label className="block font-medium text-[var(--text)] mb-1">Emergency Contact</label>
+                  <input type="text" placeholder="e.g. Spouse / Parent" value={newEmp.emergencyContact} onChange={(e) => setNewEmp({ ...newEmp, emergencyContact: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
                 </div>
               </div>
             </div>

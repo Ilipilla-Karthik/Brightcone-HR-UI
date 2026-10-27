@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { fetchEmployees } from '../../services/peopleApi';
+import { fetchEmployees, updateEmployeeApi } from '../../services/peopleApi';
+import { ic } from '../../components/icons';
 
 interface ProbationItem {
   id: string;
@@ -15,13 +16,23 @@ interface ProbationItem {
 
 export const ProbationTracking: React.FC = () => {
   const [probations, setProbations] = useState<ProbationItem[]>([]);
+  const [allEmployees, setAllEmployees] = useState<{ code: string; name: string; role: string; dept: string }[]>([]);
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCode, setSelectedCode] = useState('');
+  const [months, setMonths] = useState(3);
 
-  useEffect(() => {
+  const loadData = () => {
     fetchEmployees()
       .then((data: any) => {
         const list = Array.isArray(data) ? data : data?.value || [];
+        setAllEmployees(list.map((e: any) => ({
+          code: e.employee_code,
+          name: e.full_name,
+          role: e.job_title || 'Engineer',
+          dept: e.department || 'Engineering',
+        })));
         const probEmps = list.filter((e: any) => e.status?.toLowerCase() === 'probation');
         const mapped: ProbationItem[] = probEmps.map((e: any, idx: number) => ({
           id: `pb-${idx + 1}`,
@@ -35,14 +46,38 @@ export const ProbationTracking: React.FC = () => {
           status: 'Under Review' as const,
         }));
         setProbations(mapped);
+        if (list.length > 0 && !selectedCode) {
+          setSelectedCode(list[0].employee_code);
+        }
       })
       .catch(() => {
         setProbations([]);
       });
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
-  const handleStatusChange = (id: string, nextStatus: ProbationItem['status']) => {
-    setProbations(probations.map((p) => (p.id === id ? { ...p, status: nextStatus } : p)));
+  const handleStatusChange = async (code: string, nextStatus: ProbationItem['status']) => {
+    try {
+      if (nextStatus === 'Confirmed') {
+        await updateEmployeeApi(code, { status: 'Active' });
+      } else {
+        await updateEmployeeApi(code, { status: 'Probation' });
+      }
+    } catch {}
+    setProbations(probations.map((p) => (p.code === code ? { ...p, status: nextStatus } : p)));
+  };
+
+  const handleAddProbation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCode) return;
+    try {
+      await updateEmployeeApi(selectedCode, { status: 'Probation' });
+      loadData();
+    } catch {}
+    setIsModalOpen(false);
   };
 
   const filtered = probations.filter((p) => {
@@ -59,6 +94,13 @@ export const ProbationTracking: React.FC = () => {
           <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Probation Confirmation Tracker</h1>
           <p className="text-sm text-[var(--muted)] mt-1">Monitor new employee probationary periods, review manager evaluations, and issue formal confirmation letters.</p>
         </div>
+        <button
+          type="button"
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#12A58E] hover:bg-[#0f8b77] text-white text-sm font-semibold transition-all shadow-sm cursor-pointer"
+        >
+          {ic('plus', 16)} Add Employee to Probation
+        </button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -148,14 +190,14 @@ export const ProbationTracking: React.FC = () => {
                       <>
                         <button
                           type="button"
-                          onClick={() => handleStatusChange(item.id, 'Confirmed')}
+                          onClick={() => handleStatusChange(item.code, 'Confirmed')}
                           className="px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-semibold text-[10px] cursor-pointer"
                         >
                           Confirm Tenure
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleStatusChange(item.id, 'Extended')}
+                          onClick={() => handleStatusChange(item.code, 'Extended')}
                           className="px-2.5 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 font-semibold text-[10px] cursor-pointer"
                         >
                           Extend 3 Mo
@@ -171,6 +213,35 @@ export const ProbationTracking: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--surface)] border border-[var(--line)] rounded-2xl max-w-md w-full p-6 shadow-2xl relative space-y-4">
+            <h3 className="font-['Sora'] text-lg font-bold text-[var(--text)]">Add Employee to Probation</h3>
+            <form onSubmit={handleAddProbation} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-medium text-[var(--text)] mb-1">Select Employee</label>
+                <select required value={selectedCode} onChange={(e) => setSelectedCode(e.target.value)} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none">
+                  {allEmployees.map((emp) => (
+                    <option key={emp.code} value={emp.code}>{emp.name} ({emp.code}) — {emp.role}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block font-medium text-[var(--text)] mb-1">Probation Period Duration</label>
+                <select value={months} onChange={(e) => setMonths(Number(e.target.value))} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none">
+                  <option value={3}>3 Months</option>
+                  <option value={6}>6 Months</option>
+                </select>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-3">
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--text)]">Cancel</button>
+                <button type="submit" className="px-4 py-2 rounded-xl bg-[#12A58E] hover:bg-[#0f8b77] text-white font-semibold">Assign to Probation</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

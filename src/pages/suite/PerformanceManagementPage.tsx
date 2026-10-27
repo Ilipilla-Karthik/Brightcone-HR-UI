@@ -43,14 +43,19 @@ export const PerformanceManagementPage: React.FC = () => {
     fetchEmployees()
       .then(emps => {
         if (mounted) {
-          setEmployees(emps.map(e => ({
-            id: e.employee_code,
-            name: e.full_name,
-            department: e.department,
-            designation: e.job_title,
-            rating: 4.8,
-            rating_label: 'Exceeds Expectations',
-          })));
+          const list = Array.isArray(emps) ? emps : (emps as any)?.value || [];
+          setEmployees(list.map((e: any, idx: number) => {
+            const score = idx === 0 ? 5.0 : idx === 1 ? 4.9 : idx % 2 === 0 ? 4.5 : 4.0;
+            const label = score >= 5.0 ? 'Exceptional' : score >= 4.5 ? 'Exceeds Expectations' : 'Meets Expectations';
+            return {
+              id: e.employee_code || `BC-100${idx + 1}`,
+              name: e.full_name || 'Employee',
+              department: e.department || 'Engineering',
+              designation: e.job_title || 'Engineer',
+              rating: score,
+              rating_label: label,
+            };
+          }));
         }
       })
       .catch(() => { if (mounted) setEmployees([]); })

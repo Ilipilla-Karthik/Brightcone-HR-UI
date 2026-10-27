@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
-import { fetchPerformanceSummary, fetchPerformanceGoals } from '../../services/peopleApi';
+import { fetchPerformanceSummary, fetchPerformanceGoals, createPerformanceGoal, fetchEmployees } from '../../services/peopleApi';
 
 interface GoalItem {
   id: string;
@@ -14,11 +14,12 @@ interface GoalItem {
 export const PerformanceAdmin: React.FC = () => {
   const [tab, setTab] = useState<'overview' | 'goals' | 'reviews'>('overview');
   const [goals, setGoals] = useState<GoalItem[]>([]);
+  const [employees, setEmployees] = useState<{ code: string; name: string }[]>([]);
   const [summary, setSummary] = useState({ active: 8, reviews_in_progress: 3, completed_appraisals: 12 });
   const [isGoalModal, setIsGoalModal] = useState(false);
-  const [newGoal, setNewGoal] = useState({ employee: 'Rahul Varma', title: '', category: 'Engineering' as const });
+  const [newGoal, setNewGoal] = useState({ employee: '', title: '', category: 'Engineering' as const });
 
-  useEffect(() => {
+  const loadData = () => {
     fetchPerformanceSummary().then((s) => s && setSummary(s)).catch(() => {});
     fetchPerformanceGoals()
       .then((res) => {
@@ -28,7 +29,7 @@ export const PerformanceAdmin: React.FC = () => {
           employee: g.employee_name || 'Engineering Team',
           title: g.title || 'Quarterly OKR Deliverable',
           category: 'Engineering',
-          progress: g.progress || 50,
+          progress: g.progress_percentage || g.progress || 50,
           status: g.status === 'Achieved' ? 'Achieved' : 'In Progress',
         }));
         setGoals(mapped);
@@ -36,22 +37,49 @@ export const PerformanceAdmin: React.FC = () => {
       .catch(() => {
         setGoals([]);
       });
+
+    fetchEmployees()
+      .then((data: any) => {
+        const list = Array.isArray(data) ? data : data?.value || [];
+        const emps = list.map((e: any) => ({ code: e.employee_code, name: e.full_name }));
+        setEmployees(emps);
+        if (emps.length > 0 && !newGoal.employee) {
+          setNewGoal((prev) => ({ ...prev, employee: emps[0].name }));
+        }
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
-  const handleAddGoal = (e: React.FormEvent) => {
+  const handleAddGoal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGoal.title.trim()) return;
-    const item: GoalItem = {
-      id: `G-${100 + goals.length + 1}`,
-      employee: newGoal.employee,
-      title: newGoal.title.trim(),
-      category: newGoal.category,
-      progress: 10,
-      status: 'In Progress',
-    };
-    setGoals([item, ...goals]);
+    const empName = newGoal.employee || (employees.length > 0 ? employees[0].name : 'Engineering Team');
+    try {
+      await createPerformanceGoal({
+        employee_name: empName,
+        title: newGoal.title.trim(),
+        target_date: new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0],
+        progress_percentage: 10,
+        status: 'In Progress',
+      });
+      loadData();
+    } catch {
+      const item: GoalItem = {
+        id: `G-${100 + goals.length + 1}`,
+        employee: empName,
+        title: newGoal.title.trim(),
+        category: newGoal.category,
+        progress: 10,
+        status: 'In Progress',
+      };
+      setGoals([item, ...goals]);
+    }
     setIsGoalModal(false);
-    setNewGoal({ employee: 'Rahul Varma', title: '', category: 'Engineering' });
+    setNewGoal({ employee: employees.length > 0 ? employees[0].name : '', title: '', category: 'Engineering' });
   };
 
   return (
@@ -213,7 +241,11 @@ export const PerformanceAdmin: React.FC = () => {
             <form onSubmit={handleAddGoal} className="space-y-3 text-xs">
               <div>
                 <label className="block font-medium text-[var(--text)] mb-1">Employee</label>
-                <input required type="text" value={newGoal.employee} onChange={(e) => setNewGoal({ ...newGoal, employee: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
+                <select required value={newGoal.employee} onChange={(e) => setNewGoal({ ...newGoal, employee: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none">
+                  {employees.map((emp) => (
+                    <option key={emp.code} value={emp.name}>{emp.name} ({emp.code})</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block font-medium text-[var(--text)] mb-1">Goal Title</label>

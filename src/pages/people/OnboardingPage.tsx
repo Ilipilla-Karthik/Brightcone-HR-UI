@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
 import { recruitApi } from '../../services/recruitApi';
+import { fetchEmployees } from '../../services/peopleApi';
 
 interface OnboardingCandidate {
   id: string;
+  candId?: string;
   name: string;
   role: string;
   department: string;
@@ -17,69 +19,101 @@ interface OnboardingCandidate {
 
 export const OnboardingPage: React.FC = () => {
   const [candidates, setCandidates] = useState<OnboardingCandidate[]>([]);
+  const [employees, setEmployees] = useState<{ code: string; name: string }[]>([]);
   const [filter, setFilter] = useState('All');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newHire, setNewHire] = useState({ name: '', role: '', department: 'Engineering', joiningDate: '', buddy: 'Ananya Rao' });
 
-  useEffect(() => {
+  const loadData = () => {
     recruitApi.getCandidates()
       .then((cands) => {
         const onboardings: OnboardingCandidate[] = cands
-          .filter((c) => c.stage === 'Offer' || c.stage === 'Hired')
+          .filter((c) => c.stage === 'Offer' || c.stage === 'Hired' || c.stage === 'Onboarding')
           .map((c, idx) => ({
             id: `onb-${idx + 1}`,
+            candId: c.cand_id,
             name: c.full_name,
             role: c.job_title || 'Software Engineer',
             department: 'Engineering',
             joiningDate: '2026-11-15',
-            progress: c.stage === 'Hired' ? 100 : 70,
+            progress: c.stage === 'Hired' ? 100 : c.stage === 'Offer' ? 70 : 30,
             buddy: 'Ananya Rao',
-            tasksCompleted: c.stage === 'Hired' ? 5 : 3,
+            tasksCompleted: c.stage === 'Hired' ? 5 : c.stage === 'Offer' ? 3 : 1,
             totalTasks: 5,
-            status: c.stage === 'Hired' ? 'Completed' : 'Ready for Day 1',
+            status: c.stage === 'Hired' ? 'Completed' : c.stage === 'Offer' ? 'Ready for Day 1' : 'In Progress',
           }));
         setCandidates(onboardings);
       })
       .catch(() => setCandidates([]));
+
+    fetchEmployees()
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res?.value || [];
+        setEmployees(list.map((e: any) => ({ code: e.employee_code, name: e.full_name })));
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const filtered = candidates.filter((c) => filter === 'All' || c.status === filter);
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newHire.name || !newHire.joiningDate) return;
-    const item: OnboardingCandidate = {
-      id: `onb-${Date.now()}`,
-      name: newHire.name,
-      role: newHire.role || 'Associate',
-      department: newHire.department,
-      joiningDate: newHire.joiningDate,
-      progress: 0,
-      buddy: newHire.buddy,
-      tasksCompleted: 0,
-      totalTasks: 5,
-      status: 'In Progress',
-    };
-    setCandidates([item, ...candidates]);
+    try {
+      await recruitApi.createCandidate({
+        full_name: newHire.name,
+        job_title: newHire.role || 'Associate Engineer',
+        stage: 'Onboarding',
+        source: 'Campus / Direct',
+      });
+      loadData();
+    } catch {
+      const item: OnboardingCandidate = {
+        id: `onb-${Date.now()}`,
+        name: newHire.name,
+        role: newHire.role || 'Associate',
+        department: newHire.department,
+        joiningDate: newHire.joiningDate,
+        progress: 20,
+        buddy: newHire.buddy,
+        tasksCompleted: 1,
+        totalTasks: 5,
+        status: 'In Progress',
+      };
+      setCandidates([item, ...candidates]);
+    }
     setIsModalOpen(false);
     setNewHire({ name: '', role: '', department: 'Engineering', joiningDate: '', buddy: 'Ananya Rao' });
   };
 
-  const advanceTask = (id: string) => {
+  const advanceTask = async (id: string, candId?: string) => {
+    const target = candidates.find((c) => c.id === id);
+    if (!target || target.tasksCompleted >= target.totalTasks) return;
+    const next = target.tasksCompleted + 1;
+    const pct = Math.round((next / target.totalTasks) * 100);
+    const newStatus: OnboardingCandidate['status'] = pct === 100 ? 'Completed' : pct >= 80 ? 'Ready for Day 1' : 'In Progress';
+
+    if (candId && pct === 100) {
+      try {
+        await recruitApi.updateCandidate(candId, { stage: 'Hired' });
+      } catch {}
+    }
+
     setCandidates(
-      candidates.map((c) => {
-        if (c.id === id && c.tasksCompleted < c.totalTasks) {
-          const next = c.tasksCompleted + 1;
-          const pct = Math.round((next / c.totalTasks) * 100);
-          return {
-            ...c,
-            tasksCompleted: next,
-            progress: pct,
-            status: pct === 100 ? 'Completed' : pct >= 80 ? 'Ready for Day 1' : 'In Progress',
-          };
-        }
-        return c;
-      })
+      candidates.map((c) =>
+        c.id === id
+          ? {
+              ...c,
+              tasksCompleted: next,
+              progress: pct,
+              status: newStatus,
+            }
+          : c
+      )
     );
   };
 
@@ -178,7 +212,7 @@ export const OnboardingPage: React.FC = () => {
                   {c.tasksCompleted < c.totalTasks ? (
                     <button
                       type="button"
-                      onClick={() => advanceTask(c.id)}
+                      onClick={() => advanceTask(c.id, c.candId)}
                       className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-[var(--surface-2)] hover:bg-[#12A58E] hover:text-white transition-colors"
                     >
                       + Step Complete
@@ -225,6 +259,14 @@ export const OnboardingPage: React.FC = () => {
                   <label className="block font-medium text-[var(--text)] mb-1">Joining Date</label>
                   <input required type="date" value={newHire.joiningDate} onChange={(e) => setNewHire({ ...newHire, joiningDate: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
                 </div>
+              </div>
+              <div>
+                <label className="block font-medium text-[var(--text)] mb-1">Assigned Buddy / Mentor</label>
+                <select value={newHire.buddy} onChange={(e) => setNewHire({ ...newHire, buddy: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none">
+                  {employees.map((emp) => (
+                    <option key={emp.code} value={emp.name}>{emp.name} ({emp.code})</option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="pt-2 flex justify-end gap-2 border-t border-[var(--line)]">
