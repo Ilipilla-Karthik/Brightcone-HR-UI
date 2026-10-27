@@ -79,8 +79,8 @@ export const PerformanceManagementPage: React.FC = () => {
     <div style={{ padding: 24, maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', fontFamily: 'Sora, sans-serif', margin: 0 }}>Performance Management</h1>
-          <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>Organisation-wide appraisal cycle · Q3 2026</p>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', fontFamily: 'Sora, sans-serif', margin: 0 }}>Appraisal tracker</h1>
+          <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>Where each employee is in the appraisal cycle. Overdue when the review due date passes.</p>
         </div>
         <span style={{ fontSize: 12, fontWeight: 700, padding: '6px 14px', borderRadius: 99, background: '#fef9c3', color: '#92400e', border: '1px solid #fde68a' }}>
           Appraisal cycle open · Closes Nov 15

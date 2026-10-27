@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { ic } from '../../components/icons';
 import { TownhallItem } from './types';
 import { TownhallModal } from './components/TownhallModal';
-import { fetchConnectTownhalls } from '../../services/signConnectApi';
+import { fetchConnectTownhalls, createConnectTownhall, updateConnectTownhall, deleteConnectTownhall } from '../../services/signConnectApi';
 import { mapTownhallFromApi } from './apiMapper';
 
 export const TownhallPage: React.FC = () => {
@@ -36,24 +36,41 @@ export const TownhallPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     setTownhalls((prev) => prev.filter((th) => th.id !== id));
     showToast('Town hall meeting deleted');
+    try {
+      await deleteConnectTownhall(id);
+    } catch (err) {
+      console.error('Failed to delete townhall in DB:', err);
+    }
   };
 
-  const handleSave = (thData: Omit<TownhallItem, 'id'>, id?: string) => {
+  const handleSave = async (thData: Omit<TownhallItem, 'id'>, id?: string) => {
     if (id) {
       setTownhalls((prev) =>
         prev.map((th) => (th.id === id ? { ...thData, id } : th))
       );
       showToast('Town hall updated');
+      try {
+        await updateConnectTownhall(id, thData);
+      } catch (err) {
+        console.error('Failed to update townhall in DB:', err);
+      }
     } else {
-      const newTh: TownhallItem = {
-        id: `TH-26-0${townhalls.length + 1}`,
-        ...thData,
-      };
+      const tempId = `TH-26-0${townhalls.length + 1}`;
+      const newTh: TownhallItem = { id: tempId, ...thData };
       setTownhalls([newTh, ...townhalls]);
       showToast('Town hall scheduled');
+      try {
+        const created = await createConnectTownhall(thData);
+        if (created) {
+          const mapped = mapTownhallFromApi(created);
+          setTownhalls((prev) => prev.map((t) => (t.id === tempId ? mapped : t)));
+        }
+      } catch (err) {
+        console.error('Failed to create townhall in DB:', err);
+      }
     }
   };
 

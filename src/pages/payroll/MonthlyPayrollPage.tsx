@@ -25,9 +25,9 @@ export const MonthlyPayrollPage: React.FC = () => {
           const live: MonthlyPayrollRecord[] = res.data.map((r, i) => ({
             id: `PR-${101 + i}`,
             month: '2026-10',
-            employeeId: r.empId,
-            employeeName: r.name,
-            dept: r.dept,
+            employeeId: r.empId || (r as any).emp_id || `BC-10${i + 1}`,
+            employeeName: r.name || (r as any).full_name || 'Team Member',
+            dept: r.dept || (r as any).department || 'General',
             workingDays: 22,
             lopDays: 0,
             paidDays: 22,

@@ -35,22 +35,34 @@ export const NewClaimModal: React.FC<NewClaimModalProps> = ({ isOpen, onClose, o
 
     setSubmitting(true)
     setError(null)
+    const empName = (user as any)?.name || ((user as any)?.firstName ? `${(user as any).firstName} ${(user as any).lastName}`.trim() : 'Ananya Rao');
+    const empId = (user as any)?.employee_code || (user as any)?.id || 'BC-1001';
     try {
       await axios.post('/api/expenses', {
-        employee_id: user?.pid ?? 'EMP-001',
-        employee_name: user?.name ?? 'Employee',
+        employee_id: empId,
+        employee_name: empName,
         category,
         amount: parsedAmount,
         date,
         description,
         receipt_url: receiptName ? `/receipts/${receiptName}` : null,
-      })
-      onClaimSubmitted()
-      onClose()
+      });
+      onClaimSubmitted();
+      onClose();
     } catch {
-      // Optimistic close
-      onClaimSubmitted()
-      onClose()
+      try {
+        await axios.post('/api/v1/expenses', {
+          employee_id: empId,
+          employee_name: empName,
+          category,
+          amount: parsedAmount,
+          date,
+          description,
+          receipt_url: receiptName ? `/receipts/${receiptName}` : null,
+        });
+      } catch {}
+      onClaimSubmitted();
+      onClose();
     } finally {
       setSubmitting(false)
     }

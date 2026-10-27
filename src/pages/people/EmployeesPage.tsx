@@ -112,8 +112,8 @@ export const EmployeesPage: React.FC = () => {
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[var(--line)]">
         <div>
-          <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Workforce Directory</h1>
-          <p className="text-sm text-[var(--muted)] mt-1">Real-time personnel records, org roles, and department allocations.</p>
+          <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Employee master data</h1>
+          <p className="text-sm text-[var(--muted)] mt-1">The live employee register. Every other record links here by Employee ID.</p>
         </div>
         <div className="flex items-center gap-2.5">
           <button type="button" onClick={exportCSV} className="btn text-xs font-semibold px-3.5 py-2 flex items-center gap-1.5 border border-[var(--line)] rounded-xl hover:bg-[var(--surface-2)] transition-colors">

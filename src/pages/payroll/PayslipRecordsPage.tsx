@@ -28,9 +28,9 @@ export const PayslipRecordsPage: React.FC = () => {
             const spl = r.gross - (basic + hra)
             return {
               id: `PS-${801 + i}`,
-              employeeId: r.empId,
-              employeeName: r.name,
-              dept: r.dept,
+              employeeId: r.empId || (r as any).emp_id || `BC-10${i + 1}`,
+              employeeName: r.name || (r as any).full_name || 'Team Member',
+              dept: r.dept || (r as any).department || 'General',
               month: '2026-09',
               gross: r.gross,
               deductions: Math.round(r.pf + r.pt + r.tds),

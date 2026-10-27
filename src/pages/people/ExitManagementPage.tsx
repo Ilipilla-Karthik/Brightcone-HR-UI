@@ -112,8 +112,8 @@ export const ExitManagementPage: React.FC = () => {
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[var(--line)]">
         <div>
-          <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Exits & Offboarding</h1>
-          <p className="text-sm text-[var(--muted)] mt-1">Manage employee resignations, notice periods, exit clearances, and full & final settlements.</p>
+          <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Employee exit management</h1>
+          <p className="text-sm text-[var(--muted)] mt-1">Resignations and exits from notice to final settlement. Completing an exit marks the employee as Exited.</p>
         </div>
         <button
           type="button"

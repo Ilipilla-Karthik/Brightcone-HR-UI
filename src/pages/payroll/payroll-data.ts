@@ -27,14 +27,17 @@ export function formatINR(val: number | string | undefined | null): string {
 }
 
 export function exportToCSV(filename: string, headers: string[], rows: (string | number)[][]) {
-  const csvContent =
-    'data:text/csv;charset=utf-8,' +
-    [headers.join(','), ...rows.map((e) => e.map((x) => `"${String(x).replace(/"/g, '""')}"`).join(','))].join('\n')
-  const encodedUri = encodeURI(csvContent)
-  const link = document.createElement('a')
-  link.setAttribute('href', encodedUri)
-  link.setAttribute('download', `${filename}.csv`)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+  const csvString = [
+    headers.join(','),
+    ...rows.map((e) => e.map((x) => `"${String(x ?? '').replace(/"/g, '""')}"`).join(','))
+  ].join('\r\n');
+  const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${filename}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }

@@ -269,43 +269,29 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
     return [
       {
         title: 'OVERVIEW',
-        items: [{ label: 'People dashboard', to: '/people/dashboard', icon: ic('dashboard', 15) }],
-      },
-      {
-        title: 'WORKFORCE',
         items: [
-          { label: 'Employees', to: '/people', icon: ic('users', 15) },
+          { label: 'People dashboard', to: '/people/dashboard', icon: ic('dashboard', 15) },
+          { label: 'Employee master data', to: '/people', icon: ic('users', 15) },
           { label: 'Org structure', to: '/people/org-chart', icon: ic('org', 15) },
           { label: 'Onboarding', to: '/people/onboarding', icon: ic('plus', 15) },
-          { label: 'Exits & offboarding', to: '/people/exit', icon: ic('logout', 15) },
+          { label: 'Employee exit management', to: '/people/exit', icon: ic('logout', 15) },
         ],
       },
       {
-        title: 'EMPLOYEE MANAGEMENT',
+        title: 'TALENT & PERFORMANCE',
         items: [
-          { label: 'Employee master data', to: '/people/master-data', icon: ic('users', 15) },
-          { label: 'Employee profiles', to: '/people/profiles', icon: ic('user', 15) },
-          { label: 'New joiners', to: '/people/new-joiners', icon: ic('plus', 15) },
-          { label: 'Probation tracking', to: '/people/probation', icon: ic('clock', 15) },
-          { label: 'Employee documents', to: '/people/documents', icon: ic('doc', 15) },
-          { label: 'Employee exit management', to: '/people/exit-management', icon: ic('logout', 15) },
-        ],
-      },
-      {
-        title: 'PERFORMANCE',
-        items: [
+          { label: 'Employee performance reviews', to: '/people/performance', icon: ic('star', 15) },
           { label: 'Appraisal tracker', to: '/people/appraisals', icon: ic('chart', 15) },
-          { label: 'Performance reviews', to: '/people/performance', icon: ic('star', 15) },
-          { label: 'Probation reviews', to: '/people/probation-reviews', icon: ic('check', 15) },
-          { label: 'Increment history', to: '/people/increments', icon: ic('pay', 15) },
-          { label: 'Employee recognition', to: '/people/recognition', icon: ic('star', 15) },
+          { label: 'Probation tracking', to: '/people/probation', icon: ic('clock', 15) },
+          { label: 'Employee profiles', to: '/people/profiles', icon: ic('user', 15) },
+          { label: 'Employee documents', to: '/people/documents', icon: ic('doc', 15) },
         ],
       },
       {
         title: 'ADMINISTRATION & ASSETS',
         items: [
-          { label: 'Laptop & assets', to: '/people/assets', icon: ic('laptop', 15) },
-          { label: 'Access cards', to: '/people/access-cards', icon: ic('key', 15) },
+          { label: 'Laptop & asset management', to: '/people/assets', icon: ic('laptop', 15) },
+          { label: 'Access card tracker', to: '/people/access-cards', icon: ic('key', 15) },
           { label: 'Office facilities', to: '/people/facilities', icon: ic('building', 15) },
           { label: 'Vendor management', to: '/people/vendors', icon: ic('briefcase', 15) },
         ],

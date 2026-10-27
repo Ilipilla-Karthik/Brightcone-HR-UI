@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
-import { fetchDocuments, createDocumentApi } from '../../services/peopleApi';
+import { fetchDocuments, createDocumentApi, fetchEmployees } from '../../services/peopleApi';
 
 interface DocumentRecord {
   id: string;
@@ -18,9 +18,17 @@ export const EmployeeDocuments: React.FC = () => {
   const [filterType, setFilterType] = useState('All');
   const [search, setSearch] = useState('');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [newDoc, setNewDoc] = useState({ title: '', type: 'Employment Contract' as const, employeeName: 'Rahul Varma' });
+  const [employees, setEmployees] = useState<{ code: string; name: string }[]>([]);
+  const [newDoc, setNewDoc] = useState({ title: '', type: 'Employment Contract' as const, employeeName: 'Ananya Rao', employeeCode: 'BC-1001' });
 
   useEffect(() => {
+    fetchEmployees()
+      .then((res: any) => {
+        const list = Array.isArray(res) ? res : res?.value || [];
+        setEmployees(list.map((e: any) => ({ code: e.employee_code || e.id, name: e.full_name || e.name })));
+      })
+      .catch(() => {});
+
     fetchDocuments()
       .then((data) => {
         const list = Array.isArray(data) ? data : (data as any)?.value || [];
@@ -53,11 +61,12 @@ export const EmployeeDocuments: React.FC = () => {
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDoc.title) return;
+    const empCode = newDoc.employeeCode || 'BC-1001';
     try {
       await createDocumentApi({
         title: newDoc.title,
         document_type: newDoc.type,
-        employee_code: 'BC-1038',
+        employee_code: empCode,
         file_size: '950 KB',
       });
     } catch {}
@@ -66,14 +75,14 @@ export const EmployeeDocuments: React.FC = () => {
       title: newDoc.title,
       type: newDoc.type,
       employeeName: newDoc.employeeName,
-      employeeId: 'BC-1038',
+      employeeId: empCode,
       uploadDate: new Date().toISOString().split('T')[0],
       size: '950 KB',
       status: 'Verified',
     };
     setDocs([item, ...docs]);
     setIsUploadOpen(false);
-    setNewDoc({ title: '', type: 'Employment Contract', employeeName: 'Rahul Varma' });
+    setNewDoc({ title: '', type: 'Employment Contract', employeeName: 'Ananya Rao', employeeCode: 'BC-1001' });
   };
 
   const handleDownload = (title: string) => {
@@ -90,8 +99,8 @@ export const EmployeeDocuments: React.FC = () => {
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[var(--line)]">
         <div>
-          <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Employee Documents</h1>
-          <p className="text-sm text-[var(--muted)] mt-1">Official letters, contracts, compliance filings, and identity proofs.</p>
+          <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Employee documents</h1>
+          <p className="text-sm text-[var(--muted)] mt-1">ID proofs, certificates and letters for each employee, with verification and expiry.</p>
         </div>
         <button
           type="button"
@@ -218,7 +227,28 @@ export const EmployeeDocuments: React.FC = () => {
               </div>
               <div>
                 <label className="block font-medium text-[var(--text)] mb-1">Associated Employee</label>
-                <input required type="text" value={newDoc.employeeName} onChange={(e) => setNewDoc({ ...newDoc, employeeName: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
+                <input
+                  required
+                  type="text"
+                  list="empDocList"
+                  placeholder="Select or enter employee"
+                  value={newDoc.employeeName}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const matched = employees.find((emp) => emp.name.toLowerCase() === val.toLowerCase() || emp.code.toLowerCase() === val.toLowerCase());
+                    setNewDoc({
+                      ...newDoc,
+                      employeeName: matched ? matched.name : val,
+                      employeeCode: matched ? matched.code : newDoc.employeeCode,
+                    });
+                  }}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none"
+                />
+                <datalist id="empDocList">
+                  {employees.map((emp) => (
+                    <option key={emp.code} value={emp.name}>{emp.code} - {emp.name}</option>
+                  ))}
+                </datalist>
               </div>
               <div className="p-4 border-2 border-dashed border-[var(--line)] rounded-xl text-center text-[var(--muted)]">
                 <span className="block mx-auto mb-1">{ic('upload', 24)}</span>

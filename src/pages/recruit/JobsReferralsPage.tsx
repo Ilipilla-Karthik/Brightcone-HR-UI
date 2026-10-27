@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { recruitApi, Job, Referral } from '../../services/recruitApi';
+import { useAuth } from '../../services/authContext';
 
 export const JobsReferralsPage: React.FC = () => {
+  const { user } = useAuth();
   const [openings, setOpenings] = useState<Job[]>([]);
   const [myReferrals, setMyReferrals] = useState<Referral[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -36,6 +38,7 @@ export const JobsReferralsPage: React.FC = () => {
         candidate_email: form.email,
         job_title: selectedJob.title,
         bonus_amount: selectedJob.referral_bonus,
+        referred_by: user?.name || (user?.firstName ? `${user.firstName} ${user.lastName}` : 'Ananya Rao'),
       });
       setMyReferrals([created, ...myReferrals]);
       setSelectedJob(null);
@@ -51,10 +54,10 @@ export const JobsReferralsPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[var(--line)]">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Employee Referral Program</h1>
+            <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Jobs & referrals</h1>
             <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">● Backend Connected</span>
           </div>
-          <p className="text-sm text-[var(--muted)] mt-1">Refer top talent to Brightcone and earn competitive referral bonuses upon hiring.</p>
+          <p className="text-sm text-[var(--muted)] mt-1">Open roles at Brightcone. Refer someone great or apply internally.</p>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-purple-50 dark:bg-purple-950 text-[#7C5CFF] border border-purple-200 dark:border-purple-800">

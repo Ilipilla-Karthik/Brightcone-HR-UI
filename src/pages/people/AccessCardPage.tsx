@@ -77,7 +77,7 @@ export const AccessCardPage: React.FC = () => {
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[var(--line)]">
         <div>
-          <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Access Cards & Security Badges</h1>
+          <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Access card tracker</h1>
           <p className="text-sm text-[var(--muted)] mt-1">Issue, manage, and revoke physical RFID/NFC office access cards and security clearance zones.</p>
         </div>
         <button

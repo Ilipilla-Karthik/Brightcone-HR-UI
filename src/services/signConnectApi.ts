@@ -223,3 +223,17 @@ export async function sendCelebrationWish(payload: {
   const res = await api.post('/connect/celebrations/wish', payload);
   return res.data;
 }
+
+export async function createConnectTownhall(payload: any): Promise<any> {
+  const res = await api.post('/connect/townhalls', payload);
+  return res.data;
+}
+
+export async function updateConnectTownhall(id: string, payload: any): Promise<any> {
+  const res = await api.patch(`/connect/townhalls/${id}`, payload);
+  return res.data;
+}
+
+export async function deleteConnectTownhall(id: string): Promise<void> {
+  await api.delete(`/connect/townhalls/${id}`);
+}

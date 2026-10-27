@@ -91,8 +91,8 @@ export const FacilitiesPage: React.FC = () => {
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-[var(--line)]">
         <div>
-          <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Office Facilities & Workspaces</h1>
-          <p className="text-sm text-[var(--muted)] mt-1">Manage office infrastructure, desk ergonomic requests, meeting room systems, and facility upkeep.</p>
+          <h1 className="text-2xl font-bold font-['Sora'] tracking-tight text-[var(--text)]">Office facilities</h1>
+          <p className="text-sm text-[var(--muted)] mt-1">Maintenance and facility requests for the office, with owners and due dates.</p>
         </div>
         <button
           type="button"

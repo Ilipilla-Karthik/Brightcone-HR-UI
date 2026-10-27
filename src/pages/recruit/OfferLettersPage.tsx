@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
 import { recruitApi, Offer, Candidate } from '../../services/recruitApi';
+import { fetchEmployees } from '../../services/peopleApi';
 
 export const OfferLettersPage: React.FC = () => {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [employees, setEmployees] = useState<{ id: string; name: string; title: string }[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [loading, setLoading] = useState(true);
@@ -23,9 +25,19 @@ export const OfferLettersPage: React.FC = () => {
 
   const loadData = async () => {
     try {
-      const [offList, candList] = await Promise.all([recruitApi.getOffers(), recruitApi.getCandidates()]);
+      const [offList, candList, empList] = await Promise.all([
+        recruitApi.getOffers(),
+        recruitApi.getCandidates(),
+        fetchEmployees().catch(() => [])
+      ]);
       setOffers(offList);
-      setCandidates(candList.filter((c) => c.stage?.toLowerCase() === 'offer' || c.stage?.toLowerCase() === 'interview'));
+      setCandidates(candList);
+      const mappedEmps = (Array.isArray(empList) ? empList : []).map((e: any) => ({
+        id: e.employee_code || e.id,
+        name: e.full_name || e.name,
+        title: e.job_title || 'Team Member'
+      }));
+      setEmployees(mappedEmps);
     } catch {
       showToast('Loaded active offer pipeline');
     } finally {
@@ -61,10 +73,10 @@ export const OfferLettersPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-['Sora']">Offer Letters & Approvals</h1>
-            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">● Backend Connected</span>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-['Sora']">Offer letters</h1>
+            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">● Live Database</span>
           </div>
-          <p className="text-sm text-slate-500 mt-1">Generate CTC breakdown, release offer packages, and track acceptance</p>
+          <p className="text-sm text-slate-500 mt-1">Offers from draft to acceptance. Overdue when the offer passes its valid-till date unanswered.</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
@@ -149,7 +161,10 @@ export const OfferLettersPage: React.FC = () => {
                 />
                 <datalist id="candOfferList">
                   {candidates.map((c) => (
-                    <option key={c.cand_id || c.id} value={c.full_name}>{c.job_title}</option>
+                    <option key={c.cand_id || c.id} value={c.full_name}>{c.job_title} (Candidate)</option>
+                  ))}
+                  {employees.map((e) => (
+                    <option key={e.id} value={e.name}>{e.title} (Employee - {e.id})</option>
                   ))}
                 </datalist>
               </div>

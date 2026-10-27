@@ -78,7 +78,7 @@ export const OnboardingChecklistPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-['Sora']">New Hire Onboarding Checklist</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-['Sora']">Onboarding checklist</h1>
             <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">● Backend Linked</span>
           </div>
           <p className="text-sm text-slate-500 mt-1">IT provisioning, corporate access, compliance training, and Day 1 welcome</p>

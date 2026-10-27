@@ -59,10 +59,10 @@ export const JoiningFormalitiesPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-['Sora']">Joining Formalities & BGV</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 font-['Sora']">Joining formalities</h1>
             <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">● Backend Linked</span>
           </div>
-          <p className="text-sm text-slate-500 mt-1">Pre-onboarding document submission, criminal & education background checks</p>
+          <p className="text-sm text-slate-500 mt-1">Day-one paperwork and setup for each new joiner. Created automatically when a candidate is converted.</p>
         </div>
         <button
           onClick={() => showToast('Dispatched reminder emails to pending candidates')}

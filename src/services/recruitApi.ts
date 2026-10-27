@@ -238,13 +238,13 @@ export const recruitApi = {
       return Array.isArray(data) ? data : data.value || [];
     } catch {
       return [
-        { referral_id: 'ref-1', referred_by: 'Rahul Varma', candidate_name: 'Siddharth Rao', job_title: 'QA Automation Engineer', status: 'Interview', bonus_amount: 30000 },
+        { referral_id: 'ref-1', referred_by: 'Ananya Rao', candidate_name: 'Siddharth Rao', job_title: 'QA Automation Engineer', status: 'Interview', bonus_amount: 30000 },
         { referral_id: 'ref-2', referred_by: 'Priya Sharma', candidate_name: 'Kavya Pillai', job_title: 'Product Designer', status: 'Screening', bonus_amount: 40000 },
       ];
     }
   },
 
-  async createReferral(payload: { candidate_name: string; candidate_email?: string; job_title?: string; bonus_amount?: number }): Promise<Referral> {
+  async createReferral(payload: { candidate_name: string; candidate_email?: string; job_title?: string; bonus_amount?: number; referred_by?: string }): Promise<Referral> {
     const res = await fetch('/api/v1/referrals', {
       method: 'POST',
       headers: getAuthHeaders(),

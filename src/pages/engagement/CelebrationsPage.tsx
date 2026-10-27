@@ -41,6 +41,7 @@ export const CelebrationsPage: React.FC = () => {
 
   const handleWish = async (name: string, occasion: string = 'Celebration') => {
     showToast(`Wish sent to ${name}!`);
+    setCelebrations((prev) => prev.filter((c) => c.name !== name));
     try {
       await sendCelebrationWish({
         recipient_name: name,

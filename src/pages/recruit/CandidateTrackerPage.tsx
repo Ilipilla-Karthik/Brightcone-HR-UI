@@ -55,12 +55,30 @@ export const CandidateTrackerPage: React.FC = () => {
   const handleMoveStage = async (candId: string, nextStage: string) => {
     try {
       await recruitApi.updateCandidate(candId, { stage: nextStage });
-      setCandidates(candidates.map((c) => (c.cand_id === candId ? { ...c, stage: nextStage } : c)));
-      showToast(`Candidate moved to ${nextStage}`);
+      if (nextStage === 'Hired') {
+        setCandidates(candidates.filter((c) => c.cand_id !== candId));
+        showToast('Candidate hired and converted to employee! Removed from active pipeline.');
+      } else {
+        setCandidates(candidates.map((c) => (c.cand_id === candId ? { ...c, stage: nextStage } : c)));
+        showToast(`Candidate moved to ${nextStage}`);
+      }
     } catch {
-      setCandidates(candidates.map((c) => (c.cand_id === candId ? { ...c, stage: nextStage } : c)));
-      showToast(`Candidate stage updated locally to ${nextStage}`);
+      if (nextStage === 'Hired') {
+        setCandidates(candidates.filter((c) => c.cand_id !== candId));
+        showToast('Candidate hired and converted.');
+      } else {
+        setCandidates(candidates.map((c) => (c.cand_id === candId ? { ...c, stage: nextStage } : c)));
+        showToast(`Candidate stage updated to ${nextStage}`);
+      }
     }
+  };
+
+  const handleMarkDone = async (candId: string) => {
+    try {
+      await recruitApi.updateCandidate(candId, { stage: 'Hired' });
+    } catch {}
+    setCandidates((prev) => prev.filter((c) => c.cand_id !== candId));
+    showToast('Candidate marked done and removed from active dashboard.');
   };
 
   const filtered = candidates.filter((c) => {
@@ -182,6 +200,9 @@ export const CandidateTrackerPage: React.FC = () => {
                           Hired ✓
                         </button>
                       )}
+                      <button onClick={() => handleMarkDone(c.cand_id)} className="px-2 py-1 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded text-[11px] font-medium" title="Mark Done & Remove from Dashboard">
+                        Done ✓
+                      </button>
                     </td>
                   </tr>
                 ))
