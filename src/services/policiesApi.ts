@@ -1,4 +1,4 @@
-import { PolicyRecord, HandbookRecord } from '../pages/doc_sign/types';
+import { PolicyRecord, HandbookRecord, PolicyAckRecord } from '../pages/doc_sign/types';
 
 const getAuthHeaders = (): HeadersInit => {
   const token = localStorage.getItem('token');
@@ -147,5 +147,100 @@ export const policiesApi = {
       changesSummary: d.changes_summary || '',
       status: d.status,
     };
+  },
+
+  // 3. Policy Acknowledgements
+  async getAcknowledgements(): Promise<PolicyAckRecord[]> {
+    try {
+      const res = await fetch('/api/v1/policy-acknowledgements', { headers: getAuthHeaders() });
+      if (!res.ok) throw new Error('Failed to fetch acknowledgements');
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : data.value || [];
+      if (list.length > 0) {
+        return list.map((d: any) => ({
+          id: d.ack_code || `ACK-${d.id}`,
+          policyId: d.policy_id || 'POL-GEN',
+          policyName: d.policy_name,
+          employeeName: d.employee_name,
+          employeeEmail: d.employee_email,
+          department: d.department,
+          sentDate: d.sent_date,
+          dueDate: d.due_date,
+          acknowledgedOn: d.acknowledged_on || undefined,
+          status: d.status as any,
+        }));
+      }
+    } catch {}
+    return [];
+  },
+
+  async createAcknowledgement(payload: Partial<PolicyAckRecord>): Promise<PolicyAckRecord> {
+    const res = await fetch('/api/v1/policy-acknowledgements', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        policy_id: payload.policyId,
+        policy_name: payload.policyName,
+        employee_name: payload.employeeName,
+        employee_email: payload.employeeEmail,
+        department: payload.department,
+        sent_date: payload.sentDate,
+        due_date: payload.dueDate,
+        status: payload.status,
+      }),
+    });
+    if (!res.ok) throw new Error('Failed to create acknowledgement');
+    const d = await res.json();
+    return {
+      id: d.ack_code || `ACK-${d.id}`,
+      policyId: d.policy_id,
+      policyName: d.policy_name,
+      employeeName: d.employee_name,
+      employeeEmail: d.employee_email,
+      department: d.department,
+      sentDate: d.sent_date,
+      dueDate: d.due_date,
+      acknowledgedOn: d.acknowledged_on || undefined,
+      status: d.status,
+    };
+  },
+
+  async batchAcknowledgements(
+    policyName: string,
+    dueDate: string,
+    recipients: { name: string; email: string; department: string }[]
+  ): Promise<PolicyAckRecord[]> {
+    const res = await fetch('/api/v1/policy-acknowledgements/batch', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        policy_name: policyName,
+        due_date: dueDate,
+        recipients,
+      }),
+    });
+    if (!res.ok) throw new Error('Failed to dispatch batch acknowledgements');
+    const data = await res.json();
+    return (Array.isArray(data) ? data : []).map((d: any) => ({
+      id: d.ack_code || `ACK-${d.id}`,
+      policyId: d.policy_id,
+      policyName: d.policy_name,
+      employeeName: d.employee_name,
+      employeeEmail: d.employee_email,
+      department: d.department,
+      sentDate: d.sent_date,
+      dueDate: d.due_date,
+      acknowledgedOn: d.acknowledged_on || undefined,
+      status: d.status,
+    }));
+  },
+
+  async updateAcknowledgement(id: string | number, payload: { acknowledged_on?: string; status?: string }): Promise<void> {
+    const numId = typeof id === 'number' ? id : parseInt(String(id).replace(/\D/g, ''), 10) || 1;
+    await fetch(`/api/v1/policy-acknowledgements/${numId}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
   },
 };

@@ -46,7 +46,10 @@ export const JoiningFormalitiesPage: React.FC = () => {
     }).catch(() => setJoiners([]));
   }, []);
 
-  const approveBGV = (id: string) => {
+  const approveBGV = async (id: string) => {
+    try {
+      await recruitApi.updateCandidate(id, { stage: 'Hired' });
+    } catch {}
     setJoiners(joiners.map((j) => (j.id === id ? { ...j, bgvStatus: 'Verified', status: 'Ready to Join' } : j)));
     showToast('Background verification approved');
   };

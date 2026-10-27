@@ -27,6 +27,32 @@ export interface DepartmentApiItem {
   employee_count?: number;
 }
 
+
+export interface VendorApiItem {
+  id: number;
+  vendor_code: string;
+  name: string;
+  category: string;
+  contact_person: string;
+  email: string;
+  phone: string;
+  contract_expiry: string;
+  status: string;
+}
+
+export interface RecognitionApiItem {
+  id: number;
+  recognition_code: string;
+  award: string;
+  recipient: string;
+  employee_code: string;
+  nominated_by: string;
+  category: string;
+  points: number;
+  award_date: string;
+  citation: string;
+}
+
 export interface AssetApiItem {
   id: number;
   asset_id?: string;
@@ -178,5 +204,51 @@ export async function fetchHelpdeskTickets(): Promise<HelpdeskTicketApiItem[]> {
 
 export async function createHelpdeskTicketApi(data: Partial<HelpdeskTicketApiItem>): Promise<HelpdeskTicketApiItem> {
   const res = await api.post('/helpdesk', data);
+  return res.data;
+}
+
+export async function fetchVendors(): Promise<VendorApiItem[]> {
+  try {
+    const res = await api.get('/vendors');
+    return unwrapArray<VendorApiItem>(res.data);
+  } catch {
+    return [];
+  }
+}
+
+export async function createVendorApi(data: Partial<VendorApiItem>): Promise<VendorApiItem> {
+  const res = await api.post('/vendors', data);
+  return res.data;
+}
+
+export async function updateVendorStatusApi(id: number, status: string): Promise<VendorApiItem> {
+  const res = await api.patch(`/vendors/${id}`, { status });
+  return res.data;
+}
+
+export async function deleteVendorApi(id: number): Promise<void> {
+  await api.delete(`/vendors/${id}`);
+}
+
+export async function fetchRecognitions(): Promise<RecognitionApiItem[]> {
+  try {
+    const res = await api.get('/recognitions');
+    return unwrapArray<RecognitionApiItem>(res.data);
+  } catch {
+    return [];
+  }
+}
+
+export async function createRecognitionApi(data: Partial<RecognitionApiItem>): Promise<RecognitionApiItem> {
+  const res = await api.post('/recognitions', data);
+  return res.data;
+}
+
+export async function deleteRecognitionApi(id: number): Promise<void> {
+  await api.delete(`/recognitions/${id}`);
+}
+
+export async function createDocumentApi(data: Partial<DocumentApiItem>): Promise<DocumentApiItem> {
+  const res = await api.post('/documents', data);
   return res.data;
 }

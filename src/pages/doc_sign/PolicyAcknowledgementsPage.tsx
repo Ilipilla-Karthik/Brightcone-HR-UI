@@ -1,10 +1,6 @@
-const STANDARD_POLICIES = [
-  { id: 'POL-01', name: 'Code of Conduct', version: '2.0' },
-  { id: 'POL-02', name: 'Information Security & Acceptable Use', version: '3.2' },
-  { id: 'POL-03', name: 'POSH Policy', version: '1.1' },
-  { id: 'POL-04', name: 'Remote Work & Expense Policy', version: '4.0' },
-];
-import React, { useState } from 'react';
+const STANDARD_POLICIES = [{ id: 'POL-01', name: 'Code of Conduct', version: '2.0' }, { id: 'POL-02', name: 'Information Security & Acceptable Use', version: '3.2' }, { id: 'POL-03', name: 'POSH Policy', version: '1.1' }, { id: 'POL-04', name: 'Remote Work & Expense Policy', version: '4.0' }];
+import React, { useState, useEffect } from 'react';
+import { policiesApi } from '../../services/policiesApi';
 import { PolicyAckRecord } from './types';
 import { ic } from '../../components/icons';
 
@@ -36,6 +32,16 @@ export const PolicyAcknowledgementsPage: React.FC = () => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
+
+  const loadAcks = () => {
+    policiesApi.getAcknowledgements().then((data) => {
+      if (data && data.length > 0) setAcks(data);
+    }).catch(() => {});
+  };
+
+  useEffect(() => {
+    loadAcks();
+  }, []);
 
   const todayStr = new Date().toISOString().slice(0, 10);
 
@@ -77,13 +83,19 @@ export const PolicyAcknowledgementsPage: React.FC = () => {
     setIsAddOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formEmpName.trim()) {
       showToast('Please enter the employee name.');
       return;
     }
     if (editingRecord) {
+      try {
+        await policiesApi.updateAcknowledgement(editingRecord.id, {
+          acknowledged_on: formAckOn || undefined,
+          status: formAckOn ? 'Acknowledged' : formStatus,
+        });
+      } catch {}
       setAcks((prev) =>
         prev.map((a) =>
           a.id === editingRecord.id
@@ -93,43 +105,62 @@ export const PolicyAcknowledgementsPage: React.FC = () => {
       );
       showToast(`Updated acknowledgement for ${formEmpName}`);
     } else {
-      const newAck: PolicyAckRecord = {
-        id: `ACK-${100 + acks.length + 1}`,
-        policyId: 'POL-GEN',
-        policyName: formPolicy,
-        employeeName: formEmpName,
-        employeeEmail: formEmpEmail || `${formEmpName.toLowerCase().replace(/\s+/g, '.')}@brightcone.ai`,
-        department: formDept,
-        sentDate: formSent,
-        dueDate: formDue,
-        acknowledgedOn: formAckOn || undefined,
-        status: formAckOn ? 'Acknowledged' : formStatus,
-      };
-      setAcks((prev) => [newAck, ...prev]);
+      try {
+        const created = await policiesApi.createAcknowledgement({
+          policyName: formPolicy,
+          employeeName: formEmpName,
+          employeeEmail: formEmpEmail || `${formEmpName.toLowerCase().replace(/\s+/g, '.') }@brightcone.ai`,
+          department: formDept,
+          sentDate: formSent,
+          dueDate: formDue,
+          status: formAckOn ? 'Acknowledged' : formStatus,
+          acknowledgedOn: formAckOn || undefined,
+        });
+        setAcks((prev) => [created, ...prev]);
+      } catch {
+        const newAck: PolicyAckRecord = {
+          id: `ACK-${100 + acks.length + 1}`,
+          policyId: 'POL-GEN',
+          policyName: formPolicy,
+          employeeName: formEmpName,
+          employeeEmail: formEmpEmail || `${formEmpName.toLowerCase().replace(/\s+/g, '.') }@brightcone.ai`,
+          department: formDept,
+          sentDate: formSent,
+          dueDate: formDue,
+          acknowledgedOn: formAckOn || undefined,
+          status: formAckOn ? 'Acknowledged' : formStatus,
+        };
+        setAcks((prev) => [newAck, ...prev]);
+      }
       showToast(`Created acknowledgement request for ${formEmpName}`);
     }
     setIsAddOpen(false);
   };
 
-  const handleSendAllBatch = (e: React.FormEvent) => {
+  const handleSendAllBatch = async (e: React.FormEvent) => {
     e.preventDefault();
     const staffList = [
-      { name: 'Rahul Varma', email: 'rahul.varma@brightcone.ai', dept: 'Engineering' },
-      { name: 'Priya Menon', email: 'priya.menon@brightcone.ai', dept: 'Engineering' },
-      { name: 'Divya Kulkarni', email: 'divya.kulkarni@brightcone.ai', dept: 'Engineering' },
+      { name: 'Rahul Varma', email: 'rahul.varma@brightcone.ai', department: 'Engineering' },
+      { name: 'Priya Menon', email: 'priya.menon@brightcone.ai', department: 'Engineering' },
+      { name: 'Divya Kulkarni', email: 'divya.kulkarni@brightcone.ai', department: 'Engineering' },
     ];
-    const newItems: PolicyAckRecord[] = staffList.map((st, i) => ({
-      id: `ACK-${200 + acks.length + i + 1}`,
-      policyId: 'BATCH',
-      policyName: batchPolicy,
-      employeeName: st.name,
-      employeeEmail: st.email,
-      department: st.dept,
-      sentDate: todayStr,
-      dueDate: batchDue,
-      status: 'Pending',
-    }));
-    setAcks((prev) => [...newItems, ...prev]);
+    try {
+      const created = await policiesApi.batchAcknowledgements(batchPolicy, batchDue, staffList);
+      setAcks((prev) => [...created, ...prev]);
+    } catch {
+      const newItems: PolicyAckRecord[] = staffList.map((st, i) => ({
+        id: `ACK-${200 + acks.length + i + 1}`,
+        policyId: 'BATCH',
+        policyName: batchPolicy,
+        employeeName: st.name,
+        employeeEmail: st.email,
+        department: st.department,
+        sentDate: todayStr,
+        dueDate: batchDue,
+        status: 'Pending',
+      }));
+      setAcks((prev) => [...newItems, ...prev]);
+    }
     setIsSendAllOpen(false);
     showToast(`Dispatched "${batchPolicy}" acknowledgement to all active staff.`);
   };
@@ -251,18 +282,10 @@ export const PolicyAcknowledgementsPage: React.FC = () => {
                     <td className="py-3 px-4"><span className={`pill text-[10px] px-2 py-0.5 rounded-full font-semibold ${effSt === 'Acknowledged' ? 'p-ok' : effSt === 'Overdue' ? 'p-bad' : 'p-warn'}`}>{effSt}</span></td>
                     <td className="py-3 px-4 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {effSt !== 'Acknowledged' && (
-                          <button type="button" className="btn sm" onClick={() => showToast(`Reminder notification sent to ${a.employeeName}.`)}>Remind</button>
-                        )}
-                        <button type="button" className="btn sm ib" title="View details" onClick={() => setViewRecord(a)}>
-                          {ic('doc', 14)}
-                        </button>
-                        <button type="button" className="btn sm ib" title="Edit" onClick={() => openEditModal(a)}>
-                          {ic('edit', 14)}
-                        </button>
-                        <button type="button" className="btn sm ib bad" title="Delete" onClick={() => setAcks((prev) => prev.filter((x) => x.id !== a.id))}>
-                          {ic('trash', 14)}
-                        </button>
+                        {effSt !== 'Acknowledged' && <button type="button" className="btn sm" onClick={() => showToast(`Reminder notification sent to ${a.employeeName}.`)}>Remind</button>}
+                        <button type="button" className="btn sm ib" title="View details" onClick={() => setViewRecord(a)}>{ic('doc', 14)}</button>
+                        <button type="button" className="btn sm ib" title="Edit" onClick={() => openEditModal(a)}>{ic('edit', 14)}</button>
+                        <button type="button" className="btn sm ib bad" title="Delete" onClick={() => setAcks((prev) => prev.filter((x) => x.id !== a.id))}>{ic('trash', 14)}</button>
                       </div>
                     </td>
                   </tr>

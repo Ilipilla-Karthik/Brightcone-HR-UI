@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchHelpdeskTickets, createHelpdeskTicketApi, HelpdeskTicketApiItem } from '../../services/peopleApi';
 import { ic } from '../../components/icons';
 
 interface FacilityItem {
@@ -18,24 +19,68 @@ export const FacilitiesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newReq, setNewReq] = useState({ category: 'Desk & Seating' as const, title: '', raisedBy: '', location: '', priority: 'Medium' as const });
 
+  useEffect(() => {
+    fetchHelpdeskTickets()
+      .then((data: HelpdeskTicketApiItem[]) => {
+        const list = Array.isArray(data) ? data : (data as any)?.value || [];
+        const facilityTickets = list.filter((t: any) => t.category?.toLowerCase()?.includes('facilit') || t.category?.toLowerCase()?.includes('desk') || t.category?.toLowerCase()?.includes('office'));
+        if (facilityTickets.length > 0) {
+          setItems(
+            facilityTickets.map((t: any) => ({
+              id: t.ticket_code || `FAC-${t.id}`,
+              category: (t.category?.includes('HVAC') ? 'HVAC & Lighting' : t.category?.includes('Meeting') ? 'Meeting Room Audio' : t.category?.includes('Cafeteria') ? 'Cafeteria & Pantry' : 'Desk & Seating') as any,
+              title: t.subject,
+              raisedBy: t.employee_name || 'Staff Member',
+              location: t.description || 'Level 2 Main Bay',
+              priority: (t.priority || 'Medium') as any,
+              status: (t.status === 'Resolved' ? 'Resolved' : t.status === 'In Progress' ? 'In Progress' : 'Open') as any,
+              date: t.created_at?.split('T')[0] || '2026-10-26',
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const handleStatusChange = (id: string, nextStatus: FacilityItem['status']) => {
     setItems(items.map((it) => (it.id === id ? { ...it, status: nextStatus } : it)));
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newReq.title || !newReq.raisedBy) return;
-    const created: FacilityItem = {
-      id: `FAC-${100 + items.length + 1}`,
-      category: newReq.category,
-      title: newReq.title,
-      raisedBy: newReq.raisedBy,
-      location: newReq.location || 'Level 2 Main Bay',
-      priority: newReq.priority,
-      status: 'Open',
-      date: new Date().toISOString().split('T')[0],
-    };
-    setItems([created, ...items]);
+    try {
+      const created = await createHelpdeskTicketApi({
+        category: `Facilities - ${newReq.category}`,
+        subject: newReq.title,
+        description: newReq.location || 'Level 2 Main Bay',
+        employee_name: newReq.raisedBy,
+        priority: newReq.priority,
+      });
+      const item: FacilityItem = {
+        id: (created as any).ticket_code || (created as any).ticket_id || `FAC-${created.id}`,
+        category: newReq.category,
+        title: newReq.title,
+        raisedBy: newReq.raisedBy,
+        location: newReq.location || 'Level 2 Main Bay',
+        priority: newReq.priority,
+        status: 'Open',
+        date: new Date().toISOString().split('T')[0],
+      };
+      setItems([item, ...items]);
+    } catch {
+      const created: FacilityItem = {
+        id: `FAC-${100 + items.length + 1}`,
+        category: newReq.category,
+        title: newReq.title,
+        raisedBy: newReq.raisedBy,
+        location: newReq.location || 'Level 2 Main Bay',
+        priority: newReq.priority,
+        status: 'Open',
+        date: new Date().toISOString().split('T')[0],
+      };
+      setItems([created, ...items]);
+    }
     setIsModalOpen(false);
     setNewReq({ category: 'Desk & Seating', title: '', raisedBy: '', location: '', priority: 'Medium' });
   };

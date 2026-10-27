@@ -54,9 +54,19 @@ export const ManpowerRequirementsPage: React.FC = () => {
     }).catch(() => setReqs([]));
   }, []);
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.role) return;
+    try {
+      await recruitApi.createJob({
+        title: form.role,
+        department: form.department,
+        location: 'Hyderabad',
+        employment_type: form.budgetCTC,
+        referral_bonus: 25000,
+        description: `Open position for ${form.role} in ${form.department}`,
+      });
+    } catch {}
     const item: Requisition = {
       id: `REQ-2026-0${reqs.length + 1}`,
       department: form.department,

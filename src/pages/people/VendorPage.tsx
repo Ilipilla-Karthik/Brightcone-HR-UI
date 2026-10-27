@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { fetchVendors, createVendorApi, VendorApiItem } from '../../services/peopleApi';
 import { ic } from '../../components/icons';
 
 interface VendorItem {
@@ -18,20 +19,63 @@ export const VendorPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newVendor, setNewVendor] = useState({ name: '', category: 'IT Hardware' as const, contactPerson: '', email: '', phone: '', contractExpiry: '' });
 
-  const handleCreate = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchVendors()
+      .then((data: VendorApiItem[]) => {
+        const list = Array.isArray(data) ? data : (data as any)?.value || [];
+        setVendors(
+          list.map((v: any) => ({
+            id: v.vendor_code || `VEN-0${v.id}`,
+            name: v.name,
+            category: v.category as any,
+            contactPerson: v.contact_person,
+            email: v.email,
+            phone: v.phone,
+            contractExpiry: v.contract_expiry,
+            status: v.status as any,
+          }))
+        );
+      })
+      .catch(() => setVendors([]));
+  }, []);
+
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newVendor.name || !newVendor.contactPerson) return;
-    const item: VendorItem = {
-      id: `VEN-0${vendors.length + 1}`,
-      name: newVendor.name,
-      category: newVendor.category,
-      contactPerson: newVendor.contactPerson,
-      email: newVendor.email,
-      phone: newVendor.phone,
-      contractExpiry: newVendor.contractExpiry || '2027-12-31',
-      status: 'Active',
-    };
-    setVendors([item, ...vendors]);
+    try {
+      const created = await createVendorApi({
+        name: newVendor.name,
+        category: newVendor.category,
+        contact_person: newVendor.contactPerson,
+        email: newVendor.email,
+        phone: newVendor.phone,
+        contract_expiry: newVendor.contractExpiry || '2027-12-31',
+        status: 'Active',
+      });
+      const item: VendorItem = {
+        id: created.vendor_code || `VEN-0${created.id}`,
+        name: created.name,
+        category: created.category as any,
+        contactPerson: created.contact_person,
+        email: created.email,
+        phone: created.phone,
+        contractExpiry: created.contract_expiry,
+        status: created.status as any,
+      };
+      setVendors([item, ...vendors]);
+    } catch {
+      const item: VendorItem = {
+        id: `VEN-0${vendors.length + 1}`,
+        name: newVendor.name,
+        category: newVendor.category,
+        contactPerson: newVendor.contactPerson,
+        email: newVendor.email,
+        phone: newVendor.phone,
+        contractExpiry: newVendor.contractExpiry || '2027-12-31',
+        status: 'Active',
+      };
+      setVendors([item, ...vendors]);
+    }
     setIsModalOpen(false);
     setNewVendor({ name: '', category: 'IT Hardware', contactPerson: '', email: '', phone: '', contractExpiry: '' });
   };

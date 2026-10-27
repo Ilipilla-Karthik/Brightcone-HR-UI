@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
-import { fetchEmployees } from '../../services/peopleApi';
+import { fetchEmployees, createAssetApi } from '../../services/peopleApi';
 
 interface CardItem {
   id: string;
@@ -42,9 +42,18 @@ export const AccessCardPage: React.FC = () => {
     setCards(cards.map((c) => (c.id === id ? { ...c, status: c.status === 'Active' ? 'Blocked' : 'Active' } : c)));
   };
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCard.cardNum || !newCard.employee) return;
+    try {
+      await createAssetApi({
+        asset_type: 'Access Card',
+        model_name: newCard.zone,
+        serial_number: newCard.cardNum,
+        employee_code: newCard.empCode || 'BC-1099',
+        status: 'Active',
+      });
+    } catch {}
     const item: CardItem = {
       id: `c-${cards.length + 1}`,
       cardNum: newCard.cardNum,

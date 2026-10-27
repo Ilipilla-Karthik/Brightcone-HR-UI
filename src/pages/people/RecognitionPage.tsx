@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
-import { fetchEmployees } from '../../services/peopleApi';
+import { fetchRecognitions, createRecognitionApi, RecognitionApiItem } from '../../services/peopleApi';
 
 interface RecognitionItem {
   id: string;
@@ -21,40 +21,68 @@ export const RecognitionPage: React.FC = () => {
   const [newAward, setNewAward] = useState({ award: '', recipient: '', empCode: '', nominatedBy: 'HR Admin', category: 'Spot Award' as const, points: 2000, citation: '' });
 
   useEffect(() => {
-    fetchEmployees()
-      .then((data: any) => {
-        const list = Array.isArray(data) ? data : data?.value || [];
-        const mapped: RecognitionItem[] = list.slice(0, 3).map((e: any, idx: number) => ({
-          id: `RCG-0${idx + 1}`,
-          award: idx === 0 ? 'Excellence in AI Architecture' : idx === 1 ? 'People Leadership Milestone' : 'System Reliability Champion',
-          recipient: e.full_name,
-          empCode: e.employee_code,
-          nominatedBy: idx === 0 ? 'Naresh Vemparala' : 'Vikram Malhotra',
-          category: idx === 0 ? 'Innovation Star' : idx === 1 ? 'Culture Champion' : 'Spot Award',
-          points: 3000 + idx * 1000,
-          date: '2026-10-18',
-          citation: `Recognized for outstanding contributions to Brightcone platform deliverables.`,
-        }));
-        setAwards(mapped);
+    fetchRecognitions()
+      .then((data: RecognitionApiItem[]) => {
+        const list = Array.isArray(data) ? data : (data as any)?.value || [];
+        if (list.length > 0) {
+          setAwards(
+            list.map((r: any) => ({
+              id: r.recognition_code || `RCG-0${r.id}`,
+              award: r.award,
+              recipient: r.recipient,
+              empCode: r.employee_code,
+              nominatedBy: r.nominated_by,
+              category: r.category as any,
+              points: r.points,
+              date: r.award_date,
+              citation: r.citation,
+            }))
+          );
+        }
       })
       .catch(() => setAwards([]));
   }, []);
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAward.award || !newAward.recipient) return;
-    const item: RecognitionItem = {
-      id: `RCG-0${awards.length + 1}`,
-      award: newAward.award,
-      recipient: newAward.recipient,
-      empCode: newAward.empCode || 'BC-1099',
-      nominatedBy: newAward.nominatedBy,
-      category: newAward.category,
-      points: Number(newAward.points),
-      date: new Date().toISOString().split('T')[0],
-      citation: newAward.citation,
-    };
-    setAwards([item, ...awards]);
+    try {
+      const created = await createRecognitionApi({
+        award: newAward.award,
+        recipient: newAward.recipient,
+        employee_code: newAward.empCode || 'BC-1038',
+        nominated_by: newAward.nominatedBy,
+        category: newAward.category,
+        points: Number(newAward.points),
+        award_date: new Date().toISOString().split('T')[0],
+        citation: newAward.citation,
+      });
+      const item: RecognitionItem = {
+        id: created.recognition_code || `RCG-0${created.id}`,
+        award: created.award,
+        recipient: created.recipient,
+        empCode: created.employee_code,
+        nominatedBy: created.nominated_by,
+        category: created.category as any,
+        points: created.points,
+        date: created.award_date,
+        citation: created.citation,
+      };
+      setAwards([item, ...awards]);
+    } catch {
+      const item: RecognitionItem = {
+        id: `RCG-0${awards.length + 1}`,
+        award: newAward.award,
+        recipient: newAward.recipient,
+        empCode: newAward.empCode || 'BC-1099',
+        nominatedBy: newAward.nominatedBy,
+        category: newAward.category,
+        points: Number(newAward.points),
+        date: new Date().toISOString().split('T')[0],
+        citation: newAward.citation,
+      };
+      setAwards([item, ...awards]);
+    }
     setIsModalOpen(false);
   };
 

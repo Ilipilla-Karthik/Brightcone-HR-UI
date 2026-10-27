@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
-import { fetchDocuments } from '../../services/peopleApi';
+import { fetchDocuments, createDocumentApi } from '../../services/peopleApi';
 
 interface DocumentRecord {
   id: string;
@@ -50,18 +50,26 @@ export const EmployeeDocuments: React.FC = () => {
     return matchSearch && matchType;
   });
 
-  const handleUpload = (e: React.FormEvent) => {
+  const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDoc.title) return;
+    try {
+      await createDocumentApi({
+        title: newDoc.title,
+        document_type: newDoc.type,
+        employee_code: 'BC-1038',
+        file_size: '950 KB',
+      });
+    } catch {}
     const item: DocumentRecord = {
       id: `doc-${Date.now()}`,
       title: newDoc.title,
       type: newDoc.type,
       employeeName: newDoc.employeeName,
-      employeeId: 'BC-1020',
+      employeeId: 'BC-1038',
       uploadDate: new Date().toISOString().split('T')[0],
       size: '950 KB',
-      status: 'Pending Review',
+      status: 'Verified',
     };
     setDocs([item, ...docs]);
     setIsUploadOpen(false);
