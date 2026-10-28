@@ -18,6 +18,11 @@ export const MonthlyPayrollPage: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem('brightcone_monthly_payroll')
+      if (raw) setRecords(JSON.parse(raw))
+    } catch {}
+
     axios
       .get<Array<{ empId: string; name: string; dept: string; gross: number; pf: number; pt: number; tds: number; net: number }>>('/api/payroll/register')
       .then((res) => {
@@ -36,7 +41,7 @@ export const MonthlyPayrollPage: React.FC = () => {
             netPay: Math.round(r.net),
             status: i < 4 ? 'Approved' : i < 9 ? 'Processed' : 'Draft',
           }))
-          setRecords(live)
+          setRecords((prev) => (prev.length > 0 ? prev : live))
         }
       })
       .catch(() => {})
@@ -64,19 +69,20 @@ export const MonthlyPayrollPage: React.FC = () => {
   }
 
   const handleSave = (data: Omit<MonthlyPayrollRecord, 'id'>) => {
+    let updated: MonthlyPayrollRecord[] = []
     if (editingRecord) {
-      setRecords((prev) =>
-        prev.map((r) => (r.id === editingRecord.id ? { ...data, id: editingRecord.id } : r))
-      )
+      updated = records.map((r) => (r.id === editingRecord.id ? { ...data, id: editingRecord.id } : r))
       showToast('Payroll record updated successfully')
     } else {
       const newRec: MonthlyPayrollRecord = {
         ...data,
         id: `PR-${Date.now().toString().slice(-4)}`,
       }
-      setRecords((prev) => [newRec, ...prev])
+      updated = [newRec, ...records]
       showToast(`Payroll entry created for ${data.employeeName}`)
     }
+    setRecords(updated)
+    try { localStorage.setItem('brightcone_monthly_payroll', JSON.stringify(updated)) } catch {}
     setModalOpen(false)
   }
 

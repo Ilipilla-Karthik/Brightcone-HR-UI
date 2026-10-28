@@ -113,6 +113,19 @@ export const AssignCourseModal: React.FC<AssignCourseModalProps> = ({
           : { employee_ids: selectedEmpCodes, due_date: dueDate || undefined };
 
       const res = await assignCourse(course.id, payload);
+      try {
+        const notifs = JSON.parse(localStorage.getItem('bc_notifications') || '[]');
+        const newNotif = {
+          id: `notif-${Date.now()}`,
+          title: `New Course Assigned: ${course.title}`,
+          message: `You have been assigned to course "${course.title}". Due date: ${dueDate || 'Within 14 days'}.`,
+          category: 'announcement',
+          read: false,
+          createdAt: 'Just now',
+          actionUrl: '/learn/my-learning',
+        };
+        localStorage.setItem('bc_notifications', JSON.stringify([newNotif, ...notifs]));
+      } catch {}
       onSuccess(res);
       onClose();
     } catch (err: unknown) {
@@ -125,14 +138,18 @@ export const AssignCourseModal: React.FC<AssignCourseModalProps> = ({
     }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .filter(Boolean)
-      .slice(0, 2)
-      .join('')
-      .toUpperCase();
+  const getInitials = (name?: string | null) => {
+    if (!name || typeof name !== 'string') return '??';
+    return (
+      name
+        .trim()
+        .split(/\s+/)
+        .map((n) => n[0])
+        .filter(Boolean)
+        .slice(0, 2)
+        .join('')
+        .toUpperCase() || '??'
+    );
   };
 
   return (
@@ -257,8 +274,12 @@ export const AssignCourseModal: React.FC<AssignCourseModalProps> = ({
                             onChange={() => {}}
                             style={{ cursor: 'pointer' }}
                           />
-                          <div className={styles.empAvatar}>{getInitials(emp.name)}</div>
-                          <span className={styles.empName}>{emp.name}</span>
+                          <div className={styles.empAvatar}>
+                            {getInitials(emp.name || (emp as any).full_name)}
+                          </div>
+                          <span className={styles.empName}>
+                            {emp.name || (emp as any).full_name || 'Team Member'}
+                          </span>
                           <span className={styles.empCode}>{emp.id}</span>
                         </div>
                       );

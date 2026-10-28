@@ -34,9 +34,28 @@ export const ExpenseFinancePage: React.FC = () => {
 
   const fetchClaims = async () => {
     try {
-      const res = await axios.get("/api/expenses");
-      if (res.data && Array.isArray(res.data)) {
-        setClaims(res.data);
+      const [expRes, offRes] = await Promise.all([
+        axios.get("/api/expenses").catch(() => ({ data: [] })),
+        axios.get("/api/office-expenses").catch(() => ({ data: [] })),
+      ]);
+      const list: ExpenseClaim[] = Array.isArray(expRes.data) ? [...expRes.data] : [];
+      if (Array.isArray(offRes.data)) {
+        offRes.data.forEach((o: any) => {
+          list.push({
+            id: o.id || `OE-${Date.now()}`,
+            employee_id: o.submitted_by_code || 'BC-1006',
+            employee_name: o.submitted_by || 'Rahul Varma',
+            category: o.category || 'Office Supplies',
+            amount: typeof o.amount === 'number' ? o.amount : parseFloat(o.amount || '0'),
+            date: o.date || new Date().toISOString().slice(0, 10),
+            description: o.description || o.title || 'Office operational expenditure',
+            status: o.status || 'Pending',
+            created_at: o.created_at || new Date().toISOString(),
+          });
+        });
+      }
+      if (list.length > 0) {
+        setClaims(list);
       }
     } catch {
       // Keep local state fallback

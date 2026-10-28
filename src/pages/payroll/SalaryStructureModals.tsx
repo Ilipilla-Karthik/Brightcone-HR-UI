@@ -1,6 +1,6 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X as CloseIcon } from 'lucide-react'
-import { DEMO_EMPLOYEES, formatINR } from './payroll-data'
+import { DEMO_EMPLOYEES, formatINR, loadLivePayrollEmployees, type EmployeeRef } from './payroll-data'
 import type { SalaryStructureRecord } from './salary-structure-types'
 
 export const AddSalaryStructureModal: React.FC<{
@@ -9,10 +9,17 @@ export const AddSalaryStructureModal: React.FC<{
   onClose: () => void
   onSave: (record: Omit<SalaryStructureRecord, 'id'>) => void
 }> = ({ isOpen, editingRecord, onClose, onSave }) => {
+  const [empList, setEmpList] = useState<EmployeeRef[]>(DEMO_EMPLOYEES)
   const [empId, setEmpId] = useState(DEMO_EMPLOYEES[0].id)
   const [effectiveFrom, setEffectiveFrom] = useState('2026-10-01')
   const [annualCtc, setAnnualCtc] = useState(1800000)
   const [status, setStatus] = useState<SalaryStructureRecord['status']>('Active')
+
+  useEffect(() => {
+    loadLivePayrollEmployees().then((data) => {
+      if (data && data.length > 0) setEmpList(data)
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (editingRecord) {
@@ -21,12 +28,12 @@ export const AddSalaryStructureModal: React.FC<{
       setAnnualCtc(editingRecord.annualCtc)
       setStatus(editingRecord.status)
     } else {
-      setEmpId(DEMO_EMPLOYEES[0].id)
+      setEmpId(empList[0]?.id || DEMO_EMPLOYEES[0].id)
       setEffectiveFrom('2026-10-01')
       setAnnualCtc(1800000)
       setStatus('Active')
     }
-  }, [editingRecord, isOpen])
+  }, [editingRecord, isOpen, empList])
 
   if (!isOpen) return null
 
@@ -39,7 +46,7 @@ export const AddSalaryStructureModal: React.FC<{
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const emp = DEMO_EMPLOYEES.find((x) => x.id === empId) || DEMO_EMPLOYEES[0]
+    const emp = empList.find((x) => x.id === empId) || empList[0] || DEMO_EMPLOYEES[0]
     onSave({
       employeeId: emp.id,
       employeeName: emp.name,
@@ -80,7 +87,7 @@ export const AddSalaryStructureModal: React.FC<{
                 onChange={(e) => setEmpId(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
               >
-                {DEMO_EMPLOYEES.map((e) => (
+                {empList.map((e) => (
                   <option key={e.id} value={e.id}>
                     {e.name} ({e.id})
                   </option>

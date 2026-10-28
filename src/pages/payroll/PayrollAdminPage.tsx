@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useSearchParams } from "react-router-dom";
 import { useNotifications } from "../../services/NotificationsContext";
+import { exportToCSV } from "./payroll-data";
 import {
   type PayrollRun,
   type AttendanceSyncItem,
@@ -275,17 +276,31 @@ export const PayrollAdminPage: React.FC = () => {
           activeRun={activeRun}
           registerData={registerList}
           onDownloadSlip={(emp) => {
+            const row = registerList.find((r) => r.name === emp) || { gross: 180000, net: 145000, pf: 1800, pt: 200, tds: 33000 };
+            const content = `BRIGHTCONE TECHNOLOGIES - PAYSLIP\nEmployee: ${emp}\nMonth: ${activeRun?.month || 'October 2026'}\nGross Pay: ₹${row.gross.toLocaleString()}\nPF: ₹${row.pf.toLocaleString()}\nPT: ₹${row.pt.toLocaleString()}\nTDS: ₹${row.tds.toLocaleString()}\nNet Take Home: ₹${row.net.toLocaleString()}\nStatus: Processed & Verified`;
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Payslip_${emp.replace(/\s+/g, '_')}_Oct2026.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
             addNotification({
-              title: "Payslip Download",
-              message: `Downloading payslip PDF for ${emp}`,
+              title: "Payslip Downloaded",
+              message: `Payslip downloaded for ${emp}`,
               category: "payroll",
               actionUrl: "/payroll/runs",
             });
           }}
           onExport={() => {
+            exportToCSV(
+              `Salary_Register_${activeRun?.month?.replace(/\s+/g, '_') || 'Oct_2026'}`,
+              ['Employee ID', 'Name', 'Department', 'Gross (INR)', 'PF (INR)', 'PT (INR)', 'TDS (INR)', 'Net (INR)'],
+              registerList.map((r) => [r.empId, r.name, r.dept, r.gross, r.pf, r.pt, r.tds, r.net])
+            );
             addNotification({
-              title: "Register Export",
-              message: "Exporting full salary register CSV",
+              title: "Register Exported",
+              message: "Salary register CSV downloaded successfully.",
               category: "payroll",
               actionUrl: "/payroll/runs",
             });

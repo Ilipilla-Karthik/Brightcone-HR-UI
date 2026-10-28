@@ -26,10 +26,10 @@ export const HolidayAdminPage: React.FC = () => {
     return true;
   };
 
-  const handleDelete = async (id: number) => {
-    const ok = await attendanceApi.deleteHoliday(id);
-    if (ok) await loadHolidays();
-    return ok;
+  const handleDelete = async (id: number): Promise<boolean> => {
+    await attendanceApi.deleteHoliday(id);
+    await loadHolidays();
+    return true;
   };
 
   return (

@@ -43,6 +43,11 @@ export const DailyAttendancePage: React.FC<DailyAttendancePageProps> = ({
   const [activeTab, setActiveTab] = useState<'RECORDS' | 'CORRECTIONS'>('RECORDS');
   const [pendingCorrectionCount, setPendingCorrectionCount] = useState<number>(0);
 
+  const isEmployeePersona = typeof window !== 'undefined' && (
+    localStorage.getItem('persona') === 'employee' ||
+    localStorage.getItem('user')?.toLowerCase().includes('rahul')
+  );
+
   // Filters
   const [search, setSearch] = useState<string>('');
   const [status, setStatus] = useState<string>('ALL');
@@ -230,14 +235,16 @@ export const DailyAttendancePage: React.FC<DailyAttendancePageProps> = ({
             <span>Request correction</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleOpenAddModal}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B6FDB] hover:bg-[#0957B0] text-white transition-all shadow-md shadow-[#0B6FDB]/25 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add attendance entry</span>
-          </button>
+          {!isEmployeePersona && (
+            <button
+              type="button"
+              onClick={handleOpenAddModal}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-[#0B6FDB] hover:bg-[#0957B0] text-white transition-all shadow-md shadow-[#0B6FDB]/25 cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add attendance entry</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -329,7 +336,11 @@ export const DailyAttendancePage: React.FC<DailyAttendancePageProps> = ({
               archivedCount={archivedCount}
             />
             <AttendanceTable
-              records={records}
+              records={
+                isEmployeePersona
+                  ? records.filter((r) => r.employee_name.toLowerCase().includes('rahul'))
+                  : records
+              }
               isLoading={isLoading}
               onEdit={handleOpenEditModal}
               onToggleArchive={handleToggleArchive}

@@ -35,11 +35,23 @@ export const AttendanceClockCard: React.FC<AttendanceClockCardProps> = ({
   const [clockNote, setClockNote] = useState<string>('');
   const [showNoteInput, setShowNoteInput] = useState<boolean>(false);
 
+  const isEmployeePersona = typeof window !== 'undefined' && (
+    localStorage.getItem('persona') === 'employee' ||
+    localStorage.getItem('user')?.toLowerCase().includes('rahul')
+  );
+
   useEffect(() => {
-    if (selectedEmpId === null && employees.length > 0) {
-      setSelectedEmpId(employees[0].id);
+    if (employees.length > 0) {
+      if (isEmployeePersona) {
+        const rahul = employees.find(
+          (e) => e.name.toLowerCase().includes('rahul') || e.email.toLowerCase().includes('rahul')
+        );
+        setSelectedEmpId(rahul ? rahul.id : employees[0].id);
+      } else if (selectedEmpId === null) {
+        setSelectedEmpId(employees[0].id);
+      }
     }
-  }, [employees, selectedEmpId]);
+  }, [employees, isEmployeePersona, selectedEmpId]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -199,23 +211,30 @@ export const AttendanceClockCard: React.FC<AttendanceClockCardProps> = ({
                 <Loader2 className="w-3 h-3 animate-spin" /> <span>Syncing...</span>
               </span>
             )}
-            <div className="relative">
-              <select
-                id="employee-select"
-                value={selectedEmpId || ''}
-                onChange={(e) => setSelectedEmpId(Number(e.target.value))}
-                disabled={isLoadingStatus || isSubmitting}
-                className="appearance-none bg-[#F8FAFD] dark:bg-[#0D1833] border border-[#E3E8F2] dark:border-[#1E3466] text-[#0E1730] dark:text-white text-xs font-medium rounded-xl pl-8 pr-8 py-2 cursor-pointer shadow-xs"
-              >
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id} className="bg-white dark:bg-[#0A1326] text-[#0E1730] dark:text-white">
-                    {emp.name} ({emp.department} · {emp.role})
-                  </option>
-                ))}
-              </select>
-              <User className="w-3.5 h-3.5 text-[#5B6787] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <ChevronDown className="w-3.5 h-3.5 text-[#5B6787] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+            {isEmployeePersona ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#F0FDF4] dark:bg-[#064E3B]/30 border border-[#BBF7D0] dark:border-[#059669]/30 text-xs font-semibold text-[#166534] dark:text-[#34D399]">
+                <User className="w-3.5 h-3.5" />
+                <span>{currentEmployee?.name || 'Rahul Varma'} ({currentEmployee?.department || 'Engineering'})</span>
+              </div>
+            ) : (
+              <div className="relative">
+                <select
+                  id="employee-select"
+                  value={selectedEmpId || ''}
+                  onChange={(e) => setSelectedEmpId(Number(e.target.value))}
+                  disabled={isLoadingStatus || isSubmitting}
+                  className="appearance-none bg-[#F8FAFD] dark:bg-[#0D1833] border border-[#E3E8F2] dark:border-[#1E3466] text-[#0E1730] dark:text-white text-xs font-medium rounded-xl pl-8 pr-8 py-2 cursor-pointer shadow-xs"
+                >
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id} className="bg-white dark:bg-[#0A1326] text-[#0E1730] dark:text-white">
+                      {emp.name} ({emp.department} · {emp.role})
+                    </option>
+                  ))}
+                </select>
+                <User className="w-3.5 h-3.5 text-[#5B6787] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <ChevronDown className="w-3.5 h-3.5 text-[#5B6787] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            )}
           </div>
         )}
       </div>

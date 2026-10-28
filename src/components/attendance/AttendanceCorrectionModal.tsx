@@ -59,7 +59,7 @@ export const AttendanceCorrectionModal: React.FC<AttendanceCorrectionModalProps>
         if (!isMounted) return;
         setIsCheckingRecord(false);
         if (res.data) {
-          const match = res.data.records.find((r) => r.employee_id === employeeId);
+          const match = res.data.records.find((r: any) => r.employee_id === employeeId);
           setExistingRecord(match || null);
         }
       })

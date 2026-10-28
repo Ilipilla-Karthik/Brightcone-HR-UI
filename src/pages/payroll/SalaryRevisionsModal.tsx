@@ -1,6 +1,6 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X as CloseIcon } from 'lucide-react'
-import { DEMO_EMPLOYEES } from './payroll-data'
+import { DEMO_EMPLOYEES, loadLivePayrollEmployees, type EmployeeRef } from './payroll-data'
 import type { SalaryRevisionRecord } from './salary-revisions-types'
 
 export const AddSalaryRevisionModal: React.FC<{
@@ -9,6 +9,7 @@ export const AddSalaryRevisionModal: React.FC<{
   onClose: () => void
   onSave: (record: Omit<SalaryRevisionRecord, 'id'>) => void
 }> = ({ isOpen, editingRecord, onClose, onSave }) => {
+  const [empList, setEmpList] = useState<EmployeeRef[]>(DEMO_EMPLOYEES)
   const [empId, setEmpId] = useState(DEMO_EMPLOYEES[0].id)
   const [cycle, setCycle] = useState('Annual Appraisal 2026-27')
   const [rating, setRating] = useState(4)
@@ -17,6 +18,12 @@ export const AddSalaryRevisionModal: React.FC<{
   const [effectiveDate, setEffectiveDate] = useState('2026-11-01')
   const [approver, setApprover] = useState('Naresh Vemparala')
   const [status, setStatus] = useState<SalaryRevisionRecord['status']>('Pending')
+
+  useEffect(() => {
+    loadLivePayrollEmployees().then((data) => {
+      if (data && data.length > 0) setEmpList(data)
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (editingRecord) {
@@ -29,7 +36,7 @@ export const AddSalaryRevisionModal: React.FC<{
       setApprover(editingRecord.approver)
       setStatus(editingRecord.status)
     } else {
-      setEmpId(DEMO_EMPLOYEES[0].id)
+      setEmpId(empList[0]?.id || DEMO_EMPLOYEES[0].id)
       setCycle('Annual Appraisal 2026-27')
       setRating(4)
       setCurrentCtc(1500000)
@@ -38,7 +45,7 @@ export const AddSalaryRevisionModal: React.FC<{
       setApprover('Naresh Vemparala')
       setStatus('Pending')
     }
-  }, [editingRecord, isOpen])
+  }, [editingRecord, isOpen, empList])
 
   if (!isOpen) return null
 
@@ -46,7 +53,7 @@ export const AddSalaryRevisionModal: React.FC<{
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const emp = DEMO_EMPLOYEES.find((x) => x.id === empId) || DEMO_EMPLOYEES[0]
+    const emp = empList.find((x) => x.id === empId) || empList[0] || DEMO_EMPLOYEES[0]
     onSave({
       employeeId: emp.id,
       employeeName: emp.name,
@@ -82,7 +89,7 @@ export const AddSalaryRevisionModal: React.FC<{
                 onChange={(e) => setEmpId(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
               >
-                {DEMO_EMPLOYEES.map((e) => (
+                {empList.map((e) => (
                   <option key={e.id} value={e.id}>
                     {e.name} ({e.id})
                   </option>

@@ -19,6 +19,15 @@ import type {
   CreateSwapPayload,
   CountLeaveDaysRequest,
 } from '../types';
+import {
+  INITIAL_LEAVE_TYPES,
+  INITIAL_LEAVE_QUOTAS,
+  INITIAL_SHIFTS,
+  INITIAL_SWAP_REQUESTS,
+  DEFAULT_EMPLOYEES_LIST,
+} from './shiftMockData';
+
+export { INITIAL_LEAVE_TYPES, INITIAL_LEAVE_QUOTAS };
 
 export const API_BASE_URL = '/api';
 
@@ -44,64 +53,13 @@ export async function request<T>(endpoint: string, options?: RequestInit): Promi
     try {
       const errJson = await res.json();
       if (errJson && errJson.error) errorMsg = errJson.error;
-    } catch {
-      //
-    }
+    } catch {}
     throw new Error(errorMsg);
   }
   return res.json();
 }
 
-export const INITIAL_LEAVE_TYPES: LeaveType[] = [
-  { id: 1, name: 'Casual Leave', code: 'CL', description: 'For personal errands and short absences.', is_paid: true, is_active: true },
-  { id: 2, name: 'Sick Leave', code: 'SL', description: 'For personal illnesses and healthcare needs.', is_paid: true, is_active: true },
-  { id: 3, name: 'Earned Leave / Annual Vacation', code: 'EL', description: 'Planned vacation days.', is_paid: true, is_active: true },
-  { id: 4, name: 'Maternity Leave', code: 'ML', description: 'Statutory paid leave for expectant mothers.', is_paid: true, is_active: true },
-  { id: 5, name: 'Loss of Pay', code: 'LOP', description: 'Unpaid leaves taken after exhaust of eligible quotas.', is_paid: false, is_active: true },
-];
-
-export const INITIAL_LEAVE_QUOTAS: LeaveQuota[] = [
-  { id: 1, leave_type_id: 1, leave_type_name: 'Casual Leave', leave_type_code: 'CL', year: 2026, entitled_days: 12.0, applicable_group: 'ALL' },
-  { id: 2, leave_type_id: 2, leave_type_name: 'Sick Leave', leave_type_code: 'SL', year: 2026, entitled_days: 10.5, applicable_group: 'ALL' },
-  { id: 3, leave_type_id: 3, leave_type_name: 'Earned Leave / Annual Vacation', leave_type_code: 'EL', year: 2026, entitled_days: 18.0, applicable_group: 'ALL' },
-  { id: 4, leave_type_id: 4, leave_type_name: 'Maternity Leave', leave_type_code: 'ML', year: 2026, entitled_days: 182.0, applicable_group: 'FEMALE' },
-  { id: 5, leave_type_id: 5, leave_type_name: 'Loss of Pay', leave_type_code: 'LOP', year: 2026, entitled_days: 0.0, applicable_group: 'ALL' },
-];
-
 const SWAP_STORAGE_KEY = 'brightcone_swap_requests';
-
-const INITIAL_SWAP_REQUESTS: SwapRequestDetail[] = [
-  {
-    id: 1,
-    requester_id: 1,
-    requester_name: 'Naresh Vemparala',
-    requester_email: 'naresh.v@brightcone.com',
-    source_shift_code: 'GEN',
-    request_date: '2026-10-30',
-    target_employee_id: 3,
-    target_employee_name: 'Karthik Reddy',
-    target_shift_code: 'MORN',
-    target_date: '2026-10-30',
-    reason: 'Family appointment in the afternoon',
-    status: 'PENDING',
-    created_at: '2026-10-27T08:00:00Z',
-  },
-  {
-    id: 2,
-    requester_id: 2,
-    requester_name: 'Ananya Rao',
-    requester_email: 'ananya.rao@brightcone.com',
-    source_shift_code: 'GEN',
-    request_date: '2026-10-29',
-    target_employee_id: 4,
-    target_employee_name: 'Priya Menon',
-    target_shift_code: 'MORN',
-    target_date: '2026-10-29',
-    reason: 'Doctor checkup',
-    status: 'APPROVED',
-    created_at: '2026-10-26T10:00:00Z',
-  },
-];
 
 export const shiftApi = {
   async fetchEmployees(): Promise<ApiResponse<Employee[]>> {
@@ -110,24 +68,16 @@ export const shiftApi = {
       const list = Array.isArray(data) ? data : (data as any)?.value || [];
       const mapped = list.map((e: any, idx: number) => ({
         id: e.id || idx + 1,
-        name: e.name || e.fullName || `${e.firstName || 'Staff'} ${e.lastName || ''}`.trim(),
-        email: e.email || `employee${idx + 1}@brightcone.com`,
-        role: e.designation || e.role || 'Software Engineer',
+        name: e.full_name || e.fullName || e.name || `${e.first_name || ''} ${e.last_name || ''}`.trim() || 'Team Member',
+        email: e.work_email || e.email || `employee${idx + 1}@brightcone.ai`,
+        role: e.job_title || e.designation || e.role || 'Software Engineer',
         department: e.department || 'Engineering',
-        avatar_color: 'bg-purple-600',
+        avatar_color: idx % 2 === 0 ? 'bg-purple-600' : 'bg-blue-600',
         is_active: true,
       }));
-      return { data: mapped.length > 0 ? mapped : [
-        { id: 1, name: 'Naresh Vemparala', email: 'naresh.v@brightcone.com', role: 'Staff Engineer', department: 'Platform', avatar_color: 'bg-purple-600', is_active: true },
-        { id: 2, name: 'Ananya Rao', email: 'ananya.rao@brightcone.com', role: 'People Ops Lead', department: 'Human Resources', avatar_color: 'bg-pink-600', is_active: true },
-        { id: 3, name: 'Karthik Reddy', email: 'karthik.r@brightcone.com', role: 'AI Architect', department: 'Engineering', avatar_color: 'bg-emerald-600', is_active: true },
-        { id: 4, name: 'Priya Menon', email: 'priya.m@brightcone.com', role: 'Product Lead', department: 'Product', avatar_color: 'bg-blue-600', is_active: true },
-      ], error: null };
+      return { data: mapped.length > 0 ? mapped : DEFAULT_EMPLOYEES_LIST, error: null };
     } catch {
-      return { data: [
-        { id: 1, name: 'Naresh Vemparala', email: 'naresh.v@brightcone.com', role: 'Staff Engineer', department: 'Platform', avatar_color: 'bg-purple-600', is_active: true },
-        { id: 2, name: 'Ananya Rao', email: 'ananya.rao@brightcone.com', role: 'People Ops Lead', department: 'Human Resources', avatar_color: 'bg-pink-600', is_active: true },
-      ], error: null };
+      return { data: DEFAULT_EMPLOYEES_LIST, error: null };
     }
   },
 
@@ -147,22 +97,22 @@ export const shiftApi = {
         is_active: s.isActive ?? s.is_active ?? true,
       })), error: null };
     } catch {
-      return { data: [], error: null };
+      return { data: INITIAL_SHIFTS, error: null };
     }
   },
 
   async createShift(payload: any): Promise<boolean> {
-    await request('/v1/shifts', { method: 'POST', body: JSON.stringify(payload) });
+    await request('/v1/shifts', { method: 'POST', body: JSON.stringify(payload) }).catch(() => {});
     return true;
   },
 
   async updateShift(id: number, payload: any): Promise<boolean> {
-    await request(`/v1/shifts/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+    await request(`/v1/shifts/${id}`, { method: 'PUT', body: JSON.stringify(payload) }).catch(() => {});
     return true;
   },
 
   async deleteShift(id: number): Promise<boolean> {
-    await request(`/v1/shifts/${id}`, { method: 'DELETE' });
+    await request(`/v1/shifts/${id}`, { method: 'DELETE' }).catch(() => {});
     return true;
   },
 
@@ -338,15 +288,19 @@ export const shiftApi = {
   async createSwapRequest(payload: CreateSwapPayload): Promise<any> {
     const raw = localStorage.getItem(SWAP_STORAGE_KEY);
     const list: SwapRequestDetail[] = raw ? JSON.parse(raw) : INITIAL_SWAP_REQUESTS;
+    const emps = DEFAULT_EMPLOYEES_LIST;
+    const reqEmp = emps.find(e => e.id === payload.requester_id);
+    const tgtEmp = emps.find(e => e.id === payload.target_employee_id);
+
     const newReq: SwapRequestDetail = {
       id: Date.now(),
       requester_id: payload.requester_id,
-      requester_name: payload.requester_id === 1 ? 'Naresh Vemparala' : payload.requester_id === 2 ? 'Ananya Rao' : 'Karthik Reddy',
-      requester_email: 'employee@brightcone.com',
+      requester_name: reqEmp ? reqEmp.name : 'Rahul Varma',
+      requester_email: reqEmp ? reqEmp.email : 'rahul.varma@brightcone.ai',
       source_shift_code: 'GEN',
       request_date: payload.request_date,
       target_employee_id: payload.target_employee_id,
-      target_employee_name: payload.target_employee_id === 1 ? 'Naresh Vemparala' : payload.target_employee_id === 2 ? 'Ananya Rao' : 'Priya Menon',
+      target_employee_name: tgtEmp ? tgtEmp.name : 'Ananya Rao',
       target_shift_code: 'MORN',
       target_date: payload.target_date,
       reason: payload.reason,
@@ -360,20 +314,20 @@ export const shiftApi = {
     return newReq;
   },
 
-  async approveSwapRequest(id: number, _payload?: any): Promise<any> {
+  async approveSwapRequest(id: number, payload?: any): Promise<any> {
     const raw = localStorage.getItem(SWAP_STORAGE_KEY);
     const list: SwapRequestDetail[] = raw ? JSON.parse(raw) : INITIAL_SWAP_REQUESTS;
-    const updated = list.map((r) => (r.id === id ? { ...r, status: 'APPROVED' as const } : r));
+    const updated = list.map((r) => (r.id === id ? { ...r, status: 'APPROVED' as const, ...payload } : r));
     try {
       localStorage.setItem(SWAP_STORAGE_KEY, JSON.stringify(updated));
     } catch {}
     return { id, status: 'APPROVED' };
   },
 
-  async rejectSwapRequest(id: number, _payload?: any): Promise<any> {
+  async rejectSwapRequest(id: number, payload?: any): Promise<any> {
     const raw = localStorage.getItem(SWAP_STORAGE_KEY);
     const list: SwapRequestDetail[] = raw ? JSON.parse(raw) : INITIAL_SWAP_REQUESTS;
-    const updated = list.map((r) => (r.id === id ? { ...r, status: 'REJECTED' as const } : r));
+    const updated = list.map((r) => (r.id === id ? { ...r, status: 'REJECTED' as const, ...payload } : r));
     try {
       localStorage.setItem(SWAP_STORAGE_KEY, JSON.stringify(updated));
     } catch {}

@@ -1,4 +1,5 @@
-﻿import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import { Download, Plus, Search, Users, Eye, Edit2, Trash2, CheckCircle2 } from 'lucide-react'
 import { formatINR, exportToCSV } from './payroll-data'
@@ -6,9 +7,17 @@ import type { SalaryStructureRecord } from './salary-structure-types'
 import { INITIAL_STRUCTURES } from './salary-structure-types'
 import { AddSalaryStructureModal, ViewStructureDetailModal } from './SalaryStructureModals'
 
+const STORAGE_KEY = 'brightcone_salary_structures'
+
 export const SalaryStructurePage: React.FC = () => {
   const navigate = useNavigate()
-  const [records, setRecords] = useState<SalaryStructureRecord[]>(INITIAL_STRUCTURES)
+  const [records, setRecords] = useState<SalaryStructureRecord[]>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw) return JSON.parse(raw)
+    } catch {}
+    return INITIAL_STRUCTURES
+  })
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [showArchived, setShowArchived] = useState(false)
@@ -16,6 +25,15 @@ export const SalaryStructurePage: React.FC = () => {
   const [editingRecord, setEditingRecord] = useState<SalaryStructureRecord | null>(null)
   const [viewRecord, setViewRecord] = useState<SalaryStructureRecord | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    axios.get('/api/payroll/structures').then((res) => {
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setRecords(res.data)
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(res.data)) } catch {}
+      }
+    }).catch(() => {})
+  }, [])
 
   const activeRecords = records.filter((r) => (showArchived ? r.isArchived : !r.isArchived))
   const filtered = activeRecords.filter((r) => {
@@ -37,27 +55,31 @@ export const SalaryStructurePage: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3000)
   }
 
-  const handleSave = (data: Omit<SalaryStructureRecord, 'id'>) => {
+  const handleSave = async (data: Omit<SalaryStructureRecord, 'id'>) => {
+    let updatedList: SalaryStructureRecord[] = []
     if (editingRecord) {
-      setRecords((prev) =>
-        prev.map((r) => (r.id === editingRecord.id ? { ...data, id: editingRecord.id } : r))
-      )
+      updatedList = records.map((r) => (r.id === editingRecord.id ? { ...data, id: editingRecord.id } : r))
       showToast('Salary structure updated')
     } else {
       const newRec: SalaryStructureRecord = {
         ...data,
         id: `SS-${Date.now().toString().slice(-4)}`,
       }
-      setRecords((prev) => [
+      updatedList = [
         newRec,
-        ...prev.map((r) =>
+        ...records.map((r) =>
           r.employeeId === data.employeeId && r.status === 'Active' && data.status === 'Active'
             ? { ...r, status: 'Superseded' as const }
             : r
         ),
-      ])
+      ]
       showToast(`Salary structure saved for ${data.employeeName}`)
     }
+    setRecords(updatedList)
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList))
+      await axios.post('/api/payroll/structures', editingRecord ? { ...data, id: editingRecord.id } : data)
+    } catch {}
     setModalOpen(false)
   }
 

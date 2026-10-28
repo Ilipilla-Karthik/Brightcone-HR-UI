@@ -1,6 +1,6 @@
-﻿import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X as CloseIcon, Printer } from 'lucide-react'
-import { DEMO_EMPLOYEES, formatINR } from './payroll-data'
+import { DEMO_EMPLOYEES, formatINR, loadLivePayrollEmployees, type EmployeeRef } from './payroll-data'
 import type { PayslipRecord } from './payslip-records-types'
 
 export const AddPayslipModal: React.FC<{
@@ -8,11 +8,18 @@ export const AddPayslipModal: React.FC<{
   onClose: () => void
   onSave: (record: Omit<PayslipRecord, 'id'>) => void
 }> = ({ isOpen, onClose, onSave }) => {
+  const [empList, setEmpList] = useState<EmployeeRef[]>(DEMO_EMPLOYEES)
   const [empId, setEmpId] = useState(DEMO_EMPLOYEES[0].id)
   const [month, setMonth] = useState('October 2026')
   const [gross, setGross] = useState(145000)
   const [deductions, setDeductions] = useState(14440)
   const [status, setStatus] = useState<PayslipRecord['status']>('Generated')
+
+  useEffect(() => {
+    loadLivePayrollEmployees().then((data) => {
+      if (data && data.length > 0) setEmpList(data)
+    }).catch(() => {})
+  }, [])
 
   if (!isOpen) return null
 
@@ -23,7 +30,7 @@ export const AddPayslipModal: React.FC<{
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const emp = DEMO_EMPLOYEES.find((x) => x.id === empId) || DEMO_EMPLOYEES[0]
+    const emp = empList.find((x) => x.id === empId) || empList[0] || DEMO_EMPLOYEES[0]
     onSave({
       employeeId: emp.id,
       employeeName: emp.name,
@@ -60,7 +67,7 @@ export const AddPayslipModal: React.FC<{
               onChange={(e) => setEmpId(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-500"
             >
-              {DEMO_EMPLOYEES.map((e) => (
+              {empList.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.name} ({e.id})
                 </option>

@@ -68,53 +68,20 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
     }
     return [
       { title: 'OVERVIEW', items: [{ label: 'Dashboard', to: '/doc-sign/dashboard', icon: ic('dashboard', 15) }] },
-      {
-        title: 'DOCUMENTS',
-        items: [
-          { label: 'Documents', to: '/doc-sign/requests', icon: ic('pen', 15) },
-          { label: 'Templates', to: '/doc-sign/templates', icon: ic('doc', 15) },
-        ],
-      },
-      {
-        title: 'HR POLICIES & COMPLIANCE',
-        items: [
-          { label: 'Employee handbook', to: '/doc-sign/handbook', icon: ic('doc', 15) },
-          { label: 'HR policies', to: '/doc-sign/policies', icon: ic('shield', 15) },
-          { label: 'Policy acknowledgements', to: '/doc-sign/acks', icon: ic('check', 15) },
-        ],
-      },
+      { title: 'DOCUMENTS', items: [{ label: 'Documents', to: '/doc-sign/requests', icon: ic('pen', 15) }, { label: 'Templates', to: '/doc-sign/templates', icon: ic('doc', 15) }] },
+      { title: 'HR POLICIES & COMPLIANCE', items: [{ label: 'Employee handbook', to: '/doc-sign/handbook', icon: ic('doc', 15) }, { label: 'HR policies', to: '/doc-sign/policies', icon: ic('shield', 15) }, { label: 'Policy acknowledgements', to: '/doc-sign/acks', icon: ic('check', 15) }] },
     ];
   }
 
   // 2. Connect Module
   if (p.startsWith('/engagement') || p.startsWith('/connect')) {
     if (role === 'employee') {
-      return [{
-        title: 'COMMUNITY',
-        items: [
-          { label: 'Feed', to: '/engagement/feed', icon: ic('chat', 15) },
-          { label: 'Directory', to: '/engagement/directory', icon: ic('users', 15) },
-        ],
-      }];
+      return [{ title: 'COMMUNITY', items: [{ label: 'Feed', to: '/engagement/feed', icon: ic('chat', 15) }, { label: 'Directory', to: '/engagement/directory', icon: ic('users', 15) }] }];
     }
     return [
       { title: 'OVERVIEW', items: [{ label: 'Feed', to: '/engagement/feed', icon: ic('chat', 15) }] },
-      {
-        title: 'COMMUNICATE',
-        items: [
-          { label: 'Announcements', to: '/engagement/announcements', icon: ic('mega', 15) },
-          { label: 'Directory', to: '/engagement/directory', icon: ic('users', 15) },
-        ],
-      },
-      {
-        title: 'EMPLOYEE ENGAGEMENT',
-        items: [
-          { label: 'Events', to: '/engagement/events', icon: ic('calendar', 15) },
-          { label: 'Feedback', to: '/engagement/feedback', icon: ic('chat', 15) },
-          { label: 'Town halls', to: '/engagement/townhall', icon: ic('mega', 15) },
-          { label: 'Celebrations', to: '/engagement/celebrations', icon: ic('gift', 15) },
-        ],
-      },
+      { title: 'COMMUNICATE', items: [{ label: 'Announcements', to: '/engagement/announcements', icon: ic('mega', 15) }, { label: 'Directory', to: '/engagement/directory', icon: ic('users', 15) }] },
+      { title: 'EMPLOYEE ENGAGEMENT', items: [{ label: 'Events', to: '/engagement/events', icon: ic('calendar', 15) }, { label: 'Feedback', to: '/engagement/feedback', icon: ic('chat', 15) }, { label: 'Town halls', to: '/engagement/townhall', icon: ic('mega', 15) }, { label: 'Celebrations', to: '/engagement/celebrations', icon: ic('gift', 15) }] },
     ];
   }
 

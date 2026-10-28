@@ -1,19 +1,38 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import { Download, Plus, Search, Users, Check, X as CloseIcon, Edit2, Trash2, CheckCircle2 } from 'lucide-react'
 import { formatINR, exportToCSV } from './payroll-data'
 import type { SalaryRevisionRecord } from './salary-revisions-types'
+import { INITIAL_REVISIONS } from './salary-revisions-types'
 import { AddSalaryRevisionModal } from './SalaryRevisionsModal'
+
+const STORAGE_KEY = 'brightcone_salary_revisions'
 
 export const SalaryRevisionsPage: React.FC = () => {
   const navigate = useNavigate()
-  const [records, setRecords] = useState<SalaryRevisionRecord[]>([])
+  const [records, setRecords] = useState<SalaryRevisionRecord[]>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw) return JSON.parse(raw)
+    } catch {}
+    return INITIAL_REVISIONS
+  })
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [showArchived, setShowArchived] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingRecord, setEditingRecord] = useState<SalaryRevisionRecord | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    axios.get('/api/payroll/revisions').then((res) => {
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setRecords(res.data)
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(res.data)) } catch {}
+      }
+    }).catch(() => {})
+  }, [])
 
   const activeRecords = records.filter((r) => (showArchived ? r.isArchived : !r.isArchived))
   const filtered = activeRecords.filter((r) => {
@@ -37,26 +56,30 @@ export const SalaryRevisionsPage: React.FC = () => {
   }
 
   const handleDecision = (id: string, newStatus: 'Approved' | 'Rejected') => {
-    setRecords((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
-    )
+    const updated = records.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
+    setRecords(updated)
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)) } catch {}
     showToast(`Salary revision marked as ${newStatus}`)
   }
 
-  const handleSave = (data: Omit<SalaryRevisionRecord, 'id'>) => {
+  const handleSave = async (data: Omit<SalaryRevisionRecord, 'id'>) => {
+    let updated: SalaryRevisionRecord[] = []
     if (editingRecord) {
-      setRecords((prev) =>
-        prev.map((r) => (r.id === editingRecord.id ? { ...data, id: editingRecord.id } : r))
-      )
+      updated = records.map((r) => (r.id === editingRecord.id ? { ...data, id: editingRecord.id } : r))
       showToast('Revision record saved')
     } else {
       const newRec: SalaryRevisionRecord = {
         ...data,
         id: `SR-${Date.now().toString().slice(-4)}`,
       }
-      setRecords((prev) => [newRec, ...prev])
+      updated = [newRec, ...records]
       showToast(`Revision proposal submitted for ${data.employeeName}`)
     }
+    setRecords(updated)
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      await axios.post('/api/payroll/revisions', editingRecord ? { ...data, id: editingRecord.id } : data)
+    } catch {}
     setModalOpen(false)
   }
 

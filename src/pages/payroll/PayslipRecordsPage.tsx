@@ -18,6 +18,11 @@ export const PayslipRecordsPage: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem('brightcone_payslips')
+      if (raw) setRecords(JSON.parse(raw))
+    } catch {}
+
     axios
       .get<Array<{ empId: string; name: string; dept: string; gross: number; pf: number; pt: number; tds: number; net: number }>>('/api/payroll/register')
       .then((res) => {
@@ -45,7 +50,7 @@ export const PayslipRecordsPage: React.FC = () => {
               tds: r.tds,
             }
           })
-          setRecords(live)
+          setRecords((prev) => (prev.length > 0 ? prev : live))
         }
       })
       .catch(() => {})
@@ -77,7 +82,9 @@ export const PayslipRecordsPage: React.FC = () => {
       ...data,
       id: `SLIP-${Date.now().toString().slice(-4)}`,
     }
-    setRecords((prev) => [newRec, ...prev])
+    const updated = [newRec, ...records]
+    setRecords(updated)
+    try { localStorage.setItem('brightcone_payslips', JSON.stringify(updated)) } catch {}
     setAddModalOpen(false)
     showToast(`Payslip created for ${data.employeeName}`)
   }
