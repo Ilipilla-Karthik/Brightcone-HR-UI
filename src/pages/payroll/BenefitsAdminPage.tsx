@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Plus, Heart, Users, Calendar, Trash2, X } from 'lucide-react'
 
 export interface BenefitPlan {
@@ -8,6 +8,8 @@ export interface BenefitPlan {
   coverAmount: string
   cost: string
 }
+
+const STORAGE_KEY = 'brightcone_benefits_admin';
 
 const INITIAL_PLANS: BenefitPlan[] = [
   {
@@ -34,8 +36,33 @@ const INITIAL_PLANS: BenefitPlan[] = [
 ]
 
 export const BenefitsAdminPage: React.FC = () => {
-  const [plans, setPlans] = useState<BenefitPlan[]>(INITIAL_PLANS)
+  const [plans, setPlans] = useState<BenefitPlan[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : INITIAL_PLANS;
+    } catch {
+      return INITIAL_PLANS;
+    }
+  })
   const [modalOpen, setModalOpen] = useState(false)
+
+  const loadBenefits = async () => {
+    try {
+      const res = await fetch('/api/v1/payroll/benefits');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setPlans(data);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          return;
+        }
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    loadBenefits();
+  }, []);
 
   // Plan modal form
   const [planName, setPlanName] = useState('')
@@ -43,7 +70,7 @@ export const BenefitsAdminPage: React.FC = () => {
   const [cover, setCover] = useState('₹5,00,000')
   const [cost, setCost] = useState('Company paid')
 
-  const handleAddPlan = (e: React.FormEvent) => {
+  const handleAddPlan = async (e: React.FormEvent) => {
     e.preventDefault()
     const newPlan: BenefitPlan = {
       id: `BP-${Date.now().toString().slice(-4)}`,
@@ -52,16 +79,35 @@ export const BenefitsAdminPage: React.FC = () => {
       coverAmount: cover,
       cost,
     }
-    setPlans((prev) => [...prev, newPlan])
+    setPlans((prev) => {
+      const next = [...prev, newPlan];
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    })
     setPlanName('')
     setProvider('')
     setCover('₹5,00,000')
     setCost('Company paid')
     setModalOpen(false)
+
+    try {
+      await fetch('/api/v1/payroll/benefits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPlan),
+      });
+    } catch {}
   }
 
-  const handleDeletePlan = (id: string) => {
-    setPlans((prev) => prev.filter((p) => p.id !== id))
+  const handleDeletePlan = async (id: string) => {
+    setPlans((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    })
+    try {
+      await fetch(`/api/v1/payroll/benefits/${id}`, { method: 'DELETE' });
+    } catch {}
   }
 
   return (

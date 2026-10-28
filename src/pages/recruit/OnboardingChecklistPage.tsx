@@ -25,20 +25,26 @@ export const OnboardingChecklistPage: React.FC = () => {
     recruitApi.getCandidates().then((cands) => {
       const hired = cands.filter((c) => c.stage?.toLowerCase() === 'offer' || c.stage?.toLowerCase() === 'hired');
       if (hired.length > 0) {
-        const mapped = hired.map((c, i) => ({
-          id: c.candidate_code || `ONB-${i + 1}`,
-          name: c.full_name,
-          role: c.job_title || 'New Team Member',
-          joiningDate: 'Upcoming',
-          buddy: 'Naresh Vemparala',
-          tasks: [
+        const mapped = hired.map((c, i) => {
+          const id = c.candidate_code || `ONB-${i + 1}`;
+          const savedTasks = localStorage.getItem(`onboarding_tasks_${id}`);
+          const defaultTasks = [
             { title: 'Google Workspace & Slack account creation', completed: true },
             { title: 'Laptop workstation provisioned & ready', completed: true },
             { title: 'POSH & Security training enrolled', completed: false },
             { title: 'Manager 1-on-1 scheduled for Day 1', completed: false },
             { title: 'Buddy introduction call setup', completed: false },
-          ],
-        }));
+          ];
+          const tasks = savedTasks ? JSON.parse(savedTasks) : defaultTasks;
+          return {
+            id,
+            name: c.full_name,
+            role: c.job_title || 'New Team Member',
+            joiningDate: 'Upcoming',
+            buddy: 'Naresh Vemparala',
+            tasks,
+          };
+        });
         setCandidates(mapped);
         setSelectedCan(mapped[0]);
       } else {
@@ -52,11 +58,16 @@ export const OnboardingChecklistPage: React.FC = () => {
   }, []);
 
   const toggleTask = (candidateId: string, taskIdx: number) => {
+    let newTasks: { title: string; completed: boolean }[] = [];
     setCandidates((prev) =>
       prev.map((c) => {
         if (c.id === candidateId) {
           const updated = [...c.tasks];
           updated[taskIdx] = { ...updated[taskIdx], completed: !updated[taskIdx].completed };
+          newTasks = updated;
+          try {
+            localStorage.setItem(`onboarding_tasks_${candidateId}`, JSON.stringify(updated));
+          } catch {}
           return { ...c, tasks: updated };
         }
         return c;
@@ -64,13 +75,12 @@ export const OnboardingChecklistPage: React.FC = () => {
     );
     setSelectedCan((prev) => {
       if (prev && prev.id === candidateId) {
-        const updated = [...prev.tasks];
-        updated[taskIdx] = { ...updated[taskIdx], completed: !updated[taskIdx].completed };
+        const updated = newTasks.length > 0 ? newTasks : [...prev.tasks];
         return { ...prev, tasks: updated };
       }
       return prev;
     });
-    showToast('Checklist task updated');
+    showToast('Checklist task updated & saved');
   };
 
   return (

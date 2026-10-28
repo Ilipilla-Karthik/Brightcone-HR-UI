@@ -236,40 +236,114 @@ export async function getSkills(): Promise<Skill[]> {
   }
 }
 
+const SKILLS_KEY = 'brightcone_custom_skills';
+const RATINGS_KEY = 'brightcone_skill_ratings';
+const RECORDS_KEY = 'brightcone_completion_records';
+
 export async function createSkill(payload: CreateSkillPayload): Promise<Skill> {
+  const newSkill: Skill = {
+    id: `sk-${Date.now()}`,
+    name: payload.name,
+    category: payload.category,
+    description: payload.description,
+  };
+  try {
+    const raw = localStorage.getItem(SKILLS_KEY);
+    const list: Skill[] = raw ? JSON.parse(raw) : [];
+    localStorage.setItem(SKILLS_KEY, JSON.stringify([...list, newSkill]));
+  } catch {}
+
   try {
     const res = await api.post('/learn/skills', payload);
-    return res.data;
+    return res.data && res.data.id ? res.data : newSkill;
   } catch {
-    return { id: `sk-${Date.now()}`, ...payload };
+    return newSkill;
   }
 }
 
 export async function getSkillsMatrix(): Promise<SkillsMatrixResponse> {
+  let matrix: SkillsMatrixResponse = fallbackSkillsMatrix;
   try {
     const res = await api.get('/learn/skills/matrix');
-    return res.data && res.data.employees ? res.data : fallbackSkillsMatrix;
-  } catch {
-    return fallbackSkillsMatrix;
-  }
+    if (res.data && res.data.employees && res.data.skills) {
+      matrix = res.data;
+    }
+  } catch {}
+
+  // Merge any locally stored skills
+  try {
+    const rawSkills = localStorage.getItem(SKILLS_KEY);
+    if (rawSkills) {
+      const customSkills: Skill[] = JSON.parse(rawSkills);
+      for (const cs of customSkills) {
+        if (!matrix.skills.some((s) => s.id === cs.id || s.name.toLowerCase() === cs.name.toLowerCase())) {
+          matrix.skills.push(cs);
+          if (!matrix.categories.includes(cs.category)) {
+            matrix.categories.push(cs.category);
+          }
+        }
+      }
+    }
+
+    const rawRatings = localStorage.getItem(RATINGS_KEY);
+    if (rawRatings) {
+      const storedRatings: Record<string, EmployeeSkillRating> = JSON.parse(rawRatings);
+      matrix.employees = matrix.employees.map((emp) => {
+        const empSkills = { ...emp.skills };
+        for (const [key, rating] of Object.entries(storedRatings)) {
+          const [empCode, skillId] = key.split(':');
+          if (empCode === emp.employee_code) {
+            empSkills[skillId] = rating;
+          }
+        }
+        return { ...emp, skills: empSkills };
+      });
+    }
+  } catch {}
+
+  return matrix;
 }
 
 export async function rateSkill(payload: RateSkillPayload): Promise<EmployeeSkillRating> {
+  const rating: EmployeeSkillRating = {
+    level: payload.level,
+    verified: payload.verified !== undefined ? payload.verified : true,
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    const rawRatings = localStorage.getItem(RATINGS_KEY);
+    const storedRatings: Record<string, EmployeeSkillRating> = rawRatings ? JSON.parse(rawRatings) : {};
+    storedRatings[`${payload.employee_id}:${payload.skill_id}`] = rating;
+    localStorage.setItem(RATINGS_KEY, JSON.stringify(storedRatings));
+  } catch {}
+
   try {
     const res = await api.post('/learn/skills/rate', payload);
-    return res.data;
+    return res.data || rating;
   } catch {
-    return { level: payload.level, verified: !!payload.verified, updated_at: new Date().toISOString() };
+    return rating;
   }
 }
 
 export async function getCompletionRecords(): Promise<CompletionRecord[]> {
+  let records = fallbackRecords;
   try {
     const res = await api.get('/learn/records');
-    return Array.isArray(res.data) && res.data.length > 0 ? res.data : fallbackRecords;
-  } catch {
-    return fallbackRecords;
-  }
+    if (Array.isArray(res.data) && res.data.length > 0) {
+      records = res.data;
+    }
+  } catch {}
+
+  try {
+    const raw = localStorage.getItem(RECORDS_KEY);
+    if (raw) {
+      const localRecs: CompletionRecord[] = JSON.parse(raw);
+      records = [...localRecs, ...records];
+    }
+  } catch {}
+
+  return records;
 }
 
 export async function getSkillRecommendations(): Promise<RecommendationsResponse> {

@@ -68,6 +68,41 @@ export const INITIAL_LEAVE_QUOTAS: LeaveQuota[] = [
   { id: 5, leave_type_id: 5, leave_type_name: 'Loss of Pay', leave_type_code: 'LOP', year: 2026, entitled_days: 0.0, applicable_group: 'ALL' },
 ];
 
+const SWAP_STORAGE_KEY = 'brightcone_swap_requests';
+
+const INITIAL_SWAP_REQUESTS: SwapRequestDetail[] = [
+  {
+    id: 1,
+    requester_id: 1,
+    requester_name: 'Naresh Vemparala',
+    requester_email: 'naresh.v@brightcone.com',
+    source_shift_code: 'GEN',
+    request_date: '2026-10-30',
+    target_employee_id: 3,
+    target_employee_name: 'Karthik Reddy',
+    target_shift_code: 'MORN',
+    target_date: '2026-10-30',
+    reason: 'Family appointment in the afternoon',
+    status: 'PENDING',
+    created_at: '2026-10-27T08:00:00Z',
+  },
+  {
+    id: 2,
+    requester_id: 2,
+    requester_name: 'Ananya Rao',
+    requester_email: 'ananya.rao@brightcone.com',
+    source_shift_code: 'GEN',
+    request_date: '2026-10-29',
+    target_employee_id: 4,
+    target_employee_name: 'Priya Menon',
+    target_shift_code: 'MORN',
+    target_date: '2026-10-29',
+    reason: 'Doctor checkup',
+    status: 'APPROVED',
+    created_at: '2026-10-26T10:00:00Z',
+  },
+];
+
 export const shiftApi = {
   async fetchEmployees(): Promise<ApiResponse<Employee[]>> {
     try {
@@ -279,23 +314,79 @@ export const shiftApi = {
     return { id, ...payload, status: 'REJECTED' };
   },
 
-  async fetchSwapRequests(_params?: any): Promise<ApiResponse<SwapRequestDetail[]>> {
-    return { data: [], error: null };
+  async fetchSwapRequests(params?: any): Promise<ApiResponse<SwapRequestDetail[]>> {
+    let list: SwapRequestDetail[] = INITIAL_SWAP_REQUESTS;
+    try {
+      const raw = localStorage.getItem(SWAP_STORAGE_KEY);
+      if (raw) {
+        list = JSON.parse(raw);
+      } else {
+        localStorage.setItem(SWAP_STORAGE_KEY, JSON.stringify(INITIAL_SWAP_REQUESTS));
+      }
+    } catch {}
+
+    if (params?.status && params.status !== 'ALL') {
+      list = list.filter((r) => r.status === params.status);
+    }
+    if (params?.employee_id) {
+      list = list.filter((r) => r.requester_id === params.employee_id || r.target_employee_id === params.employee_id);
+    }
+
+    return { data: list, error: null };
   },
 
   async createSwapRequest(payload: CreateSwapPayload): Promise<any> {
-    return { id: 1, ...payload, status: 'PENDING' };
+    const raw = localStorage.getItem(SWAP_STORAGE_KEY);
+    const list: SwapRequestDetail[] = raw ? JSON.parse(raw) : INITIAL_SWAP_REQUESTS;
+    const newReq: SwapRequestDetail = {
+      id: Date.now(),
+      requester_id: payload.requester_id,
+      requester_name: payload.requester_id === 1 ? 'Naresh Vemparala' : payload.requester_id === 2 ? 'Ananya Rao' : 'Karthik Reddy',
+      requester_email: 'employee@brightcone.com',
+      source_shift_code: 'GEN',
+      request_date: payload.request_date,
+      target_employee_id: payload.target_employee_id,
+      target_employee_name: payload.target_employee_id === 1 ? 'Naresh Vemparala' : payload.target_employee_id === 2 ? 'Ananya Rao' : 'Priya Menon',
+      target_shift_code: 'MORN',
+      target_date: payload.target_date,
+      reason: payload.reason,
+      status: 'PENDING',
+      created_at: new Date().toISOString(),
+    };
+    const updated = [newReq, ...list];
+    try {
+      localStorage.setItem(SWAP_STORAGE_KEY, JSON.stringify(updated));
+    } catch {}
+    return newReq;
   },
 
-  async approveSwapRequest(id: number, payload?: any): Promise<any> {
-    return { id, ...payload, status: 'APPROVED' };
+  async approveSwapRequest(id: number, _payload?: any): Promise<any> {
+    const raw = localStorage.getItem(SWAP_STORAGE_KEY);
+    const list: SwapRequestDetail[] = raw ? JSON.parse(raw) : INITIAL_SWAP_REQUESTS;
+    const updated = list.map((r) => (r.id === id ? { ...r, status: 'APPROVED' as const } : r));
+    try {
+      localStorage.setItem(SWAP_STORAGE_KEY, JSON.stringify(updated));
+    } catch {}
+    return { id, status: 'APPROVED' };
   },
 
-  async rejectSwapRequest(id: number, payload?: any): Promise<any> {
-    return { id, ...payload, status: 'REJECTED' };
+  async rejectSwapRequest(id: number, _payload?: any): Promise<any> {
+    const raw = localStorage.getItem(SWAP_STORAGE_KEY);
+    const list: SwapRequestDetail[] = raw ? JSON.parse(raw) : INITIAL_SWAP_REQUESTS;
+    const updated = list.map((r) => (r.id === id ? { ...r, status: 'REJECTED' as const } : r));
+    try {
+      localStorage.setItem(SWAP_STORAGE_KEY, JSON.stringify(updated));
+    } catch {}
+    return { id, status: 'REJECTED' };
   },
 
-  async cancelSwapRequest(_id: number): Promise<boolean> {
+  async cancelSwapRequest(id: number): Promise<boolean> {
+    const raw = localStorage.getItem(SWAP_STORAGE_KEY);
+    const list: SwapRequestDetail[] = raw ? JSON.parse(raw) : INITIAL_SWAP_REQUESTS;
+    const updated = list.filter((r) => r.id !== id);
+    try {
+      localStorage.setItem(SWAP_STORAGE_KEY, JSON.stringify(updated));
+    } catch {}
     return true;
   },
 

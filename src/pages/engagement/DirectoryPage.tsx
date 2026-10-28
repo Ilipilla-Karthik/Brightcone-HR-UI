@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ic } from '../../components/icons';
 import { DirectoryEmployee } from './types';
-import { fetchConnectDirectory } from '../../services/signConnectApi';
+import { fetchConnectDirectory, createConnectPost } from '../../services/signConnectApi';
 import { mapDirectoryEmployeeFromApi } from './apiMapper';
+import { useNotifications } from '../../services/NotificationsContext';
+import { useAuth } from '../../services/authContext';
 
 const getInitials = (name: string) => {
   return name
@@ -76,15 +78,53 @@ export const DirectoryPage: React.FC = () => {
       })
       .catch(() => {});
   }, []);
+  const { addNotification } = useNotifications();
+  const { user } = useAuth();
+  const currentUser = user?.name || (user?.role === 'employee' ? 'Rahul Varma' : 'Ananya Rao');
+
   const [activeTab, setActiveTab] = useState<'People' | 'Org chart'>('People');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<DirectoryEmployee | null>(null);
   const [toastMsg, setToastMsg] = useState('');
+  const [isMsgModalOpen, setIsMsgModalOpen] = useState(false);
+  const [msgSubject, setMsgSubject] = useState('');
+  const [msgBody, setMsgBody] = useState('');
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 3000);
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEmployee || !msgBody.trim()) return;
+
+    const subject = msgSubject.trim() || 'Internal HR Communication';
+    const body = msgBody.trim();
+
+    try {
+      await createConnectPost({
+        post_type: 'Announcement',
+        body: `📨 Message to ${selectedEmployee.name}: ${subject}\n\n${body}`,
+        to_employee_name: selectedEmployee.name,
+        author_name: currentUser,
+      });
+    } catch {}
+
+    // Add to notification center
+    addNotification({
+      title: `Message for ${selectedEmployee.name}: ${subject}`,
+      message: `${body} (From ${currentUser})`,
+      category: 'announcement',
+      actionUrl: '/engagement/feed',
+    });
+
+    showToast(`Message successfully delivered to ${selectedEmployee.name}`);
+    setIsMsgModalOpen(false);
+    setMsgSubject('');
+    setMsgBody('');
+    setSelectedEmployee(null);
   };
 
   const departments = useMemo(() => {
@@ -277,12 +317,7 @@ export const DirectoryPage: React.FC = () => {
               <button
                 type="button"
                 className="btn primary"
-                onClick={() => {
-                  showToast(
-                    `Message sent to ${selectedEmployee.name.split(' ')[0]}`
-                  );
-                  setSelectedEmployee(null);
-                }}
+                onClick={() => setIsMsgModalOpen(true)}
               >
                 Send message
               </button>
@@ -290,6 +325,75 @@ export const DirectoryPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Message Composer Modal */}
+      {isMsgModalOpen && selectedEmployee && (
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 space-y-4 animate-scale-up text-left">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-slate-900 text-base font-['Sora']">
+                  Send Message to {selectedEmployee.name}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {selectedEmployee.role} · {selectedEmployee.dept}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsMsgModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSendMessage} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Subject / Topic
+                </label>
+                <input
+                  type="text"
+                  value={msgSubject}
+                  onChange={(e) => setMsgSubject(e.target.value)}
+                  placeholder="e.g. Project onboarding sync, 1-on-1 check-in"
+                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Message Content *
+                </label>
+                <textarea
+                  required
+                  rows={4}
+                  value={msgBody}
+                  onChange={(e) => setMsgBody(e.target.value)}
+                  placeholder="Write your note or announcement here..."
+                  className="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
+                />
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsMsgModalOpen(false)}
+                  className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-semibold bg-[#0BA6CC] hover:bg-[#0993b5] text-white rounded-xl shadow-sm transition-colors"
+                >
+                  Send Message
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       <div className={`toast ${toastMsg ? 'on' : ''}`}>

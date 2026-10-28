@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/authContext';
+import { useNotifications } from '../../services/NotificationsContext';
 
 interface HeaderProps {
   onOpenCommand?: () => void;
@@ -22,7 +23,10 @@ export const Header: React.FC<HeaderProps> = ({
   const { user, logout } = useAuth();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
 
   // Strictly determined by login user state
   const isEmployee =
@@ -38,14 +42,17 @@ export const Header: React.FC<HeaderProps> = ({
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setIsProfileOpen(false);
       }
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setIsNotifOpen(false);
+      }
     };
-    if (isProfileOpen) {
+    if (isProfileOpen || isNotifOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isProfileOpen]);
+  }, [isProfileOpen, isNotifOpen]);
 
   const displayName = activeRole === 'employee' ? 'Rahul Varma' : 'Ananya Rao';
   const displayEmail = activeRole === 'employee' ? 'rahul.varma@brightcone.ai' : 'ananya.rao@brightcone.ai';
@@ -229,22 +236,87 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </button>
 
-        {/* Notification Bell Button */}
-        <button
-          type="button"
-          className="w-10 h-10 rounded-xl border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-2)] flex items-center justify-center text-[var(--text)] transition-colors shadow-2xs shrink-0 relative cursor-pointer"
-          aria-label="Notifications"
-          title="Notifications"
-          onClick={() => navigate(homePath)}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-          {activeRole === 'hr_admin' && (
-            <span className="dot absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[var(--bad,#E53E3E)] ring-2 ring-[var(--surface)]" />
+        {/* Notification Bell Button & Dropdown */}
+        <div className="relative" ref={notifRef}>
+          <button
+            type="button"
+            className="w-10 h-10 rounded-xl border border-[var(--line)] bg-[var(--surface)] hover:bg-[var(--surface-2)] flex items-center justify-center text-[var(--text)] transition-colors shadow-2xs shrink-0 relative cursor-pointer"
+            aria-label="Notifications"
+            title="Notifications"
+            onClick={() => setIsNotifOpen((prev) => !prev)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            {unreadCount > 0 && (
+              <span className="dot absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[var(--bad,#E53E3E)] ring-2 ring-[var(--surface)] animate-pulse" />
+            )}
+          </button>
+
+          {isNotifOpen && (
+            <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-[var(--surface)] border border-[var(--line)] shadow-2xl p-4 z-50 animate-scale-up text-left">
+              <div className="flex items-center justify-between pb-3 border-b border-[var(--line)]">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-['Sora'] font-bold text-sm text-[var(--text)]">Notifications</h4>
+                  {unreadCount > 0 && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
+                      {unreadCount} new
+                    </span>
+                  )}
+                </div>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 cursor-pointer"
+                  >
+                    Mark all read
+                  </button>
+                )}
+              </div>
+
+              <div className="max-h-80 overflow-y-auto divide-y divide-[var(--line)] my-1">
+                {notifications.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-[var(--muted)]">
+                    No notifications right now
+                  </div>
+                ) : (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      onClick={() => {
+                        markAsRead(n.id);
+                        if (n.actionUrl) {
+                          navigate(n.actionUrl);
+                          setIsNotifOpen(false);
+                        }
+                      }}
+                      className={`py-2.5 px-2 rounded-lg cursor-pointer transition-colors ${
+                        !n.read ? 'bg-blue-50/50 dark:bg-blue-950/20' : 'hover:bg-[var(--surface-2)]'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                              {n.category}
+                            </span>
+                            <span className="text-xs font-semibold text-[var(--text)]">{n.title}</span>
+                          </div>
+                          <p className="text-[11px] text-[var(--muted)] mt-1 line-clamp-2">{n.message}</p>
+                          <span className="text-[10px] text-slate-400 mt-1 block font-mono">{n.createdAt}</span>
+                        </div>
+                        {!n.read && (
+                          <span className="w-2 h-2 rounded-full bg-blue-600 mt-1 shrink-0" />
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           )}
-        </button>
+        </div>
 
         {/* User Profile Pill */}
         <div className="relative" ref={menuRef}>

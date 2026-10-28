@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ic } from '../../components/icons';
 import { CelebrationItem } from './types';
-import { fetchConnectCelebrations } from '../../services/signConnectApi';
+import { fetchConnectCelebrations, sendCelebrationWish } from '../../services/signConnectApi';
 import { mapCelebrationFromApi } from './apiMapper';
+import { useNotifications } from '../../services/NotificationsContext';
+import { useAuth } from '../../services/authContext';
 
 const getInitials = (name: string) => {
   return name
@@ -30,6 +32,10 @@ export const CelebrationsPage: React.FC = () => {
       })
       .catch(() => {});
   }, []);
+  const { addNotification } = useNotifications();
+  const { user } = useAuth();
+  const currentUser = user?.name || (user?.role === 'employee' ? 'Rahul Varma' : 'Ananya Rao');
+
   const [filterType, setFilterType] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [toastMsg, setToastMsg] = useState('');
@@ -39,8 +45,41 @@ export const CelebrationsPage: React.FC = () => {
     setTimeout(() => setToastMsg(''), 3000);
   };
 
-  const handleWish = (name: string) => {
-    showToast(`Wish sent to ${name}!`);
+  const handleWish = async (item: CelebrationItem) => {
+    const msg = `Warmest wishes on your ${item.occasion}! May you have a joyous celebration and wonderful year ahead!`;
+    try {
+      await sendCelebrationWish({
+        recipient_name: item.name,
+        sender_name: currentUser,
+        occasion: item.occasion,
+        message: msg,
+      });
+    } catch {}
+
+    // Add in-app notification
+    addNotification({
+      title: `🎉 ${item.occasion} Wish sent to ${item.name}`,
+      message: `${currentUser} wished ${item.name}: "${msg}"`,
+      category: 'announcement',
+      actionUrl: '/engagement/feed',
+    });
+
+    // Store in local storage for instant visibility in dashboards
+    try {
+      const existingRaw = localStorage.getItem('brightcone_wishes');
+      const existing = existingRaw ? JSON.parse(existingRaw) : [];
+      const newWish = {
+        id: `wish-${Date.now()}`,
+        recipient: item.name,
+        sender: currentUser,
+        occasion: item.occasion,
+        message: msg,
+        timestamp: 'Just now',
+      };
+      localStorage.setItem('brightcone_wishes', JSON.stringify([newWish, ...existing]));
+    } catch {}
+
+    showToast(`Celebration wish successfully delivered to ${item.name}!`);
   };
 
   const filtered = useMemo(() => {
@@ -214,7 +253,7 @@ export const CelebrationsPage: React.FC = () => {
                       <button
                         type="button"
                         className="btn sm"
-                        onClick={() => handleWish(item.name)}
+                        onClick={() => handleWish(item)}
                       >
                         Wish
                       </button>

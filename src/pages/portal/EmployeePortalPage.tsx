@@ -82,7 +82,70 @@ export const EmployeePortalPage: React.FC = () => {
             />
           </div>
 
-          {/* Quick Overview Card */}
+          {/* Celebrations & Wishes Card */}
+          <div className="rounded-2xl border border-slate-200 bg-linear-to-r from-purple-50/50 to-pink-50/50 bg-white p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🎉</span>
+                <h3 className="font-['Sora'] text-base font-semibold text-slate-900">
+                  Celebrations & Wishes Received
+                </h3>
+              </div>
+              <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-purple-100 text-purple-700">
+                Community Connect
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {(() => {
+                let wishes: any[] = [];
+                try {
+                  const raw = localStorage.getItem('brightcone_wishes');
+                  if (raw) wishes = JSON.parse(raw);
+                } catch {}
+                if (wishes.length === 0) {
+                  wishes = [
+                    {
+                      id: 'w-1',
+                      sender: 'Ananya Rao',
+                      recipient: 'Karthik Reddy',
+                      occasion: 'Work anniversary',
+                      message: 'Happy 3rd work anniversary, Karthik! Thank you for pioneering our generative AI engine!',
+                      timestamp: 'Today',
+                    },
+                    {
+                      id: 'w-2',
+                      sender: 'Rahul Varma',
+                      recipient: 'Karthik Reddy',
+                      occasion: 'Birthday',
+                      message: 'Wishing you a very Happy Birthday! Have an amazing year ahead!',
+                      timestamp: 'Yesterday',
+                    },
+                  ];
+                }
+                return wishes.map((w: any) => (
+                  <div
+                    key={w.id}
+                    className="p-3.5 rounded-xl border border-purple-100 bg-white shadow-2xs flex items-start gap-3"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-linear-to-tr from-purple-500 to-indigo-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
+                      {w.sender ? w.sender.slice(0, 2).toUpperCase() : 'BC'}
+                    </div>
+                    <div className="flex-1 text-xs">
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-slate-900">
+                          {w.sender} <span className="font-normal text-slate-500">wished you for</span>{' '}
+                          <span className="text-purple-700 font-bold">{w.occasion}</span>
+                        </p>
+                        <span className="text-[10px] text-slate-400 font-mono">{w.timestamp || 'Recent'}</span>
+                      </div>
+                      <p className="text-slate-600 mt-1 italic">"{w.message}"</p>
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
             <h3 className="font-['Sora'] text-base font-semibold text-slate-900">
               Today's Shift & Activities

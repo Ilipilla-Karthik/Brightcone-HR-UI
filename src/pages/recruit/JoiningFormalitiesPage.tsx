@@ -12,11 +12,22 @@ interface JoiningRecord {
   totalDocs: number;
   signedOffer: boolean;
   status: 'Ready to Join' | 'Pending Verification' | 'On Track';
+  docChecklist: Record<string, boolean>;
 }
+
+const DEFAULT_DOC_KEYS = [
+  'ID & Address Proof (Aadhaar/Passport)',
+  'PAN Card & Tax Declaration',
+  'Relieving Letter & Experience Cert',
+  'Highest Degree Educational Certificate',
+  'Cancelled Cheque / Bank Account Details',
+  'Signed Employment Offer Letter',
+];
 
 export const JoiningFormalitiesPage: React.FC = () => {
   const [joiners, setJoiners] = useState<JoiningRecord[]>([]);
   const [toastMsg, setToastMsg] = useState('');
+  const [selectedJoiner, setSelectedJoiner] = useState<JoiningRecord | null>(null);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -28,17 +39,43 @@ export const JoiningFormalitiesPage: React.FC = () => {
       const offered = cands.filter((c) => c.stage?.toLowerCase() === 'offer' || c.stage?.toLowerCase() === 'hired');
       if (offered.length > 0) {
         setJoiners(
-          offered.map((c, i) => ({
-            id: c.candidate_code || `JOIN-${i + 101}`,
-            candidateName: c.full_name,
-            role: c.job_title || 'Position Offered',
-            joiningDate: 'Upcoming Cohort',
-            bgvStatus: c.stage?.toLowerCase() === 'hired' ? 'Verified' : 'In Progress',
-            docsSubmitted: c.stage?.toLowerCase() === 'hired' ? 6 : 4,
-            totalDocs: 6,
-            signedOffer: true,
-            status: c.stage?.toLowerCase() === 'hired' ? 'Ready to Join' : 'On Track',
-          }))
+          offered.map((c, i) => {
+            const id = c.candidate_code || `JOIN-${i + 101}`;
+            const isHired = c.stage?.toLowerCase() === 'hired';
+            const savedRaw = localStorage.getItem(`joining_formalities_${id}`);
+            let savedState: any = null;
+            if (savedRaw) {
+              try {
+                savedState = JSON.parse(savedRaw);
+              } catch {}
+            }
+
+            const initialChecklist: Record<string, boolean> = savedState?.docChecklist || {
+              'ID & Address Proof (Aadhaar/Passport)': true,
+              'PAN Card & Tax Declaration': true,
+              'Relieving Letter & Experience Cert': isHired,
+              'Highest Degree Educational Certificate': true,
+              'Cancelled Cheque / Bank Account Details': isHired,
+              'Signed Employment Offer Letter': true,
+            };
+
+            const submittedCount = Object.values(initialChecklist).filter(Boolean).length;
+            const bgv = savedState?.bgvStatus || (isHired ? 'Verified' : 'In Progress');
+            const readiness = bgv === 'Verified' && submittedCount >= 6 ? 'Ready to Join' : (bgv === 'Verified' ? 'Ready to Join' : 'On Track');
+
+            return {
+              id,
+              candidateName: c.full_name,
+              role: c.job_title || 'Position Offered',
+              joiningDate: 'Upcoming Cohort',
+              bgvStatus: bgv,
+              docsSubmitted: submittedCount,
+              totalDocs: 6,
+              signedOffer: true,
+              status: readiness,
+              docChecklist: initialChecklist,
+            };
+          })
         );
       } else {
         setJoiners([]);
@@ -50,8 +87,49 @@ export const JoiningFormalitiesPage: React.FC = () => {
     try {
       await recruitApi.updateCandidate(id, { stage: 'Hired' });
     } catch {}
-    setJoiners(joiners.map((j) => (j.id === id ? { ...j, bgvStatus: 'Verified', status: 'Ready to Join' } : j)));
-    showToast('Background verification approved');
+    setJoiners((prev) =>
+      prev.map((j) => {
+        if (j.id === id) {
+          const updated: JoiningRecord = { ...j, bgvStatus: 'Verified', status: 'Ready to Join' };
+          try {
+            localStorage.setItem(`joining_formalities_${id}`, JSON.stringify(updated));
+          } catch {}
+          return updated;
+        }
+        return j;
+      })
+    );
+    showToast('Background verification approved & saved');
+  };
+
+  const toggleDocument = (joinerId: string, docName: string) => {
+    setJoiners((prev) =>
+      prev.map((j) => {
+        if (j.id === joinerId) {
+          const updatedChecklist = {
+            ...j.docChecklist,
+            [docName]: !j.docChecklist[docName],
+          };
+          const count = Object.values(updatedChecklist).filter(Boolean).length;
+          const status = j.bgvStatus === 'Verified' && count >= 6 ? 'Ready to Join' : (j.bgvStatus === 'Verified' ? 'Ready to Join' : 'On Track');
+          const updated: JoiningRecord = {
+            ...j,
+            docChecklist: updatedChecklist,
+            docsSubmitted: count,
+            status,
+          };
+          try {
+            localStorage.setItem(`joining_formalities_${joinerId}`, JSON.stringify(updated));
+          } catch {}
+          if (selectedJoiner && selectedJoiner.id === joinerId) {
+            setSelectedJoiner(updated);
+          }
+          return updated;
+        }
+        return j;
+      })
+    );
+    showToast('Document verification updated');
   };
 
   return (
@@ -76,21 +154,21 @@ export const JoiningFormalitiesPage: React.FC = () => {
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ready for Day 1</p>
           <p className="text-2xl font-bold text-emerald-600 mt-1 font-['Sora']">
-            {joiners.filter(j => j.status === 'Ready to Join').length} Candidates
+            {joiners.filter((j) => j.status === 'Ready to Join').length} Candidates
           </p>
           <p className="text-[11px] text-slate-500 mt-0.5">100% verified & cleared</p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">BGV in Progress</p>
           <p className="text-2xl font-bold text-blue-600 mt-1 font-['Sora']">
-            {joiners.filter(j => j.bgvStatus === 'In Progress').length} Candidates
+            {joiners.filter((j) => j.bgvStatus === 'In Progress').length} Candidates
           </p>
           <p className="text-[11px] text-slate-500 mt-0.5">Verification underway</p>
         </div>
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pending Documents</p>
           <p className="text-2xl font-bold text-amber-600 mt-1 font-['Sora']">
-            {joiners.filter(j => j.docsSubmitted < j.totalDocs).length} Candidates
+            {joiners.filter((j) => j.docsSubmitted < j.totalDocs).length} Candidates
           </p>
           <p className="text-[11px] text-slate-500 mt-0.5">Submissions awaited</p>
         </div>
@@ -130,7 +208,14 @@ export const JoiningFormalitiesPage: React.FC = () => {
                     </td>
                     <td className="py-3 px-4 font-mono font-medium text-slate-700 whitespace-nowrap">{j.joiningDate}</td>
                     <td className="py-3 px-4">
-                      <span className="font-bold text-slate-800 font-mono">{j.docsSubmitted} / {j.totalDocs}</span>
+                      <button
+                        onClick={() => setSelectedJoiner(j)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold font-mono transition-colors"
+                        title="Click to review and tick submitted documents"
+                      >
+                        <span>{j.docsSubmitted} / {j.totalDocs}</span>
+                        <span className="text-[10px] text-blue-600 underline">Verify</span>
+                      </button>
                     </td>
                     <td className="py-3 px-4">
                       {j.signedOffer ? (
@@ -158,21 +243,29 @@ export const JoiningFormalitiesPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right whitespace-nowrap">
-                      {j.bgvStatus !== 'Verified' ? (
+                      <div className="flex items-center justify-end gap-1.5">
                         <button
-                          onClick={() => approveBGV(j.id)}
-                          className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
+                          onClick={() => setSelectedJoiner(j)}
+                          className="px-2 py-1 text-xs text-slate-600 hover:text-slate-900 border border-slate-200 hover:bg-slate-100 rounded transition-colors"
                         >
-                          Approve BGV
+                          Checklist
                         </button>
-                      ) : (
-                        <button
-                          onClick={() => showToast(`Sent Day-1 Welcome Instructions to ${j.candidateName}`)}
-                          className="px-2.5 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
-                        >
-                          Send Day 1 Kit
-                        </button>
-                      )}
+                        {j.bgvStatus !== 'Verified' ? (
+                          <button
+                            onClick={() => approveBGV(j.id)}
+                            className="px-2.5 py-1 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
+                          >
+                            Approve BGV
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => showToast(`Sent Day-1 Welcome Instructions to ${j.candidateName}`)}
+                            className="px-2.5 py-1 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded transition-colors"
+                          >
+                            Send Day 1 Kit
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -181,6 +274,69 @@ export const JoiningFormalitiesPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Document Verification Modal */}
+      {selectedJoiner && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full p-6 space-y-4 animate-scale-up">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-slate-900 text-base font-['Sora']">
+                  Joining Formalities Checklist
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {selectedJoiner.candidateName} · {selectedJoiner.role}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedJoiner(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+              {DEFAULT_DOC_KEYS.map((docName) => {
+                const isChecked = !!selectedJoiner.docChecklist[docName];
+                return (
+                  <label
+                    key={docName}
+                    className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => toggleDocument(selectedJoiner.id, docName)}
+                      className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer"
+                    />
+                    <div className="flex-1 text-xs">
+                      <p className={`font-medium ${isChecked ? 'text-slate-800 line-through text-slate-400' : 'text-slate-900'}`}>
+                        {docName}
+                      </p>
+                      <span className={`text-[10px] font-semibold ${isChecked ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {isChecked ? '✓ Verified & Stored' : '● Awaiting Document Submission'}
+                      </span>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+              <span className="text-xs text-slate-500">
+                Verified: <strong className="text-slate-900">{selectedJoiner.docsSubmitted} / {selectedJoiner.totalDocs}</strong>
+              </span>
+              <button
+                onClick={() => setSelectedJoiner(null)}
+                className="px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toastMsg && (
         <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-xs font-medium shadow-xl flex items-center gap-2 animate-fade-in">

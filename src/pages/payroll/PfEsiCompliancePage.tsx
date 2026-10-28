@@ -1,17 +1,44 @@
-﻿import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Download, Plus, Search, Shield, Clock, Edit2, Trash2 } from 'lucide-react'
 import { formatINR, exportToCSV } from './payroll-data'
 import type { PfEsiFiling } from './pf-esi-types'
 import { AddPfEsiFilingModal, RecordChallanModal } from './PfEsiComplianceModals'
 
+const STORAGE_KEY = 'brightcone_pf_esi_compliance';
+
 export const PfEsiCompliancePage: React.FC = () => {
-  const [records, setRecords] = useState<PfEsiFiling[]>([])
+  const [records, setRecords] = useState<PfEsiFiling[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  })
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [showArchived, setShowArchived] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingRecord, setEditingRecord] = useState<PfEsiFiling | null>(null)
   const [challanModalRecord, setChallanModalRecord] = useState<PfEsiFiling | null>(null)
+
+  const loadPfEsi = async () => {
+    try {
+      const res = await fetch('/api/v1/payroll/pf-esi');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setRecords(data);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          return;
+        }
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    loadPfEsi();
+  }, []);
 
   const activeRecords = records.filter((r) => (showArchived ? r.isArchived : !r.isArchived))
   const filtered = activeRecords.filter((r) => {
@@ -29,30 +56,61 @@ export const PfEsiCompliancePage: React.FC = () => {
   const overdueCount = records.filter((r) => !r.isArchived && r.status === 'Overdue').length
   const archivedCount = records.filter((r) => r.isArchived).length
 
-  const handleSave = (data: Omit<PfEsiFiling, 'id' | 'status'>) => {
+  const handleSave = async (data: Omit<PfEsiFiling, 'id' | 'status'>) => {
     if (editingRecord) {
-      setRecords((prev) =>
-        prev.map((r) => (r.id === editingRecord.id ? { ...r, ...data } : r))
-      )
+      const updated = { ...editingRecord, ...data };
+      setRecords((prev) => {
+        const next = prev.map((r) => (r.id === editingRecord.id ? updated : r));
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+        return next;
+      });
+      try {
+        await fetch(`/api/v1/payroll/pf-esi/${editingRecord.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated),
+        });
+      } catch {}
     } else {
       const newRec: PfEsiFiling = {
         ...data,
         id: `${data.scheme}-${Date.now().toString().slice(-4)}`,
         status: 'Pending',
       }
-      setRecords((prev) => [newRec, ...prev])
+      setRecords((prev) => {
+        const next = [newRec, ...prev];
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+        return next;
+      });
+      try {
+        await fetch('/api/v1/payroll/pf-esi', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newRec),
+        });
+      } catch {}
     }
     setModalOpen(false)
     setEditingRecord(null)
   }
 
-  const handleMarkPaid = (id: string, challan: string) => {
-    setRecords((prev) =>
-      prev.map((r) =>
-        r.id === id ? { ...r, status: 'Paid', paidOn: new Date().toISOString().slice(0, 10), challanNo: challan } : r
-      )
-    )
-    setChallanModalRecord(null)
+  const handleMarkPaid = async (id: string, challan: string) => {
+    const paidOn = new Date().toISOString().slice(0, 10);
+    setRecords((prev) => {
+      const next = prev.map((r) =>
+        r.id === id ? { ...r, status: 'Paid' as const, paidOn, challanNo: challan } : r
+      );
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+    setChallanModalRecord(null);
+    try {
+      await fetch(`/api/v1/payroll/pf-esi/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Paid', paidOn, challanNo: challan }),
+      });
+    } catch {}
   }
 
   const handleExport = () => {

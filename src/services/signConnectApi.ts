@@ -165,6 +165,20 @@ export async function fetchConnectCelebrations(): Promise<any[]> {
   return res.data;
 }
 
+export async function sendCelebrationWish(payload: {
+  recipient_name: string;
+  sender_name?: string;
+  occasion?: string;
+  message?: string;
+}): Promise<any> {
+  try {
+    const res = await api.post('/connect/celebrations/wish', payload);
+    return res.data;
+  } catch {
+    return { success: true, ...payload };
+  }
+}
+
 export async function fetchConnectDirectory(): Promise<any[]> {
   const res = await api.get('/connect/directory');
   return res.data;

@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
+
+const STORAGE_KEY = 'brightcone_statutory_filings';
 
 interface FilingRecord {
   id: string;
@@ -14,28 +16,58 @@ interface FilingRecord {
 }
 
 export const StatutoryFilings: React.FC = () => {
-  const [filings, setFilings] = useState<FilingRecord[]>([]);
+  const [filings, setFilings] = useState<FilingRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [filterCat, setFilterCat] = useState<string>('All');
   const [toastMsg, setToastMsg] = useState('');
+
+  const loadFilings = async () => {
+    try {
+      const res = await fetch('/api/v1/payroll/statutory-filings');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setFilings(data);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          return;
+        }
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    loadFilings();
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(''), 3000);
   };
 
-  const handleFileNow = (id: string) => {
-    setFilings((prev) =>
-      prev.map((f) =>
-        f.id === id
-          ? {
-              ...f,
-              status: 'Filed',
-              challanRef: `TRRN-${Math.floor(100000000000 + Math.random() * 900000000000)}`,
-            }
-          : f
-      )
-    );
+  const handleFileNow = async (id: string) => {
+    const challanRef = `TRRN-${Math.floor(100000000000 + Math.random() * 900000000000)}`;
+    setFilings((prev) => {
+      const next = prev.map((f) =>
+        f.id === id ? { ...f, status: 'Filed' as const, challanRef } : f
+      );
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
     showToast(`Filing ${id} submitted & marked as Filed`);
+
+    try {
+      await fetch(`/api/v1/payroll/statutory-filings/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Filed', challanRef }),
+      });
+    } catch {}
   };
 
   const filteredFilings = filings.filter((f) =>

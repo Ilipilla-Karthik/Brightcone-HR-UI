@@ -93,9 +93,14 @@ export const DailyAttendancePage: React.FC<DailyAttendancePageProps> = ({
       });
 
       if (res.data) {
-        setRecords(res.data.records);
-        setSummary(res.data.summary);
-        setArchivedCount(res.data.archived_count);
+        setRecords(res.data.records || []);
+        setSummary(res.data.summary || {
+          total_records: res.data.records?.length || 0,
+          recorded_count: res.data.records?.length || 0,
+          pending_count: 0,
+          regularised_count: 0,
+        });
+        setArchivedCount(res.data.archived_count || 0);
       } else {
         setPageError(res.error || 'Failed to load attendance records');
       }
