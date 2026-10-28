@@ -36,9 +36,16 @@ export const HRPoliciesPage: React.FC = () => {
   const [formStatus, setFormStatus] = useState<PolicyRecord['status']>('Draft');
 
   useEffect(() => {
+    const cached = localStorage.getItem('brightcone_hr_policies');
+    if (cached) {
+      try { setPolicies(JSON.parse(cached)); } catch {}
+    }
     policiesApi.getPolicies().then((data) => {
-      setPolicies(data);
-    }).catch(() => setPolicies([]));
+      if (data && data.length > 0) {
+        setPolicies(data);
+        localStorage.setItem('brightcone_hr_policies', JSON.stringify(data));
+      }
+    }).catch(() => {});
   }, []);
 
   const showToast = (msg: string) => {
@@ -86,21 +93,41 @@ export const HRPoliciesPage: React.FC = () => {
     setIsFormOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim()) {
       showToast('Please enter a policy name.');
       return;
     }
+    const payload = {
+      name: formName,
+      category: formCategory,
+      version: formVer,
+      effectiveDate: formEff || todayStr,
+      nextReviewDate: formReview || '2027-01-01',
+      owner: formOwner,
+      file: `${formName.replace(/\s+/g, '_')}_v${formVer}.pdf`,
+      ackRequired: formAckReq,
+      status: formStatus,
+    };
     if (editingRecord) {
-      setPolicies((prev) =>
-        prev.map((p) => (p.id === editingRecord.id ? { ...p, name: formName, category: formCategory, version: formVer, effectiveDate: formEff, nextReviewDate: formReview, owner: formOwner, ackRequired: formAckReq, status: formStatus } : p))
-      );
+      try { await policiesApi.updatePolicy(editingRecord.id, payload); } catch {}
+      setPolicies((prev) => {
+        const updated = prev.map((p) => (p.id === editingRecord.id ? { ...p, ...payload } : p));
+        localStorage.setItem('brightcone_hr_policies', JSON.stringify(updated));
+        return updated;
+      });
       showToast(`Updated policy ${formName}`);
     } else {
-      const newId = `POL-${String(policies.length + 1).padStart(2, '0')}`;
-      const newPolicy: PolicyRecord = { id: newId, name: formName, category: formCategory, version: formVer, effectiveDate: formEff, nextReviewDate: formReview, owner: formOwner, file: `${formName.replace(/\s+/g, '_')}_v${formVer}.pdf`, ackRequired: formAckReq, status: formStatus };
-      setPolicies((prev) => [newPolicy, ...prev]);
+      let created: PolicyRecord | null = null;
+      try { created = await policiesApi.createPolicy(payload); } catch {}
+      const fallbackId = `POL-${String(policies.length + 1).padStart(2, '0')}`;
+      const newPolicy: PolicyRecord = created || { id: fallbackId, ...payload };
+      setPolicies((prev) => {
+        const updated = [newPolicy, ...prev];
+        localStorage.setItem('brightcone_hr_policies', JSON.stringify(updated));
+        return updated;
+      });
       showToast(`Added policy ${newPolicy.name}`);
     }
     setIsFormOpen(false);

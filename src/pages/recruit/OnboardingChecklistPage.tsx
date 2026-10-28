@@ -25,20 +25,29 @@ export const OnboardingChecklistPage: React.FC = () => {
     recruitApi.getCandidates().then((cands) => {
       const hired = cands.filter((c) => c.stage?.toLowerCase() === 'offer' || c.stage?.toLowerCase() === 'hired');
       if (hired.length > 0) {
-        const mapped = hired.map((c, i) => ({
-          id: c.candidate_code || `ONB-${i + 1}`,
-          name: c.full_name,
-          role: c.job_title || 'New Team Member',
-          joiningDate: 'Upcoming',
-          buddy: 'Naresh Vemparala',
-          tasks: [
-            { title: 'Google Workspace & Slack account creation', completed: true },
-            { title: 'Laptop workstation provisioned & ready', completed: true },
-            { title: 'POSH & Security training enrolled', completed: false },
-            { title: 'Manager 1-on-1 scheduled for Day 1', completed: false },
-            { title: 'Buddy introduction call setup', completed: false },
-          ],
-        }));
+        const defaultTasks = [
+          { title: 'Google Workspace & Slack account creation', completed: true },
+          { title: 'Laptop workstation provisioned & ready', completed: true },
+          { title: 'POSH & Security training enrolled', completed: false },
+          { title: 'Manager 1-on-1 scheduled for Day 1', completed: false },
+          { title: 'Buddy introduction call setup', completed: false },
+        ];
+        const mapped = hired.map((c, i) => {
+          const cid = c.candidate_code || `ONB-${i + 1}`;
+          let savedTasks: { title: string; completed: boolean }[] | null = null;
+          try {
+            const raw = localStorage.getItem(`brightcone_onboarding_checklist_${cid}`);
+            if (raw) savedTasks = JSON.parse(raw);
+          } catch {}
+          return {
+            id: cid,
+            name: c.full_name,
+            role: c.job_title || 'New Team Member',
+            joiningDate: 'Upcoming',
+            buddy: 'Naresh Vemparala',
+            tasks: savedTasks || defaultTasks,
+          };
+        });
         setCandidates(mapped);
         setSelectedCan(mapped[0]);
       } else {
@@ -52,11 +61,13 @@ export const OnboardingChecklistPage: React.FC = () => {
   }, []);
 
   const toggleTask = (candidateId: string, taskIdx: number) => {
+    let newTasks: { title: string; completed: boolean }[] = [];
     setCandidates((prev) =>
       prev.map((c) => {
         if (c.id === candidateId) {
           const updated = [...c.tasks];
           updated[taskIdx] = { ...updated[taskIdx], completed: !updated[taskIdx].completed };
+          newTasks = updated;
           return { ...c, tasks: updated };
         }
         return c;
@@ -70,6 +81,11 @@ export const OnboardingChecklistPage: React.FC = () => {
       }
       return prev;
     });
+    if (newTasks.length > 0) {
+      try {
+        localStorage.setItem(`brightcone_onboarding_checklist_${candidateId}`, JSON.stringify(newTasks));
+      } catch {}
+    }
     showToast('Checklist task updated');
   };
 

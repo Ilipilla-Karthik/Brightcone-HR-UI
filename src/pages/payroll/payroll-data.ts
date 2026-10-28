@@ -1,4 +1,4 @@
-﻿// Shared types, employee list, mock data and utility helpers for Payroll & Compliance views
+// Shared types, employee list, mock data and utility helpers for Payroll & Compliance views
 
 export interface EmployeeRef {
   id: string
@@ -18,6 +18,26 @@ export const DEMO_EMPLOYEES: EmployeeRef[] = [
   { id: 'BC-1007', name: 'Sneha Iyer', email: 'sneha.iyer@brightcone.ai', dept: 'Design', role: 'Product Designer' },
   { id: 'BC-1008', name: 'Arjun Nair', email: 'arjun.nair@brightcone.ai', dept: 'Sales', role: 'Account Executive' },
 ]
+
+export async function getPayrollEmployees(): Promise<EmployeeRef[]> {
+  try {
+    const res = await fetch('/api/v1/employees');
+    if (res.ok) {
+      const data = await res.json();
+      const list = Array.isArray(data) ? data : data.value || [];
+      if (list.length > 0) {
+        return list.map((e: any) => ({
+          id: e.employee_code || (e.id ? `BC-${e.id}` : 'BC-1000'),
+          name: e.full_name || e.name || 'Staff Member',
+          email: e.work_email || `${(e.full_name || 'employee').toLowerCase().replace(/\s+/g, '.')}@brightcone.ai`,
+          dept: e.department || e.dept || 'Engineering',
+          role: e.job_title || e.role || 'Staff',
+        }));
+      }
+    }
+  } catch {}
+  return DEMO_EMPLOYEES;
+}
 
 export function formatINR(val: number | string | undefined | null): string {
   if (val === undefined || val === null || val === '') return '₹0'

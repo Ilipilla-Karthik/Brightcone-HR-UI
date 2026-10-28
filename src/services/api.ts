@@ -102,7 +102,19 @@ export async function getDepartments(): Promise<DepartmentItem[]> {
 
 export async function getEmployees(): Promise<Employee[]> {
   const res = await api.get('/employees');
-  return res.data;
+  if (Array.isArray(res.data)) {
+    return res.data.map((e: any) => ({
+      id: e.employee_code || (e.id ? String(e.id) : ''),
+      name: e.full_name || e.name || 'Employee',
+      role: e.job_title || e.role || '',
+      dept: e.department || e.dept || '',
+      loc: e.location || e.loc || '',
+      mgr: e.manager_name || e.mgr || null,
+      status: e.status || 'Active',
+      ...e,
+    }));
+  }
+  return [];
 }
 
 // Standard Authentication API

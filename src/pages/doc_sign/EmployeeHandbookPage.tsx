@@ -23,9 +23,11 @@ export const EmployeeHandbookPage: React.FC = () => {
   const [formStatus, setFormStatus] = useState<HandbookRecord['status']>('Draft');
 
   useEffect(() => {
-    policiesApi.getHandbooks().then((data) => {
-      setRecords(data);
-    }).catch(() => setRecords([]));
+    const cached = localStorage.getItem('brightcone_handbook_records');
+    if (cached) { try { setRecords(JSON.parse(cached)); } catch {} }
+    policiesApi.getHandbooks().then((d) => {
+      if (d?.length) { setRecords(d); localStorage.setItem('brightcone_handbook_records', JSON.stringify(d)); }
+    }).catch(() => {});
   }, []);
 
   const showToast = (msg: string) => {
@@ -77,57 +79,47 @@ export const EmployeeHandbookPage: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    setRecords((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: 'Archived' } : r))
-    );
+    setRecords((prev) => {
+      const up = prev.map((r) => (r.id === id ? { ...r, status: 'Archived' as const } : r));
+      localStorage.setItem('brightcone_handbook_records', JSON.stringify(up));
+      return up;
+    });
     showToast('Handbook version moved to archive.');
   };
 
   const handleRestore = (id: string) => {
-    setRecords((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: 'Published' } : r))
-    );
+    setRecords((prev) => {
+      const up = prev.map((r) => (r.id === id ? { ...r, status: 'Published' as const } : r));
+      localStorage.setItem('brightcone_handbook_records', JSON.stringify(up));
+      return up;
+    });
     showToast('Handbook version restored.');
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = {
+      ver: formVer, version: formVer, eff: formEff, effectiveDate: formEff,
+      title: formTitle, owner: formOwner, file: formFile || `Handbook_v${formVer}.pdf`,
+      changes: formChanges, changesSummary: formChanges, status: formStatus,
+    };
     if (editingRecord) {
-      setRecords((prev) =>
-        prev.map((r) =>
-          r.id === editingRecord.id
-            ? {
-                ...r,
-                ver: formVer,
-                version: formVer,
-                eff: formEff,
-                effectiveDate: formEff,
-                title: formTitle,
-                owner: formOwner,
-                file: formFile,
-                changes: formChanges,
-                changesSummary: formChanges,
-                status: formStatus,
-              }
-            : r
-        )
-      );
+      try { await policiesApi.updateHandbook(editingRecord.id, payload); } catch {}
+      setRecords((prev) => {
+        const up = prev.map((r) => (r.id === editingRecord.id ? { ...r, ...payload } : r));
+        localStorage.setItem('brightcone_handbook_records', JSON.stringify(up));
+        return up;
+      });
       showToast(`Updated handbook version v${formVer}`);
     } else {
-      const newRec: HandbookRecord = {
-        id: `HB-00${records.length + 1}`,
-        ver: formVer,
-        version: formVer,
-        eff: formEff,
-        effectiveDate: formEff,
-        title: formTitle,
-        owner: formOwner,
-        file: formFile,
-        changes: formChanges,
-        changesSummary: formChanges,
-        status: formStatus,
-      };
-      setRecords([newRec, ...records]);
+      let created: HandbookRecord | null = null;
+      try { created = await policiesApi.createHandbook(payload); } catch {}
+      const newRec: HandbookRecord = created || { id: `HB-${String(records.length + 1).padStart(2, '0')}`, ...payload };
+      setRecords((prev) => {
+        const up = [newRec, ...prev];
+        localStorage.setItem('brightcone_handbook_records', JSON.stringify(up));
+        return up;
+      });
       showToast(`Created handbook version v${formVer}`);
     }
     setIsFormOpen(false);

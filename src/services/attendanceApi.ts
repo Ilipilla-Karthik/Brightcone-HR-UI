@@ -229,6 +229,9 @@ export const attendanceApi = {
         };
       });
 
+      let cachedRoster: any[] = [];
+      try { cachedRoster = JSON.parse(localStorage.getItem('brightcone_roster_custom') || '[]'); } catch {}
+
       const rosterRows = employees.map((emp) => {
         const empRoster = list.filter((r: any) =>
           (r.employeeName || r.employee_name || '').toLowerCase() === emp.name.toLowerCase() ||
@@ -238,44 +241,33 @@ export const attendanceApi = {
         return {
           ...emp,
           days: days.map((day, dIdx) => {
+            const override = cachedRoster.find((c: any) => c.employee_id === emp.id && c.date === day.date);
+            if (override) {
+              const sc = override.shift_code || 'GEN';
+              const sname = sc === 'EVE' ? 'Evening Shift' : sc === 'MOR' ? 'Morning Shift' : sc === 'NGT' ? 'Night Shift' : 'General Shift';
+              return { date: day.date, day_name: day.day_name, day_number: day.day_number, shift_id: override.shift_id, shift_code: sc, shift_name: override.is_off ? null : sname, is_off: override.is_off, notes: null };
+            }
             const assigned = empRoster.find((r: any) => r.startDate === day.date || r.start_date === day.date);
             const isWeekend = dIdx >= 5;
             const shiftCode = assigned ? (assigned.shiftCode || assigned.shift_code) : (isWeekend ? null : (emp.name === 'Karthik Reddy' && dIdx === 1 ? 'MOR' : 'GEN'));
+            const shiftName = shiftCode === 'EVE' ? 'Evening Shift' : shiftCode === 'MOR' ? 'Morning Shift' : shiftCode === 'NGT' ? 'Night Shift' : (shiftCode ? 'General Shift' : null);
             return {
-              date: day.date,
-              day_name: day.day_name,
-              day_number: day.day_number,
-              shift_id: shiftCode ? (shiftCode === 'MOR' ? 2 : 1) : null,
-              shift_code: shiftCode,
-              shift_name: shiftCode === 'MOR' ? 'Morning Shift' : (shiftCode ? 'General Shift' : null),
-              is_off: isWeekend,
-              notes: null,
+              date: day.date, day_name: day.day_name, day_number: day.day_number,
+              shift_id: shiftCode ? (shiftCode === 'EVE' ? 3 : shiftCode === 'MOR' ? 2 : shiftCode === 'NGT' ? 4 : 1) : null,
+              shift_code: shiftCode, shift_name: shiftName, is_off: isWeekend, notes: null,
             };
           }),
         };
       });
 
       return {
-        week_start: weekStart,
-        week_end: days[6].date,
-        is_published: true,
-        published_at: new Date().toISOString(),
-        published_by: 'Ananya Rao',
-        summary: {
-          scheduled_today: 13,
-          total_employees: 14,
-          shifts_defined: shiftsList.length || 4,
-          shift_codes: ['GEN', 'USP', 'USC', 'NGT'],
-          swap_requests_count: 2,
-          on_leave_this_week_count: 1,
-        },
+        week_start: weekStart, week_end: days[6].date, is_published: true, published_at: new Date().toISOString(), published_by: 'Ananya Rao',
+        summary: { scheduled_today: 13, total_employees: 14, shifts_defined: shiftsList.length || 4, shift_codes: ['GEN', 'USP', 'USC', 'NGT'], swap_requests_count: 2, on_leave_this_week_count: 1 },
         employees: rosterRows,
       };
     } catch {
       return {
-        week_start: weekStart,
-        week_end: weekStart,
-        is_published: false,
+        week_start: weekStart, week_end: weekStart, is_published: false,
         summary: { scheduled_today: 0, total_employees: 0, shifts_defined: 0, shift_codes: [], swap_requests_count: 0, on_leave_this_week_count: 0 },
         employees: [],
       };
@@ -284,17 +276,26 @@ export const attendanceApi = {
 
   async assignShift(payload: AssignShiftPayload): Promise<boolean> {
     try {
+      const shiftMap: Record<number, string> = { 1: 'GEN', 2: 'MOR', 3: 'EVE', 4: 'NGT' };
+      const code = payload.is_off ? 'OFF' : (payload.shift_id ? (shiftMap[payload.shift_id] || 'GEN') : 'GEN');
       await request('/v1/roster', {
         method: 'POST',
         body: JSON.stringify({
           employeeCode: `BC-${1000 + payload.employee_id}`,
           employeeName: 'Staff Member',
-          shiftCode: payload.shift_id ? 'GEN' : 'OFF',
+          shiftCode: code,
           startDate: payload.date,
           endDate: payload.date,
           status: 'Assigned',
         }),
       });
+      try {
+        const key = 'brightcone_roster_custom';
+        const list = JSON.parse(localStorage.getItem(key) || '[]');
+        const filtered = list.filter((x: any) => !(x.employee_id === payload.employee_id && x.date === payload.date));
+        filtered.push({ employee_id: payload.employee_id, date: payload.date, shift_id: payload.shift_id, is_off: payload.is_off, shift_code: code });
+        localStorage.setItem(key, JSON.stringify(filtered));
+      } catch {}
       return true;
     } catch {
       return false;

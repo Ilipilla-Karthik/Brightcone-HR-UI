@@ -3,6 +3,7 @@ import { ic } from '../../components/icons';
 import { DirectoryEmployee } from './types';
 import { fetchConnectDirectory } from '../../services/signConnectApi';
 import { mapDirectoryEmployeeFromApi } from './apiMapper';
+import { useNotifications } from '../../services/NotificationsContext';
 
 const getInitials = (name: string) => {
   return name
@@ -80,7 +81,10 @@ export const DirectoryPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<DirectoryEmployee | null>(null);
+  const { addNotification } = useNotifications();
   const [toastMsg, setToastMsg] = useState('');
+  const [msgText, setMsgText] = useState('');
+  const [showMsgBox, setShowMsgBox] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -274,18 +278,22 @@ export const DirectoryPage: React.FC = () => {
             </dl>
 
             <div className="mt">
-              <button
-                type="button"
-                className="btn primary"
-                onClick={() => {
-                  showToast(
-                    `Message sent to ${selectedEmployee.name.split(' ')[0]}`
-                  );
-                  setSelectedEmployee(null);
-                }}
-              >
-                Send message
-              </button>
+              {!showMsgBox ? (
+                <button type="button" className="btn primary" onClick={() => setShowMsgBox(true)}>Send message</button>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <textarea rows={3} className="input w-full" placeholder={`Write a message to ${selectedEmployee.name}...`} value={msgText} onChange={(e) => setMsgText(e.target.value)} style={{ fontSize: "12px", padding: "8px", borderRadius: "8px", border: "1px solid var(--line)" }} />
+                  <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                    <button type="button" className="btn sm" onClick={() => setShowMsgBox(false)}>Cancel</button>
+                    <button type="button" className="btn primary sm" onClick={() => {
+                      const content = msgText.trim() || "Hey, checking in with you!";
+                      addNotification({ title: `New Message for ${selectedEmployee.name}`, message: `From Colleagues: "${content}"`, category: "announcement", actionUrl: "/connect/directory" });
+                      showToast(`Message delivered to ${selectedEmployee.name}! Check notification bell.`);
+                      setMsgText(""); setShowMsgBox(false); setSelectedEmployee(null);
+                    }}>Deliver</button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

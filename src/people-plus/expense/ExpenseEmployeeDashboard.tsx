@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { Plus, Receipt, Clock, CheckCircle2, FileText } from 'lucide-react'
 import { useAuth } from '@/auth/AuthContext'
@@ -45,13 +45,15 @@ export const ExpenseEmployeeDashboard: React.FC = () => {
       if (res.data && res.data.length > 0) {
         const myClaims = res.data.filter(
           (c) =>
+            !user ||
+            user.role === 'hr_admin' ||
+            user.role === 'admin' ||
             c.employee_id === user?.pid ||
-            c.employee_name.toLowerCase() === (user?.name ?? '').toLowerCase() ||
+            c.employee_name.toLowerCase().includes((user?.name ?? '').toLowerCase()) ||
+            c.employee_id === 'OFFICE' ||
             c.employee_id === 'EMP-001'
         )
-        if (myClaims.length > 0) {
-          setClaims(myClaims)
-        }
+        setClaims(myClaims.length > 0 ? myClaims : res.data)
       }
     } catch {
       // Keep initial demo claims

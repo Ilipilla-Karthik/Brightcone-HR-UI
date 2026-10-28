@@ -1,11 +1,13 @@
 const STANDARD_POLICIES = [{ id: 'POL-01', name: 'Code of Conduct', version: '2.0' }, { id: 'POL-02', name: 'Information Security & Acceptable Use', version: '3.2' }, { id: 'POL-03', name: 'POSH Policy', version: '1.1' }, { id: 'POL-04', name: 'Remote Work & Expense Policy', version: '4.0' }];
 import React, { useState, useEffect } from 'react';
 import { policiesApi } from '../../services/policiesApi';
+import { getEmployees } from '../../services/api';
 import { PolicyAckRecord } from './types';
 import { ic } from '../../components/icons';
 
 export const PolicyAcknowledgementsPage: React.FC = () => {
   const [acks, setAcks] = useState<PolicyAckRecord[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [showArchived, setShowArchived] = useState(false);
@@ -41,6 +43,9 @@ export const PolicyAcknowledgementsPage: React.FC = () => {
 
   useEffect(() => {
     loadAcks();
+    getEmployees().then((data) => {
+      if (Array.isArray(data) && data.length > 0) setEmployees(data);
+    }).catch(() => {});
   }, []);
 
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -139,10 +144,13 @@ export const PolicyAcknowledgementsPage: React.FC = () => {
 
   const handleSendAllBatch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const staffList = [
+    const staffList = employees.length > 0 ? employees.map((emp) => ({
+      name: emp.name || emp.full_name,
+      email: emp.email || emp.work_email || `${(emp.name || emp.full_name).toLowerCase().replace(/\s+/g, '.')}@brightcone.ai`,
+      department: emp.dept || emp.department || 'General',
+    })) : [
       { name: 'Rahul Varma', email: 'rahul.varma@brightcone.ai', department: 'Engineering' },
       { name: 'Priya Menon', email: 'priya.menon@brightcone.ai', department: 'Engineering' },
-      { name: 'Divya Kulkarni', email: 'divya.kulkarni@brightcone.ai', department: 'Engineering' },
     ];
     try {
       const created = await policiesApi.batchAcknowledgements(batchPolicy, batchDue, staffList);
@@ -215,26 +223,10 @@ export const PolicyAcknowledgementsPage: React.FC = () => {
 
       {/* 4 Stat Cards */}
       <div className="grid g4 mb-6">
-        <div className="card stat">
-          <div className="k"><i>{ic('doc', 16)}</i>Total records</div>
-          <div className="v">{acks.length}</div>
-          <div className="d">Live records</div>
-        </div>
-        <div className="card stat">
-          <div className="k"><i>{ic('clock', 16)}</i>Pending</div>
-          <div className="v">{pendingCount}</div>
-          <div className="d">Awaiting sign-off</div>
-        </div>
-        <div className="card stat">
-          <div className="k"><i>{ic('check', 16)}</i>Acknowledged</div>
-          <div className="v">{ackCount}</div>
-          <div className="d up">Confirmed</div>
-        </div>
-        <div className="card stat">
-          <div className="k"><i>{ic('clock', 16)}</i>Overdue</div>
-          <div className="v">{overdueCount}</div>
-          <div className="d" style={{ color: 'var(--bad)' }}>Past due date</div>
-        </div>
+        <div className="card stat"><div className="k"><i>{ic('doc', 16)}</i>Total records</div><div className="v">{acks.length}</div><div className="d">Live records</div></div>
+        <div className="card stat"><div className="k"><i>{ic('clock', 16)}</i>Pending</div><div className="v">{pendingCount}</div><div className="d">Awaiting sign-off</div></div>
+        <div className="card stat"><div className="k"><i>{ic('check', 16)}</i>Acknowledged</div><div className="v">{ackCount}</div><div className="d up">Confirmed</div></div>
+        <div className="card stat"><div className="k"><i>{ic('clock', 16)}</i>Overdue</div><div className="v">{overdueCount}</div><div className="d" style={{ color: 'var(--bad)' }}>Past due date</div></div>
       </div>
 
       {/* Toolbar & Table */}
@@ -316,7 +308,28 @@ export const PolicyAcknowledgementsPage: React.FC = () => {
                 </select>
               </label>
               <div className="grid grid-cols-2 gap-3">
-                <label className="block"><span className="font-semibold text-[var(--muted)] block mb-1">Employee name *</span><input className="input w-full" value={formEmpName} onChange={(e) => setFormEmpName(e.target.value)} placeholder="e.g. Rahul Varma" required /></label>
+                <label className="block"><span className="font-semibold text-[var(--muted)] block mb-1">Employee name *</span>
+                  {employees.length > 0 ? (
+                    <select className="input w-full" value={formEmpName} onChange={(e) => {
+                      const val = e.target.value;
+                      setFormEmpName(val);
+                      const emp = employees.find((x: any) => (x.name || x.full_name) === val);
+                      if (emp) {
+                        setFormEmpEmail(emp.email || emp.work_email || `${val.toLowerCase().replace(/\s+/g, '.')}@brightcone.ai`);
+                        setFormDept(emp.dept || emp.department || 'Engineering');
+                      }
+                    }} required>
+                      <option value="">-- Choose employee --</option>
+                      {employees.map((emp: any) => {
+                        const name = emp.name || emp.full_name;
+                        const code = emp.id || emp.employee_code;
+                        return <option key={code || name} value={name}>{name} ({code})</option>;
+                      })}
+                    </select>
+                  ) : (
+                    <input className="input w-full" value={formEmpName} onChange={(e) => setFormEmpName(e.target.value)} placeholder="e.g. Rahul Varma" required />
+                  )}
+                </label>
                 <label className="block"><span className="font-semibold text-[var(--muted)] block mb-1">Employee email</span><input className="input w-full" value={formEmpEmail} onChange={(e) => setFormEmpEmail(e.target.value)} placeholder="e.g. rahul.v@brightcone.ai" /></label>
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -368,14 +381,10 @@ export const PolicyAcknowledgementsPage: React.FC = () => {
           <div className="scrim on fixed inset-0 bg-black/40 z-40" onClick={() => setViewRecord(null)} />
           <div className="modal on fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[var(--surface)] p-6 rounded-2xl border border-[var(--line)] shadow-xl z-50 w-full max-w-md">
             <div className="flex items-center justify-between pb-3 border-b border-[var(--line)] mb-4"><h2 className="text-base font-bold font-heading">{viewRecord.policyName}</h2><button className="text-muted hover:text-[var(--text)]" onClick={() => setViewRecord(null)} aria-label="Close">{ic('x', 14)}</button></div>
-            <div className="space-y-2 text-xs">
-              <div><span className="text-[var(--muted)]">Employee:</span> <b>{viewRecord.employeeName}</b></div>
-              <div><span className="text-[var(--muted)]">Email:</span> <span className="font-mono">{viewRecord.employeeEmail}</span></div>
-              <div><span className="text-[var(--muted)]">Department:</span> <b>{viewRecord.department}</b></div>
-              <div><span className="text-[var(--muted)]">Sent on:</span> <b>{viewRecord.sentDate}</b></div>
-              <div><span className="text-[var(--muted)]">Due date:</span> <b>{viewRecord.dueDate}</b></div>
-              <div><span className="text-[var(--muted)]">Acknowledged on:</span> <b>{viewRecord.acknowledgedOn || 'Pending signature'}</b></div>
-              <div><span className="text-[var(--muted)]">Status:</span> <span className="pill p-ok">{getEffectiveStatus(viewRecord)}</span></div>
+            <div className="space-y-1.5 text-xs">
+              <div><span className="text-[var(--muted)]">Employee:</span> <b>{viewRecord.employeeName}</b> (<span className="font-mono">{viewRecord.employeeEmail}</span>)</div>
+              <div><span className="text-[var(--muted)]">Department:</span> <b>{viewRecord.department}</b> · Sent: <b>{viewRecord.sentDate}</b> · Due: <b>{viewRecord.dueDate}</b></div>
+              <div><span className="text-[var(--muted)]">Acknowledged:</span> <b>{viewRecord.acknowledgedOn || 'Pending signature'}</b> · Status: <span className="pill p-ok">{getEffectiveStatus(viewRecord)}</span></div>
             </div>
             <div className="flex justify-end mt-4 pt-3 border-t border-[var(--line)]"><button className="btn sm" onClick={() => setViewRecord(null)}>Close</button></div>
           </div>

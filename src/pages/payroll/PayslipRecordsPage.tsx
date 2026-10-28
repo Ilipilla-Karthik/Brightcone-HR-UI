@@ -18,6 +18,14 @@ export const PayslipRecordsPage: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem('brightcone_payslip_records');
+      if (saved) {
+        setRecords(JSON.parse(saved));
+        return;
+      }
+    } catch {}
+
     axios
       .get<Array<{ empId: string; name: string; dept: string; gross: number; pf: number; pt: number; tds: number; net: number }>>('/api/payroll/register')
       .then((res) => {
@@ -46,6 +54,7 @@ export const PayslipRecordsPage: React.FC = () => {
             }
           })
           setRecords(live)
+          localStorage.setItem('brightcone_payslip_records', JSON.stringify(live));
         }
       })
       .catch(() => {})
@@ -77,7 +86,9 @@ export const PayslipRecordsPage: React.FC = () => {
       ...data,
       id: `SLIP-${Date.now().toString().slice(-4)}`,
     }
-    setRecords((prev) => [newRec, ...prev])
+    const updated = [newRec, ...records]
+    setRecords(updated)
+    try { localStorage.setItem('brightcone_payslip_records', JSON.stringify(updated)) } catch {}
     setAddModalOpen(false)
     showToast(`Payslip created for ${data.employeeName}`)
   }
@@ -111,7 +122,9 @@ export const PayslipRecordsPage: React.FC = () => {
         tds,
       }
     })
-    setRecords((prev) => [...newSlips, ...prev])
+    const updated = [...newSlips, ...records]
+    setRecords(updated)
+    try { localStorage.setItem('brightcone_payslip_records', JSON.stringify(updated)) } catch {}
     setBatchModalOpen(false)
     showToast(`Batch generated ${newSlips.length} payslips for ${month}`)
   }

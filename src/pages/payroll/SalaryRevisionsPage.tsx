@@ -7,7 +7,17 @@ import { AddSalaryRevisionModal } from './SalaryRevisionsModal'
 
 export const SalaryRevisionsPage: React.FC = () => {
   const navigate = useNavigate()
-  const [records, setRecords] = useState<SalaryRevisionRecord[]>([])
+  const [records, setRecords] = useState<SalaryRevisionRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem('brightcone_salary_revisions');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      { id: 'SR-101', employeeId: 'BC-1003', employeeName: 'Karthik Reddy', dept: 'Engineering', appraisalCycle: 'Mid-Year 2026', rating: 'Exceptional (5/5)', currentCtc: 6400000, revisedCtc: 7200000, changePct: 12.5, effectiveDate: '2026-11-01', status: 'Pending', notes: 'Lead architect behind production platform rewrite.' },
+      { id: 'SR-102', employeeId: 'BC-1006', employeeName: 'Rahul Varma', dept: 'Engineering', appraisalCycle: 'Mid-Year 2026', rating: 'Strong (4/5)', currentCtc: 3200000, revisedCtc: 3500000, changePct: 9.4, effectiveDate: '2026-11-01', status: 'Approved', notes: 'Consistently delivers on team sprints and mentoring.' },
+      { id: 'SR-103', employeeId: 'BC-1001', employeeName: 'Ananya Rao', dept: 'People Ops', appraisalCycle: 'Annual 2026', rating: 'Strong (4/5)', currentCtc: 3200000, revisedCtc: 3600000, changePct: 12.5, effectiveDate: '2026-10-01', status: 'Approved', notes: 'Streamlined pan-India HR and hiring operations.' },
+    ];
+  })
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [showArchived, setShowArchived] = useState(false)
@@ -37,27 +47,29 @@ export const SalaryRevisionsPage: React.FC = () => {
   }
 
   const handleDecision = (id: string, newStatus: 'Approved' | 'Rejected') => {
-    setRecords((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
-    )
-    showToast(`Salary revision marked as ${newStatus}`)
+    const updated = records.map((r) => (r.id === id ? { ...r, status: newStatus } : r));
+    setRecords(updated);
+    try { localStorage.setItem('brightcone_salary_revisions', JSON.stringify(updated)); } catch {}
+    showToast(`Salary revision marked as ${newStatus}`);
   }
 
   const handleSave = (data: Omit<SalaryRevisionRecord, 'id'>) => {
+    let updated: SalaryRevisionRecord[] = [];
     if (editingRecord) {
-      setRecords((prev) =>
-        prev.map((r) => (r.id === editingRecord.id ? { ...data, id: editingRecord.id } : r))
-      )
-      showToast('Revision record saved')
+      updated = records.map((r) => (r.id === editingRecord.id ? { ...data, id: editingRecord.id } : r));
+      setRecords(updated);
+      showToast('Revision record saved');
     } else {
       const newRec: SalaryRevisionRecord = {
         ...data,
         id: `SR-${Date.now().toString().slice(-4)}`,
-      }
-      setRecords((prev) => [newRec, ...prev])
-      showToast(`Revision proposal submitted for ${data.employeeName}`)
+      };
+      updated = [newRec, ...records];
+      setRecords(updated);
+      showToast(`Revision proposal submitted for ${data.employeeName}`);
     }
-    setModalOpen(false)
+    try { localStorage.setItem('brightcone_salary_revisions', JSON.stringify(updated)); } catch {}
+    setModalOpen(false);
   }
 
   const handleExport = () => {

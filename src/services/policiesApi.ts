@@ -149,6 +149,24 @@ export const policiesApi = {
     };
   },
 
+  async updateHandbook(id: string, payload: Partial<HandbookRecord>): Promise<void> {
+    try {
+      await fetch(`/api/v1/handbooks/${id}`, {
+        method: 'PATCH',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          title: payload.title,
+          version: payload.version || payload.ver,
+          effective_date: payload.effectiveDate || payload.eff,
+          owner: payload.owner,
+          file_name: payload.file,
+          changes_summary: payload.changesSummary || payload.changes,
+          status: payload.status,
+        }),
+      });
+    } catch {}
+  },
+
   // 3. Policy Acknowledgements
   async getAcknowledgements(): Promise<PolicyAckRecord[]> {
     try {

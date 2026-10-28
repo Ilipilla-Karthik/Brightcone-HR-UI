@@ -71,10 +71,13 @@ export const AssignCourseModal: React.FC<AssignCourseModalProps> = ({
   const filteredEmployees = employees.filter((e) => {
     const q = searchQuery.toLowerCase().trim();
     if (!q) return true;
+    const name = e.name || (e as any).full_name || '';
+    const id = e.id || (e as any).employee_code || '';
+    const dept = e.dept || (e as any).department || '';
     return (
-      e.name.toLowerCase().includes(q) ||
-      e.id.toLowerCase().includes(q) ||
-      (e.dept && e.dept.toLowerCase().includes(q))
+      name.toLowerCase().includes(q) ||
+      String(id).toLowerCase().includes(q) ||
+      dept.toLowerCase().includes(q)
     );
   });
 
@@ -125,14 +128,17 @@ export const AssignCourseModal: React.FC<AssignCourseModalProps> = ({
     }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .filter(Boolean)
-      .slice(0, 2)
-      .join('')
-      .toUpperCase();
+  const getInitials = (name?: string) => {
+    if (!name) return 'EM';
+    return (
+      name
+        .split(' ')
+        .filter(Boolean)
+        .map((n) => n[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase() || 'EM'
+    );
   };
 
   return (
@@ -257,9 +263,15 @@ export const AssignCourseModal: React.FC<AssignCourseModalProps> = ({
                             onChange={() => {}}
                             style={{ cursor: 'pointer' }}
                           />
-                          <div className={styles.empAvatar}>{getInitials(emp.name)}</div>
-                          <span className={styles.empName}>{emp.name}</span>
-                          <span className={styles.empCode}>{emp.id}</span>
+                          <div className={styles.empAvatar}>
+                            {getInitials(emp.name || (emp as any).full_name)}
+                          </div>
+                          <span className={styles.empName}>
+                            {emp.name || (emp as any).full_name || 'Employee'}
+                          </span>
+                          <span className={styles.empCode}>
+                            {emp.id || (emp as any).employee_code}
+                          </span>
                         </div>
                       );
                     })

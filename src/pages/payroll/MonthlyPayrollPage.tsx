@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import { Download, Plus, Search, Users, Eye, Edit2, Trash2, CheckCircle2 } from 'lucide-react'
 import { formatINR, exportToCSV } from './payroll-data'
@@ -18,28 +17,45 @@ export const MonthlyPayrollPage: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    axios
-      .get<Array<{ empId: string; name: string; dept: string; gross: number; pf: number; pt: number; tds: number; net: number }>>('/api/payroll/register')
-      .then((res) => {
-        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-          const live: MonthlyPayrollRecord[] = res.data.map((r, i) => ({
-            id: `PR-${101 + i}`,
-            month: '2026-10',
-            employeeId: r.empId || (r as any).emp_id || `BC-10${i + 1}`,
-            employeeName: r.name || (r as any).full_name || 'Team Member',
-            dept: r.dept || (r as any).department || 'General',
-            workingDays: 22,
-            lopDays: 0,
-            paidDays: 22,
-            grossPay: r.gross,
-            totalDeductions: Math.round(r.pf + r.pt + r.tds),
-            netPay: Math.round(r.net),
-            status: i < 4 ? 'Approved' : i < 9 ? 'Processed' : 'Draft',
-          }))
-          setRecords(live)
+    try {
+      const saved = localStorage.getItem('brightcone_monthly_payroll_records');
+      if (saved) {
+        setRecords(JSON.parse(saved));
+        return;
+      }
+    } catch {}
+
+    fetch('/api/v1/employees')
+      .then((res) => res.json())
+      .then((data) => {
+        const list = Array.isArray(data) ? data : data.value || [];
+        if (list.length > 0) {
+          const live: MonthlyPayrollRecord[] = list.map((emp: any, i: number) => {
+            const gross = Math.round(emp.ctc ? emp.ctc / 12 : 125000 + (i % 5) * 15000);
+            const pf = 1800;
+            const pt = 200;
+            const tds = Math.round(gross * 0.08);
+            const deductions = pf + pt + tds;
+            return {
+              id: `PR-${101 + i}`,
+              month: '2026-10',
+              employeeId: emp.employee_code || (emp.id ? `BC-${emp.id}` : `BC-10${i + 1}`),
+              employeeName: emp.full_name || emp.name || 'Team Member',
+              dept: emp.department || emp.dept || 'Engineering',
+              workingDays: 22,
+              lopDays: 0,
+              paidDays: 22,
+              grossPay: gross,
+              totalDeductions: deductions,
+              netPay: gross - deductions,
+              status: i < 4 ? 'Approved' : i < 9 ? 'Processed' : 'Draft',
+            };
+          });
+          setRecords(live);
+          localStorage.setItem('brightcone_monthly_payroll_records', JSON.stringify(live));
         }
       })
-      .catch(() => {})
+      .catch(() => {});
   }, [])
 
   const activeRecords = records.filter((r) => (showArchived ? r.isArchived : !r.isArchived))
@@ -64,20 +80,24 @@ export const MonthlyPayrollPage: React.FC = () => {
   }
 
   const handleSave = (data: Omit<MonthlyPayrollRecord, 'id'>) => {
+    let updated: MonthlyPayrollRecord[] = [];
     if (editingRecord) {
-      setRecords((prev) =>
-        prev.map((r) => (r.id === editingRecord.id ? { ...data, id: editingRecord.id } : r))
-      )
-      showToast('Payroll record updated successfully')
+      updated = records.map((r) => (r.id === editingRecord.id ? { ...data, id: editingRecord.id } : r));
+      setRecords(updated);
+      showToast('Payroll record updated successfully');
     } else {
       const newRec: MonthlyPayrollRecord = {
         ...data,
         id: `PR-${Date.now().toString().slice(-4)}`,
-      }
-      setRecords((prev) => [newRec, ...prev])
-      showToast(`Payroll entry created for ${data.employeeName}`)
+      };
+      updated = [newRec, ...records];
+      setRecords(updated);
+      showToast(`Payroll entry created for ${data.employeeName}`);
     }
-    setModalOpen(false)
+    try {
+      localStorage.setItem('brightcone_monthly_payroll_records', JSON.stringify(updated));
+    } catch {}
+    setModalOpen(false);
   }
 
   const handleExport = () => {

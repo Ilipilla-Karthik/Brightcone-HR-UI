@@ -174,18 +174,86 @@ export const shiftApi = {
   },
 
   async fetchLeaveRequests(_params?: any): Promise<ApiResponse<LeaveRequest[]>> {
-    return { data: [], error: null };
+    try {
+      const res = await request<any[]>('/v1/leave/my');
+      const list = Array.isArray(res) ? res : [];
+      let savedLocal: any[] = [];
+      try {
+        savedLocal = JSON.parse(localStorage.getItem('brightcone_leave_requests') || '[]');
+      } catch {}
+      const combined = [...savedLocal, ...list].map((r: any, idx: number) => ({
+        id: r.id || idx + 1,
+        employee_id: r.employee_code || r.employee_id || 'BC-1001',
+        employee_name: r.employee_name || 'Staff Member',
+        leave_type_code: r.leave_type || r.leave_type_code || 'CL',
+        start_date: r.from_date || r.start_date || '2026-10-15',
+        end_date: r.to_date || r.end_date || '2026-10-16',
+        days_count: parseFloat(r.days) || 1,
+        reason: r.reason || '',
+        status: (r.status || 'PENDING').toUpperCase(),
+        created_at: r.created_at || new Date().toISOString(),
+      }));
+      return { data: combined as any, error: null };
+    } catch {
+      return { data: [], error: null };
+    }
   },
 
   async createLeaveRequest(payload: CreateLeaveRequestPayload): Promise<any> {
-    return { id: 1, ...payload, status: 'PENDING' };
+    try {
+      const res = await request<any>('/v1/leave/apply', {
+        method: 'POST',
+        body: JSON.stringify({
+          employee_code: payload.employee_id ? `BC-${payload.employee_id}` : 'BC-1001',
+          employee_name: 'Ananya Rao',
+          leave_type: String(payload.leave_type_id || 'CL'),
+          from_date: payload.start_date,
+          to_date: payload.end_date,
+          days: payload.is_half_day ? '0.5' : '1',
+          reason: payload.reason,
+        }),
+      });
+      try {
+        const key = 'brightcone_leave_requests';
+        const list = JSON.parse(localStorage.getItem(key) || '[]');
+        list.unshift(res || { id: Date.now(), ...payload, status: 'PENDING' });
+        localStorage.setItem(key, JSON.stringify(list));
+      } catch {}
+      return res;
+    } catch {
+      return { id: Date.now(), ...payload, status: 'PENDING' };
+    }
   },
 
   async approveLeaveRequest(id: number, payload?: any): Promise<any> {
+    try {
+      await request(`/v1/leave/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'Approved' }),
+      });
+    } catch {}
+    try {
+      const key = 'brightcone_leave_requests';
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      const upd = list.map((item: any) => item.id === id ? { ...item, status: 'APPROVED' } : item);
+      localStorage.setItem(key, JSON.stringify(upd));
+    } catch {}
     return { id, ...payload, status: 'APPROVED' };
   },
 
   async rejectLeaveRequest(id: number, payload?: any): Promise<any> {
+    try {
+      await request(`/v1/leave/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'Rejected' }),
+      });
+    } catch {}
+    try {
+      const key = 'brightcone_leave_requests';
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      const upd = list.map((item: any) => item.id === id ? { ...item, status: 'REJECTED' } : item);
+      localStorage.setItem(key, JSON.stringify(upd));
+    } catch {}
     return { id, ...payload, status: 'REJECTED' };
   },
 
@@ -196,22 +264,44 @@ export const shiftApi = {
   async calculateLeaveDays(payload: any): Promise<ApiResponse<LeaveCalculationResult>> {
     const s = new Date(payload.start_date);
     const e = new Date(payload.end_date);
-    const diff = Math.max(1, Math.round((e.getTime() - s.getTime()) / (1000 * 3600 * 24)) + 1);
-    const chargeable = payload.is_half_day ? 0.5 : diff;
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const breakdown: any[] = [];
+    let workingDays = 0;
+    let weekendDays = 0;
+    let holidaysCount = 0;
+    let chargeableDays = 0;
+
+    const curr = new Date(s);
+    while (curr <= e) {
+      const dateStr = curr.toISOString().split('T')[0];
+      const dayIdx = curr.getDay();
+      const isWeekend = dayIdx === 0 || dayIdx === 6;
+      const isHoliday = dateStr === '2026-10-02' || dateStr === '2026-11-08' || dateStr === '2026-12-25';
+      const isMaternity = payload.leave_type_code === 'ML';
+      const isChargeable = isMaternity || (!isWeekend && !isHoliday);
+      const chargeVal = isChargeable ? (payload.is_half_day ? 0.5 : 1.0) : 0;
+
+      if (isWeekend) weekendDays++;
+      else if (isHoliday) holidaysCount++;
+      else workingDays++;
+
+      if (isChargeable) chargeableDays += chargeVal;
+
+      breakdown.push({
+        date: dateStr, day_name: dayNames[dayIdx], is_weekend: isWeekend, is_holiday: isHoliday,
+        holiday_name: isHoliday ? 'Public Holiday' : null, is_scheduled_off: false,
+        is_chargeable: isChargeable, chargeable_value: chargeVal,
+      });
+      curr.setDate(curr.getDate() + 1);
+    }
+
+    const totalDays = breakdown.length || 1;
     return {
       data: {
-        start_date: payload.start_date,
-        end_date: payload.end_date,
-        total_calendar_days: diff,
-        chargeable_days: chargeable,
-        weekend_days_count: 0,
-        weekend_days: 0,
-        holidays_count: 0,
-        holiday_days: 0,
-        working_days: diff,
-        policy_applied: 'Standard Policy',
-        leave_type_code: payload.leave_type_code,
-        breakdown: [],
+        start_date: payload.start_date, end_date: payload.end_date, total_calendar_days: totalDays,
+        chargeable_days: chargeableDays, weekend_days_count: weekendDays, weekend_days: weekendDays,
+        holidays_count: holidaysCount, holiday_days: holidaysCount, working_days: workingDays,
+        policy_applied: 'Standard Policy', leave_type_code: payload.leave_type_code, breakdown,
       },
       error: null,
     };
@@ -239,29 +329,11 @@ export const shiftApi = {
   },
 
   async fetchCompOffBalance(employeeId: number): Promise<ApiResponse<CompOffBalance>> {
-    return {
-      data: {
-        employee_id: employeeId,
-        available_days: 0.0,
-        total_earned_days: 0.0,
-        used_days: 0.0,
-        pending_days: 0.0,
-      },
-      error: null,
-    };
+    return { data: { employee_id: employeeId, available_days: 0.0, total_earned_days: 0.0, used_days: 0.0, pending_days: 0.0 }, error: null };
   },
-
-  async getCompOffBalance(employeeId: number): Promise<ApiResponse<CompOffBalance>> {
-    return this.fetchCompOffBalance(employeeId);
-  },
-
-  async fetchCompOffRequests(_params?: any): Promise<ApiResponse<CompOffRequest[]>> {
-    return { data: [], error: null };
-  },
-
-  async fetchCompOffEntitlements(_employeeId?: number): Promise<ApiResponse<CompOffEntitlement[]>> {
-    return { data: [], error: null };
-  },
+  async getCompOffBalance(employeeId: number): Promise<ApiResponse<CompOffBalance>> { return this.fetchCompOffBalance(employeeId); },
+  async fetchCompOffRequests(_params?: any): Promise<ApiResponse<CompOffRequest[]>> { return { data: [], error: null }; },
+  async fetchCompOffEntitlements(_employeeId?: number): Promise<ApiResponse<CompOffEntitlement[]>> { return { data: [], error: null }; },
 
   async grantCompOffEntitlement(payload: GrantCompOffPayload): Promise<any> {
     return { id: 1, ...payload, status: 'ACTIVE' };

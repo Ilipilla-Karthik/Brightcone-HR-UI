@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Download, Plus, Search, Users, Eye, Edit2, Trash2, CheckCircle2 } from 'lucide-react'
 import { formatINR, exportToCSV } from './payroll-data'
@@ -8,7 +8,13 @@ import { AddSalaryStructureModal, ViewStructureDetailModal } from './SalaryStruc
 
 export const SalaryStructurePage: React.FC = () => {
   const navigate = useNavigate()
-  const [records, setRecords] = useState<SalaryStructureRecord[]>(INITIAL_STRUCTURES)
+  const [records, setRecords] = useState<SalaryStructureRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem('brightcone_salary_structures');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_STRUCTURES;
+  })
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [showArchived, setShowArchived] = useState(false)
@@ -38,27 +44,29 @@ export const SalaryStructurePage: React.FC = () => {
   }
 
   const handleSave = (data: Omit<SalaryStructureRecord, 'id'>) => {
+    let updated: SalaryStructureRecord[] = [];
     if (editingRecord) {
-      setRecords((prev) =>
-        prev.map((r) => (r.id === editingRecord.id ? { ...data, id: editingRecord.id } : r))
-      )
-      showToast('Salary structure updated')
+      updated = records.map((r) => (r.id === editingRecord.id ? { ...data, id: editingRecord.id } : r));
+      setRecords(updated);
+      showToast('Salary structure updated');
     } else {
       const newRec: SalaryStructureRecord = {
         ...data,
         id: `SS-${Date.now().toString().slice(-4)}`,
-      }
-      setRecords((prev) => [
+      };
+      updated = [
         newRec,
-        ...prev.map((r) =>
+        ...records.map((r) =>
           r.employeeId === data.employeeId && r.status === 'Active' && data.status === 'Active'
             ? { ...r, status: 'Superseded' as const }
             : r
         ),
-      ])
-      showToast(`Salary structure saved for ${data.employeeName}`)
+      ];
+      setRecords(updated);
+      showToast(`Salary structure saved for ${data.employeeName}`);
     }
-    setModalOpen(false)
+    try { localStorage.setItem('brightcone_salary_structures', JSON.stringify(updated)); } catch {}
+    setModalOpen(false);
   }
 
   const handleExport = () => {
