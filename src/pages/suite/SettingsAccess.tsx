@@ -1,50 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
-
-interface RolePermission {
-  module: string;
-  admin: boolean;
-  peopleOps: boolean;
-  finance: boolean;
-  manager: boolean;
-  employee: boolean;
-}
-
-const DEFAULT_PERMISSIONS: RolePermission[] = [
-  { module: 'People & Directory', admin: true, peopleOps: true, finance: false, manager: true, employee: true },
-  { module: 'Recruit & ATS', admin: true, peopleOps: true, finance: false, manager: true, employee: false },
-  { module: 'Payroll & Salary', admin: true, peopleOps: false, finance: true, manager: false, employee: false },
-  { module: 'Expenses & Claims', admin: true, peopleOps: false, finance: true, manager: true, employee: true },
-  { module: 'Sign & Policies', admin: true, peopleOps: true, finance: false, manager: true, employee: true },
-  { module: 'Connect & Feed', admin: true, peopleOps: true, finance: true, manager: true, employee: true },
-  { module: 'Learn & LMS', admin: true, peopleOps: true, finance: false, manager: true, employee: true },
-  { module: 'Shift & Attendance', admin: true, peopleOps: true, finance: false, manager: true, employee: true },
-  { module: 'Suite & Audit Logs', admin: true, peopleOps: false, finance: false, manager: false, employee: false },
-];
+import {
+  RolePermission,
+  OrgSettings,
+  SecuritySettings,
+  getOrgSettings,
+  saveOrgSettings,
+  getSecuritySettings,
+  saveSecuritySettings,
+  getRolePermissions,
+  saveRolePermissions,
+} from '../../services/suiteStorage';
 
 export const SettingsAccess: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'Org' | 'RBAC' | 'Security'>('Org');
-  const [permissions, setPermissions] = useState<RolePermission[]>(DEFAULT_PERMISSIONS);
-  const [orgForm, setOrgForm] = useState({
-    companyName: 'Brightcone Technologies Private Limited',
-    brandName: 'Brightcone AI',
-    cin: 'U72900TG2021PTC148810',
-    gstin: '36AAACB1234D1Z5',
-    pan: 'AAACB1234D',
-    headquarters: 'Financial District, Nanakramguda, Hyderabad - 500032',
-    currency: 'INR (₹)',
-    timezone: 'Asia/Kolkata (IST +05:30)',
-  });
-
-  const [secForm, setSecForm] = useState({
-    enforce2FA: true,
-    sessionTimeoutMins: 30,
-    enforceStrongPassword: true,
-    ssoGoogle: true,
-    ipAllowlist: '106.51.78.0/24, 14.139.112.0/24',
-  });
-
+  const [permissions, setPermissions] = useState<RolePermission[]>(() => getRolePermissions());
+  const [orgForm, setOrgForm] = useState<OrgSettings>(() => getOrgSettings());
+  const [secForm, setSecForm] = useState<SecuritySettings>(() => getSecuritySettings());
   const [toastMsg, setToastMsg] = useState('');
+
+  useEffect(() => {
+    setPermissions(getRolePermissions());
+    setOrgForm(getOrgSettings());
+    setSecForm(getSecuritySettings());
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -52,18 +31,23 @@ export const SettingsAccess: React.FC = () => {
   };
 
   const togglePerm = (index: number, role: keyof RolePermission) => {
-    setPermissions((prev) =>
-      prev.map((item, idx) => {
+    setPermissions((prev) => {
+      const updated = prev.map((item, idx) => {
         if (idx === index && typeof item[role] === 'boolean') {
           return { ...item, [role]: !item[role] };
         }
         return item;
-      })
-    );
+      });
+      saveRolePermissions(updated);
+      return updated;
+    });
   };
 
   const saveSettings = () => {
-    showToast('Organization settings updated successfully');
+    saveOrgSettings(orgForm);
+    saveSecuritySettings(secForm);
+    saveRolePermissions(permissions);
+    showToast('Organization and security settings saved successfully');
   };
 
   return (

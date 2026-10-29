@@ -184,7 +184,7 @@ export const EmployeesPage: React.FC = () => {
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-3">
                     <span className="w-8 h-8 rounded-full bg-[#12A58E] text-white flex items-center justify-center font-bold text-xs shrink-0">
-                      {emp.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                      {(emp.name || 'Employee').split(' ').filter(Boolean).map((n) => n[0]).join('').slice(0, 2)}
                     </span>
                     <div className="min-w-0">
                       <b className="block text-xs font-semibold text-[var(--text)] truncate">{emp.name}</b>
@@ -228,7 +228,7 @@ export const EmployeesPage: React.FC = () => {
             </button>
             <div className="flex items-center gap-3.5 pb-4 border-b border-[var(--line)]">
               <span className="w-12 h-12 rounded-2xl bg-[#12A58E] text-white flex items-center justify-center font-bold text-base shadow-sm">
-                {selectedEmp.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                {(selectedEmp.name || 'Employee').split(' ').filter(Boolean).map((n) => n[0]).join('').slice(0, 2)}
               </span>
               <div>
                 <h3 className="font-['Sora'] text-lg font-bold text-[var(--text)]">{selectedEmp.name}</h3>

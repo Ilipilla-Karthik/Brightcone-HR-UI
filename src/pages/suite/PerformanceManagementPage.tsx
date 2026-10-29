@@ -37,26 +37,47 @@ const Card: React.FC<{ label: string; value: string | number; sub?: string; colo
 export const PerformanceManagementPage: React.FC = () => {
   const [employees, setEmployees] = useState<PerfEmployee[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedEmp, setSelectedEmp] = useState<PerfEmployee | null>(null);
+  const [newRating, setNewRating] = useState<number>(5.0);
 
   useEffect(() => {
     let mounted = true;
     fetchEmployees()
       .then(emps => {
         if (mounted) {
-          setEmployees(emps.map(e => ({
-            id: e.employee_code,
-            name: e.full_name,
-            department: e.department,
-            designation: e.job_title,
-            rating: 4.8,
-            rating_label: 'Exceeds Expectations',
-          })));
+          const rawRatings = localStorage.getItem('brightcone_performance_ratings');
+          const storedRatings: Record<string, { rating: number; label: string }> = rawRatings ? JSON.parse(rawRatings) : {};
+          setEmployees(emps.map((e, idx) => {
+            const stored = storedRatings[e.employee_code];
+            const defaultRating = stored ? stored.rating : (idx % 5 === 0 ? 5.0 : idx % 3 === 0 ? 4.8 : idx % 2 === 0 ? 4.2 : 3.9);
+            const defaultLabel = defaultRating >= 5 ? 'Exceptional' : defaultRating >= 4.5 ? 'Exceeds Expectations' : defaultRating >= 3.5 ? 'Meets Expectations' : 'Needs Development';
+            return {
+              id: e.employee_code,
+              name: e.full_name,
+              department: e.department,
+              designation: e.job_title,
+              rating: stored?.rating ?? defaultRating,
+              rating_label: stored?.label ?? defaultLabel,
+            };
+          }));
         }
       })
       .catch(() => { if (mounted) setEmployees([]); })
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
   }, []);
+
+  const handleSaveRating = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEmp) return;
+    const label = newRating >= 5 ? 'Exceptional' : newRating >= 4.5 ? 'Exceeds Expectations' : newRating >= 3.5 ? 'Meets Expectations' : 'Needs Development';
+    const rawRatings = localStorage.getItem('brightcone_performance_ratings');
+    const storedRatings: Record<string, { rating: number; label: string }> = rawRatings ? JSON.parse(rawRatings) : {};
+    storedRatings[selectedEmp.id] = { rating: newRating, label };
+    localStorage.setItem('brightcone_performance_ratings', JSON.stringify(storedRatings));
+    setEmployees(prev => prev.map(emp => emp.id === selectedEmp.id ? { ...emp, rating: newRating, rating_label: label } : emp));
+    setSelectedEmp(null);
+  };
 
   const total = employees.length;
   const exceptional = employees.filter(e => (e.rating || 0) >= 5).length;
@@ -133,7 +154,12 @@ export const PerformanceManagementPage: React.FC = () => {
                   <p style={{ fontSize: 12, color: '#94a3b8', textAlign: 'center', margin: '16px 0' }}>No employee reviews recorded yet.</p>
                 ) : (
                   topFive.map((e, i) => (
-                    <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#f8fafc', borderRadius: 8 }}>
+                    <div
+                      key={e.id}
+                      onClick={() => { setSelectedEmp(e); setNewRating(e.rating || 5.0); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#f8fafc', borderRadius: 8, cursor: 'pointer' }}
+                      title="Click to adjust appraisal rating"
+                    >
                       <span style={{ fontSize: 16, fontWeight: 900, color: i === 0 ? '#f59e0b' : '#e2e8f0', fontFamily: 'Sora, sans-serif', minWidth: 24 }}>#{i + 1}</span>
                       <div style={{ flex: 1 }}>
                         <p style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', margin: 0 }}>{e.name}</p>
@@ -183,6 +209,44 @@ export const PerformanceManagementPage: React.FC = () => {
               </table>
             </div>
           </div>
+
+          {selectedEmp && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+              <div style={{ background: '#fff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 420, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 4px', color: '#0f172a' }}>Review {selectedEmp.name}</h3>
+                <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 16px' }}>{selectedEmp.designation} · {selectedEmp.department}</p>
+                <form onSubmit={handleSaveRating}>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: '#475569', display: 'block', marginBottom: 6 }}>Appraisal Score (1.0 to 5.0)</label>
+                  <select
+                    value={newRating}
+                    onChange={(e) => setNewRating(parseFloat(e.target.value))}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', fontSize: 13, marginBottom: 16 }}
+                  >
+                    <option value={5.0}>5.0 - Exceptional (Outstanding leadership & delivery)</option>
+                    <option value={4.8}>4.8 - Exceeds Expectations (High velocity & quality)</option>
+                    <option value={4.0}>4.0 - Strong Delivery (Meets & often exceeds goals)</option>
+                    <option value={3.5}>3.5 - Meets Expectations (Satisfactory performance)</option>
+                    <option value={2.5}>2.5 - Needs Development (Targeted improvement plan)</option>
+                  </select>
+                  <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedEmp(null)}
+                      style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #cbd5e1', background: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Save Appraisal
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </>
       )}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

@@ -54,9 +54,9 @@ export const ExpenseFinancePage: React.FC = () => {
           });
         });
       }
-      if (list.length > 0) {
-        setClaims(list);
-      }
+      // Reflect the server list even when it comes back empty, so a refetch
+      // after a failed action shows the real state instead of stale rows.
+      setClaims(list);
     } catch {
       // Keep local state fallback
     }
@@ -70,7 +70,15 @@ export const ExpenseFinancePage: React.FC = () => {
     try {
       await axios.post(`/api/expenses/${id}/approve`);
     } catch {
-      // Local fallback
+      // The claim id doesn't exist server-side — don't fake a success.
+      fetchClaims();
+      addNotification({
+        title: "Approval Failed",
+        message: `Claim ${id} was not found on the server, so it was not approved.`,
+        category: "expense",
+        actionUrl: "/payroll/finance-expenses",
+      });
+      return;
     }
     setClaims((prev) =>
       prev.map((c) => (c.id === id ? { ...c, status: "Approved" } : c))
@@ -90,7 +98,14 @@ export const ExpenseFinancePage: React.FC = () => {
     try {
       await axios.post(`/api/expenses/${id}/reject`, { reason });
     } catch {
-      // Local fallback
+      fetchClaims();
+      addNotification({
+        title: "Rejection Failed",
+        message: `Claim ${id} was not found on the server, so it was not rejected.`,
+        category: "expense",
+        actionUrl: "/payroll/finance-expenses",
+      });
+      return;
     }
     setClaims((prev) =>
       prev.map((c) =>
@@ -115,7 +130,14 @@ export const ExpenseFinancePage: React.FC = () => {
     try {
       await axios.post(`/api/expenses/${id}/pay`);
     } catch {
-      // Local fallback
+      fetchClaims();
+      addNotification({
+        title: "Payment Failed",
+        message: `Claim ${id} was not found on the server, so no reimbursement was recorded.`,
+        category: "expense",
+        actionUrl: "/payroll/finance-expenses",
+      });
+      return;
     }
 
     const now = new Date().toISOString();

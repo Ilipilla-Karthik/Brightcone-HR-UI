@@ -56,6 +56,17 @@ export const SkillsMatrixModals: React.FC<SkillsMatrixModalsProps> = ({
   data,
   isSubmitting,
 }) => {
+  React.useEffect(() => {
+    if (isRateModalOpen && data) {
+      if (!selectedEmpCode && data.employees.length > 0) {
+        setSelectedEmpCode(data.employees[0].employee_code);
+      }
+      if (!selectedSkillId && data.skills.length > 0) {
+        setSelectedSkillId(data.skills[0].id);
+      }
+    }
+  }, [isRateModalOpen, data, selectedEmpCode, selectedSkillId, setSelectedEmpCode, setSelectedSkillId]);
+
   return (
     <>
       {/* Add Skill Modal */}

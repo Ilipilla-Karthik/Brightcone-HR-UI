@@ -71,7 +71,6 @@ import { OnboardingPage } from './pages/people/OnboardingPage';
 import { AssetsAdminPage } from './pages/people/AssetsAdminPage';
 import { EmployeeDocuments } from './pages/people/EmployeeDocuments';
 import { ExitManagementPage } from './pages/people/ExitManagementPage';
-import { PerformanceAdmin } from './pages/people/PerformanceAdmin';
 import { ProbationTracking } from './pages/people/ProbationTracking';
 import { EmployeeProfilePage } from './pages/people/EmployeeProfilePage';
 import { AccessCardPage } from './pages/people/AccessCardPage';
@@ -81,6 +80,11 @@ import { IncrementsPage } from './pages/people/IncrementsPage';
 import { RecognitionPage } from './pages/people/RecognitionPage';
 import { HelpdeskQueuePage } from './pages/people/HelpdeskQueuePage';
 import { OrgStructureAdmin } from './pages/people/OrgStructureAdmin';
+import { NewJoinersPage } from './pages/people/NewJoinersPage';
+import { EmployeeExitManagementPage } from './pages/people/EmployeeExitManagementPage';
+import { AppraisalTrackerPage } from './pages/people/AppraisalTrackerPage';
+import { PerformanceReviewsPage } from './pages/people/PerformanceReviewsPage';
+import { ProbationReviewsPage } from './pages/people/ProbationReviewsPage';
 
 import { RecruitDashboard } from './pages/recruit/RecruitDashboard';
 import { RecruitAdminPage } from './pages/recruit/RecruitAdminPage';
@@ -282,20 +286,20 @@ const AppLayout: React.FC = () => {
               <Route path="/people/onboarding" element={<OnboardingPage />} />
               <Route path="/people/exit" element={<ExitManagementPage />} />
               <Route path="/people/exits" element={<ExitManagementPage />} />
-              <Route path="/people/exit-management" element={<ExitManagementPage />} />
+              <Route path="/people/exit-management" element={<EmployeeExitManagementPage />} />
 
               {/* Employee Management */}
               <Route path="/people/employees" element={<EmployeesPage />} />
               <Route path="/people/master-data" element={<EmployeesPage />} />
               <Route path="/people/profiles" element={<EmployeeProfilePage />} />
-              <Route path="/people/new-joiners" element={<OnboardingPage />} />
+              <Route path="/people/new-joiners" element={<NewJoinersPage />} />
               <Route path="/people/probation" element={<ProbationTracking />} />
               <Route path="/people/documents" element={<EmployeeDocuments />} />
 
               {/* Performance */}
-              <Route path="/people/performance" element={<PerformanceAdmin />} />
-              <Route path="/people/appraisals" element={<PerformanceAdmin />} />
-              <Route path="/people/probation-reviews" element={<ProbationTracking />} />
+              <Route path="/people/performance" element={<PerformanceReviewsPage />} />
+              <Route path="/people/appraisals" element={<AppraisalTrackerPage />} />
+              <Route path="/people/probation-reviews" element={<ProbationReviewsPage />} />
               <Route path="/people/increments" element={<IncrementsPage />} />
               <Route path="/people/recognition" element={<RecognitionPage />} />
 

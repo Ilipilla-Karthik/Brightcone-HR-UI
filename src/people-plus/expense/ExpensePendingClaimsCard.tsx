@@ -34,6 +34,7 @@ export const ExpensePendingClaimsCard: React.FC<ExpensePendingClaimsCardProps> =
   ])
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [actionMessage, setActionMessage] = useState<string | null>(null)
+  const [actionFailed, setActionFailed] = useState(false)
 
   useEffect(() => {
     fetchPendingClaims()
@@ -42,12 +43,14 @@ export const ExpensePendingClaimsCard: React.FC<ExpensePendingClaimsCardProps> =
   const fetchPendingClaims = async () => {
     try {
       const res = await axios.get<ExpenseClaim[]>('/api/expenses')
-      const pending = res.data.filter((c) => c.status === 'Pending')
-      if (pending.length > 0) {
-        setClaims(pending)
+      // Always mirror the server's list (when it responds) so the claim ids shown
+      // are the ids that actually exist in the backend — otherwise approving a
+      // stale demo id returns 404 while the UI reports success.
+      if (Array.isArray(res.data)) {
+        setClaims(res.data.filter((c) => c.status === 'Pending'))
       }
     } catch {
-      // Fallback to initial demo items
+      // Backend unreachable — fall back to the seeded demo items above
     }
   }
 
@@ -57,11 +60,12 @@ export const ExpensePendingClaimsCard: React.FC<ExpensePendingClaimsCardProps> =
       await axios.post(`/api/expenses/${id}/approve`)
       setClaims((prev) => prev.filter((c) => c.id !== id))
       setActionMessage('Claim approved and queued for payroll reimbursement.')
+      setActionFailed(false)
       onClaimUpdated?.()
     } catch {
-      setClaims((prev) => prev.filter((c) => c.id !== id))
-      setActionMessage('Claim approved.')
-      onClaimUpdated?.()
+      setActionMessage(`Could not approve claim ${id} — it was not found on the server.`)
+      setActionFailed(true)
+      fetchPendingClaims()
     } finally {
       setLoadingId(null)
       setTimeout(() => setActionMessage(null), 3000)
@@ -74,11 +78,12 @@ export const ExpensePendingClaimsCard: React.FC<ExpensePendingClaimsCardProps> =
       await axios.post(`/api/expenses/${id}/reject`, { reason: 'Policy limit exceeded' })
       setClaims((prev) => prev.filter((c) => c.id !== id))
       setActionMessage('Claim marked as rejected.')
+      setActionFailed(false)
       onClaimUpdated?.()
     } catch {
-      setClaims((prev) => prev.filter((c) => c.id !== id))
-      setActionMessage('Claim rejected.')
-      onClaimUpdated?.()
+      setActionMessage(`Could not reject claim ${id} — it was not found on the server.`)
+      setActionFailed(true)
+      fetchPendingClaims()
     } finally {
       setLoadingId(null)
       setTimeout(() => setActionMessage(null), 3000)
@@ -101,8 +106,14 @@ export const ExpensePendingClaimsCard: React.FC<ExpensePendingClaimsCardProps> =
         </div>
 
         {actionMessage && (
-          <div className="mb-3 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
-            <Check size={14} />
+          <div
+            className={
+              actionFailed
+                ? 'mb-3 px-3 py-2 rounded-lg bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800 text-xs text-rose-800 dark:text-rose-300'
+                : 'mb-3 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2'
+            }
+          >
+            {actionFailed ? null : <Check size={14} />}
             <span>{actionMessage}</span>
           </div>
         )}

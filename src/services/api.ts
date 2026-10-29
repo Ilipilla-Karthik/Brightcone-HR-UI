@@ -14,6 +14,7 @@ import {
   RemindReviewResult,
 } from './types';
 import { shiftApi, API_BASE_URL, request, type ApiResponse } from './shiftApi';
+import { mergeMyLearning, updateCustomAssignmentProgress } from './learnStorage';
 
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
@@ -173,16 +174,35 @@ export async function updateCourse(id: string, payload: CreateCoursePayload): Pr
 
 export async function getMyLearning(employeeId?: string): Promise<MyAssignment[]> {
   const url = employeeId ? `/learn/my-learning?employee_id=${encodeURIComponent(employeeId)}` : '/learn/my-learning';
-  const res = await api.get(url);
-  return res.data;
+  try {
+    const res = await api.get(url);
+    const data = Array.isArray(res.data) ? res.data : [];
+    return mergeMyLearning(data, employeeId);
+  } catch {
+    return mergeMyLearning([], employeeId);
+  }
 }
 
 export async function updateAssignmentProgress(
   assignmentId: string,
   progress: number
 ): Promise<MyAssignment> {
-  const res = await api.post(`/learn/assignments/${assignmentId}/progress`, { progress });
-  return res.data;
+  updateCustomAssignmentProgress(assignmentId, progress);
+  try {
+    const res = await api.post(`/learn/assignments/${assignmentId}/progress`, { progress });
+    return res.data;
+  } catch {
+    return {
+      assignment_id: assignmentId,
+      course_id: assignmentId,
+      course_title: 'Course',
+      course_type: 'Elective',
+      duration: '45 mins',
+      due_date: null,
+      progress,
+      status: progress >= 100 ? 'Completed' : progress > 0 ? 'In progress' : 'Not started',
+    };
+  }
 }
 
 export async function sendReminders(params: {

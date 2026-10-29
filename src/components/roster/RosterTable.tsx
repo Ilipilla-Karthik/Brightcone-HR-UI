@@ -71,16 +71,17 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                         emp.avatar_color
                       )}`}
                     >
-                      {emp.name
+                      {String(emp?.name || (emp as any)?.employee_name || 'Staff')
                         .split(' ')
+                        .filter(Boolean)
                         .map((n) => n[0])
                         .join('')
                         .substring(0, 2)
-                        .toUpperCase()}
+                        .toUpperCase() || 'ST'}
                     </div>
                     <div className="min-w-0">
                       <div className="font-semibold text-[#0E1730] dark:text-white truncate text-sm">
-                        {emp.name}
+                        {emp.name || (emp as any).employee_name || 'Staff Member'}
                       </div>
                       <div className="text-xs text-[#64748B] dark:text-[#8D9BB8] truncate">
                         {emp.default_shift_name || 'General shift'}
@@ -89,7 +90,7 @@ export const RosterTable: React.FC<RosterTableProps> = ({
                   </div>
                 </td>
 
-                {emp.days.map((day) => {
+                {(emp.days || (emp as any).assignments || []).map((day: any) => {
                   const shiftDisplay = day.is_off
                     ? 'OFF'
                     : day.shift_code

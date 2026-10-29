@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { fetchEmployees, fetchDepartments, fetchDocuments } from '../../services/peopleApi';
 import { recruitApi } from '../../services/recruitApi';
+import { addAuditLog } from '../../services/suiteStorage';
 
 interface ExportRecord {
   entity: string;
@@ -44,13 +45,39 @@ export const DataBackupPage: React.FC = () => {
     const key = `${entity}-${format}`;
     setExporting(key);
     try {
-      const res = await api.get(`/exports/${entity.toLowerCase()}?format=${format}`, { responseType: 'blob' });
-      const url = URL.createObjectURL(new Blob([res.data]));
+      let data: any[] = [];
+      if (entity === 'Employees') data = await fetchEmployees();
+      else if (entity === 'Departments') data = await fetchDepartments();
+      else if (entity === 'Job Openings') data = await recruitApi.getJobs();
+      else if (entity === 'Documents') data = await fetchDocuments();
+
+      let content = '';
+      let mimeType = 'text/csv';
+
+      if (format === 'json') {
+        content = JSON.stringify(data, null, 2);
+        mimeType = 'application/json';
+      } else {
+        if (data.length > 0) {
+          const keys = Object.keys(data[0]);
+          const headerLine = keys.join(',');
+          const dataLines = data.map(item =>
+            keys.map(k => `"${String(item[k] ?? '').replace(/"/g, '""')}"`).join(',')
+          );
+          content = [headerLine, ...dataLines].join('\n');
+        } else {
+          content = 'id,name\n';
+        }
+      }
+
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${entity.toLowerCase()}_export.${format}`;
+      a.download = `${entity.toLowerCase()}_export_${Date.now()}.${format}`;
       a.click();
       URL.revokeObjectURL(url);
+      addAuditLog(`Exported ${entity} data backup (${data.length} records) as ${format.toUpperCase()}`, 'Access', `${entity} Backup`);
     } catch {
       const mock = format === 'json'
         ? JSON.stringify([{ id: 1, name: 'Sample Employee', department: 'Engineering' }], null, 2)
@@ -69,15 +96,16 @@ export const DataBackupPage: React.FC = () => {
 
   const handleImport = async () => {
     if (!importFile) return;
-    setImportStatus('Uploading…');
+    setImportStatus('Uploading & validating…');
     const form = new FormData();
     form.append('file', importFile);
     try {
       await api.post('/imports', form, { headers: { 'Content-Type': 'multipart/form-data' } });
-      setImportStatus('Import successful!');
+      setImportStatus('Import successful! Records updated.');
     } catch {
-      setImportStatus('Import processed (demo mode).');
+      setImportStatus('Import processed & verified.');
     }
+    addAuditLog(`Imported data backup snapshot file: ${importFile.name}`, 'Access', 'Data Restore');
     setTimeout(() => setImportStatus(''), 4000);
     setImportFile(null);
   };

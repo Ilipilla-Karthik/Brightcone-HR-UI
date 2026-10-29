@@ -204,6 +204,24 @@ export const recruitApi = {
     return res.json();
   },
 
+  async updateInterview(id: string, payload: { status?: string; notes?: string; round_name?: string; panel?: string; scheduled_at?: string }): Promise<Interview> {
+    const res = await fetch(`/api/v1/interviews/${id}`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error('Failed to update interview');
+    return res.json();
+  },
+
+  async deleteInterview(id: string): Promise<void> {
+    const res = await fetch(`/api/v1/interviews/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to delete interview');
+  },
+
   // 4. Offers
   async getOffers(): Promise<Offer[]> {
     try {

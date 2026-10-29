@@ -1,15 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
-
-interface Notification {
-  id: string;
-  title: string;
-  message?: string;
-  priority: 'high' | 'medium' | 'low';
-  due_date?: string;
-  status: 'pending' | 'done';
-  category?: string;
-}
+import {
+  NotificationItem as Notification,
+  getActionsReminders,
+  markActionDone as persistMarkDone,
+} from '../../services/suiteStorage';
 
 const PRIORITIES = ['All', 'high', 'medium', 'low'];
 
@@ -20,27 +15,20 @@ const priorityColor = (p: string) => {
 };
 
 export const ActionsRemindersPage: React.FC = () => {
-  const [items, setItems] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<Notification[]>(() => getActionsReminders());
   const [filter, setFilter] = useState('All');
   const [showDone, setShowDone] = useState(false);
   const [marking, setMarking] = useState<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-    api.get('/notifications')
-      .then(r => { if (mounted) setItems(r.data || []); })
-      .catch(() => {
-        if (mounted) setItems([]);
-      })
-      .finally(() => { if (mounted) setLoading(false); });
-    return () => { mounted = false; };
+    setItems(getActionsReminders());
   }, []);
 
   const markDone = async (id: string) => {
     setMarking(id);
-    try { await api.put(`/notifications/${id}/read`); } catch { /* optimistic */ }
-    setItems(prev => prev.map(n => n.id === id ? { ...n, status: 'done' } : n));
+    const updated = persistMarkDone(id);
+    setItems(updated);
+    try { await api.put(`/notifications/${id}/read`); } catch {}
     setMarking(null);
   };
 
@@ -90,41 +78,35 @@ export const ActionsRemindersPage: React.FC = () => {
         </label>
       </div>
 
-      {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
-          <div style={{ width: 32, height: 32, border: '3px solid #e2e8f0', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.map(n => {
-            const isOverdue = n.status === 'pending' && n.due_date && new Date(n.due_date) < new Date();
-            return (
-              <div key={n.id} style={{ background: '#fff', border: `1px solid ${n.status === 'done' ? '#f1f5f9' : '#e2e8f0'}`, borderLeft: `4px solid ${n.status === 'done' ? '#e2e8f0' : priorityColor(n.priority)}`, borderRadius: 12, padding: '14px 18px', boxShadow: '0 1px 3px rgba(0,0,0,.04)', display: 'flex', alignItems: 'flex-start', gap: 14, opacity: n.status === 'done' ? 0.65 : 1 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', textDecoration: n.status === 'done' ? 'line-through' : 'none' }}>{n.title}</span>
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 99, background: priorityColor(n.priority) + '1a', color: priorityColor(n.priority), textTransform: 'uppercase', letterSpacing: '0.05em' }}>{n.priority}</span>
-                    {n.category && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 99, background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>{n.category}</span>}
-                  </div>
-                  {n.message && <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 6px' }}>{n.message}</p>}
-                  {n.due_date && (
-                    <p style={{ fontSize: 11, fontWeight: 600, color: isOverdue ? '#dc2626' : '#94a3b8', margin: 0 }}>
-                      {isOverdue ? '⚠ Overdue · ' : ''}Due: {n.due_date}
-                    </p>
-                  )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {filtered.map(n => {
+          const isOverdue = n.status === 'pending' && n.due_date && new Date(n.due_date) < new Date();
+          return (
+            <div key={n.id} style={{ background: '#fff', border: `1px solid ${n.status === 'done' ? '#f1f5f9' : '#e2e8f0'}`, borderLeft: `4px solid ${n.status === 'done' ? '#e2e8f0' : priorityColor(n.priority)}`, borderRadius: 12, padding: '14px 18px', boxShadow: '0 1px 3px rgba(0,0,0,.04)', display: 'flex', alignItems: 'flex-start', gap: 14, opacity: n.status === 'done' ? 0.65 : 1 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', textDecoration: n.status === 'done' ? 'line-through' : 'none' }}>{n.title}</span>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 99, background: priorityColor(n.priority) + '1a', color: priorityColor(n.priority), textTransform: 'uppercase', letterSpacing: '0.05em' }}>{n.priority}</span>
+                  {n.category && <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 99, background: '#f1f5f9', color: '#64748b', fontWeight: 600 }}>{n.category}</span>}
                 </div>
-                {n.status === 'pending' && (
-                  <button onClick={() => markDone(n.id)} disabled={marking === n.id}
-                    style={{ flexShrink: 0, padding: '6px 14px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#f0fdf4', color: '#16a34a', opacity: marking === n.id ? 0.6 : 1 }}>
-                    {marking === n.id ? '…' : '✓ Done'}
-                  </button>
+                {n.message && <p style={{ fontSize: 12, color: '#64748b', margin: '0 0 6px' }}>{n.message}</p>}
+                {n.due_date && (
+                  <p style={{ fontSize: 11, fontWeight: 600, color: isOverdue ? '#dc2626' : '#94a3b8', margin: 0 }}>
+                    {isOverdue ? '⚠ Overdue · ' : ''}Due: {n.due_date}
+                  </p>
                 )}
               </div>
-            );
-          })}
-          {filtered.length === 0 && <div style={{ textAlign: 'center', color: '#94a3b8', padding: 40 }}>No actions match your filters</div>}
-        </div>
-      )}
+              {n.status === 'pending' && (
+                <button onClick={() => markDone(n.id)} disabled={marking === n.id}
+                  style={{ flexShrink: 0, padding: '6px 14px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: 12, fontWeight: 600, cursor: 'pointer', background: '#f0fdf4', color: '#16a34a', opacity: marking === n.id ? 0.6 : 1 }}>
+                  {marking === n.id ? '…' : '✓ Done'}
+                </button>
+              )}
+            </div>
+          );
+        })}
+        {filtered.length === 0 && <div style={{ textAlign: 'center', color: '#94a3b8', padding: 40 }}>No actions match your filters</div>}
+      </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useOutletContext, useLocation } from 'react-router-dom';
 import { Play, Award, AlertTriangle, AlertCircle, BookOpen } from 'lucide-react';
 import { getMyLearning, updateAssignmentProgress } from '../../services/api';
 import { MyAssignment } from '../../services/types';
@@ -17,6 +17,11 @@ export const EmployeeLearnPage: React.FC = () => {
   const context = useOutletContext<OutletContextType>();
   const currentPersona = context?.currentPersona;
   const { user } = useAuth();
+
+  const location = useLocation();
+  const highlightCourseId = (location.state as any)?.highlightCourseId;
+  const highlightTitle = (location.state as any)?.highlightTitle;
+  const hasNotifiedRef = useRef(false);
 
   const [assignments, setAssignments] = useState<MyAssignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,15 +53,31 @@ export const EmployeeLearnPage: React.FC = () => {
     try {
       setIsLoading(true);
       setError(null);
-      // Identity is derived securely from the authenticated session (JWT)
       const data = await getMyLearning();
+      if (highlightCourseId || highlightTitle) {
+        data.sort((a, b) => {
+          const matchA =
+            a.course_id === highlightCourseId ||
+            a.course_title.toLowerCase() === (highlightTitle || '').toLowerCase();
+          const matchB =
+            b.course_id === highlightCourseId ||
+            b.course_title.toLowerCase() === (highlightTitle || '').toLowerCase();
+          if (matchA && !matchB) return -1;
+          if (!matchA && matchB) return 1;
+          return 0;
+        });
+      }
       setAssignments(data);
+      if ((highlightTitle || highlightCourseId) && !hasNotifiedRef.current) {
+        hasNotifiedRef.current = true;
+        addToast('info', `Opened course: "${highlightTitle || 'Recommended Course'}"`);
+      }
     } catch {
       setError('Unable to load assignments from server. Please retry.');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [highlightCourseId, highlightTitle]);
 
   useEffect(() => {
     loadAssignments();
@@ -163,12 +184,29 @@ export const EmployeeLearnPage: React.FC = () => {
                 assignment.due_date! < new Date().toISOString().slice(0, 10)
               );
 
+              const isHighlighted = Boolean(
+                (highlightCourseId && (assignment.course_id === highlightCourseId || assignment.assignment_id === highlightCourseId)) ||
+                (highlightTitle && assignment.course_title.toLowerCase() === highlightTitle.toLowerCase())
+              );
+
               return (
-                <div key={assignment.assignment_id || assignment.course_id} className={styles.courseCard}>
+                <div
+                  key={assignment.assignment_id || assignment.course_id}
+                  className={styles.courseCard}
+                  style={isHighlighted ? { border: '2px solid #0B6FDB', boxShadow: '0 0 12px rgba(11, 111, 219, 0.25)' } : undefined}
+                >
                   <div>
                     <div className={styles.cardTop}>
                       <h3 className={styles.cardTitle}>{assignment.course_title}</h3>
                       <div className={styles.badgeGroup}>
+                        {isHighlighted && (
+                          <span
+                            className={`${styles.pill} ${styles.pOk}`}
+                            title="Recommended Course"
+                          >
+                            ★ Recommended
+                          </span>
+                        )}
                         {isOverdue && (
                           <span
                             className={`${styles.pill} ${styles.pBad}`}

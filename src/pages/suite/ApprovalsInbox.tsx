@@ -1,27 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
-
-interface ApprovalItem {
-  id: string;
-  module: 'Leave' | 'Expense' | 'Shift' | 'Sign';
-  title: string;
-  requesterName: string;
-  requesterRole: string;
-  requesterDept: string;
-  details: string;
-  amountOrDuration?: string;
-  submittedAt: string;
-  status: 'Pending' | 'Approved' | 'Rejected';
-  priority: 'High' | 'Normal' | 'Low';
-}
+import {
+  ApprovalItem,
+  getApprovals,
+  updateApprovalStatus,
+  approveAllPending,
+} from '../../services/suiteStorage';
 
 export const ApprovalsInbox: React.FC = () => {
-  const [items, setItems] = useState<ApprovalItem[]>([]);
+  const [items, setItems] = useState<ApprovalItem[]>(() => getApprovals());
   const [activeTab, setActiveTab] = useState<'Pending' | 'Approved' | 'Rejected' | 'All'>('Pending');
   const [moduleFilter, setModuleFilter] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<ApprovalItem | null>(null);
   const [toastMsg, setToastMsg] = useState('');
+
+  useEffect(() => {
+    setItems(getApprovals());
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -29,7 +25,8 @@ export const ApprovalsInbox: React.FC = () => {
   };
 
   const handleAction = (id: string, newStatus: 'Approved' | 'Rejected') => {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item)));
+    const updated = updateApprovalStatus(id, newStatus);
+    setItems(updated);
     showToast(`Request ${id} marked as ${newStatus}`);
     if (selectedItem?.id === id) setSelectedItem(null);
   };
@@ -71,7 +68,8 @@ export const ApprovalsInbox: React.FC = () => {
         </div>
         <button
           onClick={() => {
-            setItems((prev) => prev.map((i) => (i.status === 'Pending' ? { ...i, status: 'Approved' } : i)));
+            const updated = approveAllPending();
+            setItems(updated);
             showToast('Approved all pending requests');
           }}
           className="px-3.5 py-2 text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors flex items-center gap-2 self-start sm:self-auto"

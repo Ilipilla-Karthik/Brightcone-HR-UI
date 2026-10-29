@@ -1,40 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { LeaveQuota, LeaveType } from '../../types';
-import { INITIAL_LEAVE_QUOTAS, INITIAL_LEAVE_TYPES } from '../../services/shiftApi';
+import { shiftApi, request } from '../../services/shiftApi';
 import { LeaveQuotasPage } from '../LeaveQuotasPage';
 
-const STORAGE_KEY = 'brightcone_leave_quotas';
-
 export const LeaveQuotasAdminPage: React.FC = () => {
-  const [quotas, setQuotas] = useState<LeaveQuota[]>(() => {
+  const [quotas, setQuotas] = useState<LeaveQuota[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
+
+  const loadData = useCallback(async () => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : INITIAL_LEAVE_QUOTAS;
-    } catch {
-      return INITIAL_LEAVE_QUOTAS;
-    }
-  });
-  const [leaveTypes] = useState<LeaveType[]>(INITIAL_LEAVE_TYPES);
+      const [qData, tData] = await Promise.all([
+        request<any[]>('/v1/time/leave-quotas'),
+        shiftApi.fetchLeaveTypes(),
+      ]);
+      if (Array.isArray(qData) && qData.length > 0) {
+        setQuotas(qData);
+      }
+      if (tData.data) {
+        setLeaveTypes(tData.data);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleAdd = async (q: any) => {
-    const newQuotas = [...quotas, { id: Date.now(), ...q }];
-    setQuotas(newQuotas);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(newQuotas)); } catch {}
-    return true;
+    try {
+      await request('/v1/time/leave-quotas', {
+        method: 'POST',
+        body: JSON.stringify(q),
+      });
+      await loadData();
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleUpdate = async (id: number, q: any) => {
-    const updated = quotas.map((item) => (item.id === id ? { ...item, ...q } : item));
-    setQuotas(updated);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch {}
-    return true;
+    try {
+      await request(`/v1/time/leave-quotas/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(q),
+      });
+      await loadData();
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleDelete = async (id: number) => {
-    const remaining = quotas.filter((item) => item.id !== id);
-    setQuotas(remaining);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining)); } catch {}
-    return true;
+    try {
+      await request(`/v1/time/leave-quotas/${id}`, {
+        method: 'DELETE',
+      });
+      await loadData();
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   return (

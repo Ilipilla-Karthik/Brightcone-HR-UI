@@ -1,10 +1,16 @@
-import { shiftApi } from './shiftApi';
+import { shiftApi, request } from './shiftApi';
 import type { WeeklyRosterResponse, AssignShiftPayload, PublishRosterPayload, Holiday, Shift } from '../types';
 
 export const attendanceWeeklyApi = {
   async fetchWeeklyRoster(weekStart: string): Promise<WeeklyRosterResponse> {
     const empRes = await shiftApi.fetchEmployees();
     const employees = empRes.data || [];
+
+    let dbRoster: any[] = [];
+    try {
+      const data = await request<any[]>('/v1/roster');
+      if (Array.isArray(data)) dbRoster = data;
+    } catch {}
 
     const start = new Date(weekStart);
     const end = new Date(start);
@@ -20,21 +26,46 @@ export const attendanceWeeklyApi = {
       };
     });
 
+    const isPublished = dbRoster.length > 0 ? dbRoster.some(r => r.status === 'Published') : true;
+
     const rosterRows: any[] = employees.map((emp: any) => {
-      const assignments = days.map((day) => ({
-        date: day.date,
-        shift_id: 2,
-        shift_name: 'General Shift',
-        shift_code: 'GEN',
-        status: (day.day_name === 'Sat' || day.day_name === 'Sun') ? 'OFF' : 'CONFIRMED' as const,
-      }));
+      const isWeekendDay = (name: string) => name === 'Sat' || name === 'Sun';
+      const assignments = days.map((day) => {
+        const custom = dbRoster.find(r =>
+          (r.employeeCode === emp.pid || r.employee_code === emp.pid || r.employeeName === emp.name || r.employee_name === emp.name) &&
+          (r.startDate <= day.date && r.endDate >= day.date)
+        );
+        const shiftCode = custom ? (custom.shiftCode || custom.shift_code || 'GEN') : (isWeekendDay(day.day_name) ? null : 'GEN');
+        const shiftName = shiftCode === 'MORN' ? 'Morning Shift' : shiftCode === 'EVE' ? 'Evening Shift' : shiftCode === 'NIGHT' ? 'Night Shift' : shiftCode ? 'General Shift' : null;
+        const isOff = isWeekendDay(day.day_name) && !custom;
+
+        return {
+          date: day.date,
+          day_name: day.day_name,
+          day_number: day.day_number,
+          shift_id: isOff ? null : 2,
+          shift_name: shiftName,
+          shift_code: shiftCode,
+          is_off: isOff,
+          status: (isOff ? 'OFF' : (custom?.status || 'CONFIRMED')) as any,
+          notes: null,
+        };
+      });
+
       return {
+        id: emp.id,
+        pid: emp.pid || `EMP-${emp.id}`,
+        name: emp.name || emp.full_name || 'Staff Member',
         employee_id: emp.id,
-        employee_name: emp.name,
-        employee_role: emp.role,
-        employee_department: emp.department,
-        avatar_color: emp.avatar_color,
+        employee_name: emp.name || emp.full_name || 'Staff Member',
+        email: emp.email || emp.work_email || '',
+        role: emp.role || emp.job_title || 'Software Engineer',
+        employee_role: emp.role || emp.job_title || 'Software Engineer',
+        department: emp.department || 'Engineering',
+        employee_department: emp.department || 'Engineering',
+        avatar_color: emp.avatar_color || 'emerald',
         default_shift_name: 'General Shift',
+        days: assignments,
         assignments,
       };
     });
@@ -42,7 +73,7 @@ export const attendanceWeeklyApi = {
     return {
       week_start: weekStart,
       week_end: end.toISOString().split('T')[0],
-      is_published: true,
+      is_published: isPublished,
       summary: {
         scheduled_today: employees.length,
         total_employees: employees.length,
@@ -56,15 +87,25 @@ export const attendanceWeeklyApi = {
   },
 
   async assignShift(payload: AssignShiftPayload): Promise<any> {
-    return { success: true, ...payload };
+    const empRes = await shiftApi.fetchEmployees();
+    const emp = empRes.data?.find(e => e.id === payload.employee_id);
+    const body = {
+      employeeCode: emp?.pid || `EMP-${payload.employee_id}`,
+      employeeName: emp?.name || 'Staff Member',
+      shiftCode: (payload as any).shift_code || 'GEN',
+      startDate: payload.date || new Date().toISOString().slice(0, 10),
+      endDate: payload.date || new Date().toISOString().slice(0, 10),
+      status: 'Assigned',
+    };
+    return request('/v1/roster', { method: 'POST', body: JSON.stringify(body) });
   },
 
-  async publishRoster(payload: PublishRosterPayload): Promise<any> {
-    return { success: true, ...payload };
+  async publishRoster(_payload?: PublishRosterPayload): Promise<any> {
+    return request('/v1/roster/publish', { method: 'POST' });
   },
 
   async bulkAssignShift(payload: any): Promise<any> {
-    return { success: true, ...payload };
+    return this.assignShift(payload);
   },
 
   async fetchShifts(): Promise<Shift[]> {
@@ -85,22 +126,43 @@ export const attendanceWeeklyApi = {
   },
 
   async fetchHolidays(): Promise<Holiday[]> {
-    return [
-      { id: 1, name: 'Republic Day', holiday_date: '2026-01-26', is_recurring: true },
-      { id: 2, name: 'Holi', holiday_date: '2026-03-25', is_recurring: true },
-      { id: 3, name: 'Independence Day', holiday_date: '2026-08-15', is_recurring: true },
-      { id: 4, name: 'Gandhi Jayanti', holiday_date: '2026-10-02', is_recurring: true },
-      { id: 5, name: 'Diwali', holiday_date: '2026-11-08', is_recurring: true },
-    ];
+    const res = await shiftApi.fetchHolidays();
+    return res.data || [];
   },
 
   async createHoliday(payload: any): Promise<any> {
-    return { id: Date.now(), ...payload };
+    return request('/v1/holidays', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: payload.name,
+        holidayDate: payload.holiday_date || payload.date,
+        description: payload.description || 'Public holiday',
+        applicableLocation: payload.applicable_location || 'All Locations',
+        isRecurring: payload.is_recurring ?? true,
+      }),
+    });
   },
 
-  async deleteHoliday(_id: number): Promise<boolean> {
+  async updateHoliday(id: number, payload: any): Promise<any> {
+    return request(`/v1/holidays/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: payload.name,
+        holidayDate: payload.holiday_date || payload.date,
+        description: payload.description,
+        applicableLocation: payload.applicable_location,
+        isRecurring: payload.is_recurring,
+      }),
+    });
+  },
+
+  async deleteHoliday(id: number): Promise<boolean> {
+    await request(`/v1/holidays/${id}`, { method: 'DELETE' }).catch(() => {});
     return true;
   },
 
-  async fetchLeaveQuotas(): Promise<any[]> { return []; },
+  async fetchLeaveQuotas(): Promise<any[]> {
+    const res = await shiftApi.fetchLeaveQuotas();
+    return res.data || [];
+  },
 };

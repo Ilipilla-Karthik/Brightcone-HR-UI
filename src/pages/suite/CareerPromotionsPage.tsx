@@ -1,27 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { fetchEmployees } from '../../services/peopleApi';
-
-interface Employee {
-  id: string;
-  name: string;
-  department?: string;
-  designation?: string;
-  current_role?: string;
-  date_of_joining?: string;
-  status?: string;
-}
-
-interface PromotionRequest {
-  id: string;
-  employee_name: string;
-  current_role: string;
-  proposed_role: string;
-  department: string;
-  requested_by: string;
-  status: 'pending' | 'approved' | 'rejected';
-  date: string;
-}
+import {
+  PromotionRequest,
+  getPromotionRequests,
+  updatePromotionStatus,
+} from '../../services/suiteStorage';
 
 const CAREER_PATHS = [
   { role: 'Associate Engineer', next: 'Engineer', years: '1–2 yrs' },
@@ -37,13 +21,14 @@ const tenureYears = (doj?: string) => {
 };
 
 export const CareerPromotionsPage: React.FC = () => {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [requests, setRequests] = useState<PromotionRequest[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [requests, setRequests] = useState<PromotionRequest[]>(() => getPromotionRequests());
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
+    setRequests(getPromotionRequests());
     fetchEmployees()
       .then(emps => {
         if (mounted) {
@@ -68,8 +53,9 @@ export const CareerPromotionsPage: React.FC = () => {
 
   const handleAction = async (id: string, action: 'approved' | 'rejected') => {
     setActing(id);
-    try { await api.put(`/promotions/${id}`, { status: action }); } catch { /* optimistic */ }
-    setRequests(prev => prev.map(r => r.id === id ? { ...r, status: action } : r));
+    const updated = updatePromotionStatus(id, action);
+    setRequests(updated);
+    try { await api.put(`/promotions/${id}`, { status: action }); } catch {}
     setActing(null);
   };
 

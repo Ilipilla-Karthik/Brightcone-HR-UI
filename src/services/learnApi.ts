@@ -145,7 +145,22 @@ export async function deleteSecurityTraining(id: string): Promise<{ success: boo
   }
 }
 
+import {
+  saveCustomSkill,
+  saveStoredRating,
+  mergeSkillsMatrix,
+  addCustomAssignment,
+  mergeCompletionTracker,
+} from './learnStorage';
+
 export async function bulkAssignSecurityTraining(payload: { course: string; due: string }): Promise<BulkAssignResponse> {
+  addCustomAssignment({
+    course_title: payload.course,
+    training_type: 'Security',
+    due_date: payload.due,
+    employee_ids: ['*'],
+  });
+
   try {
     const res = await api.post('/learn/sectrain/bulk-assign', payload);
     return res.data;
@@ -155,12 +170,14 @@ export async function bulkAssignSecurityTraining(payload: { course: string; due:
 }
 
 export async function getCompletionTracker(): Promise<CompletionTrackerResponse> {
+  let base: CompletionTrackerResponse = fallbackCompletion;
   try {
     const res = await api.get('/learn/completion');
-    return res.data && res.data.records ? res.data : fallbackCompletion;
-  } catch {
-    return fallbackCompletion;
-  }
+    if (res.data && res.data.records) {
+      base = res.data;
+    }
+  } catch {}
+  return mergeCompletionTracker(base);
 }
 
 export async function updateAssignmentScore(assignmentId: string, score: number): Promise<MyAssignment> {
@@ -168,7 +185,20 @@ export async function updateAssignmentScore(assignmentId: string, score: number)
   return res.data;
 }
 
-export async function assignCourse(courseId: string, payload: AssignCoursePayload): Promise<AssignCourseResponse> {
+export async function assignCourse(
+  courseId: string,
+  payload: AssignCoursePayload & { course_title?: string; category?: string; duration?: string }
+): Promise<AssignCourseResponse> {
+  addCustomAssignment({
+    course_id: courseId,
+    course_title: payload.course_title || `Course ${courseId}`,
+    training_type: 'Course',
+    due_date: payload.due_date,
+    employee_ids: payload.employee_ids,
+    category: payload.category,
+    duration: payload.duration,
+  });
+
   try {
     const res = await api.post(`/learn/courses/${courseId}/assign`, payload);
     return res.data;
@@ -236,29 +266,25 @@ export async function getSkills(): Promise<Skill[]> {
   }
 }
 
-const SKILLS_KEY = 'brightcone_custom_skills';
-const RATINGS_KEY = 'brightcone_skill_ratings';
 const RECORDS_KEY = 'brightcone_completion_records';
 
 export async function createSkill(payload: CreateSkillPayload): Promise<Skill> {
-  const newSkill: Skill = {
+  let skill: Skill = {
     id: `sk-${Date.now()}`,
     name: payload.name,
     category: payload.category,
     description: payload.description,
   };
-  try {
-    const raw = localStorage.getItem(SKILLS_KEY);
-    const list: Skill[] = raw ? JSON.parse(raw) : [];
-    localStorage.setItem(SKILLS_KEY, JSON.stringify([...list, newSkill]));
-  } catch {}
 
   try {
     const res = await api.post('/learn/skills', payload);
-    return res.data && res.data.id ? res.data : newSkill;
-  } catch {
-    return newSkill;
-  }
+    if (res.data && res.data.id) {
+      skill = res.data;
+    }
+  } catch {}
+
+  saveCustomSkill(skill);
+  return skill;
 }
 
 export async function getSkillsMatrix(): Promise<SkillsMatrixResponse> {
@@ -270,53 +296,17 @@ export async function getSkillsMatrix(): Promise<SkillsMatrixResponse> {
     }
   } catch {}
 
-  // Merge any locally stored skills
-  try {
-    const rawSkills = localStorage.getItem(SKILLS_KEY);
-    if (rawSkills) {
-      const customSkills: Skill[] = JSON.parse(rawSkills);
-      for (const cs of customSkills) {
-        if (!matrix.skills.some((s) => s.id === cs.id || s.name.toLowerCase() === cs.name.toLowerCase())) {
-          matrix.skills.push(cs);
-          if (!matrix.categories.includes(cs.category)) {
-            matrix.categories.push(cs.category);
-          }
-        }
-      }
-    }
-
-    const rawRatings = localStorage.getItem(RATINGS_KEY);
-    if (rawRatings) {
-      const storedRatings: Record<string, EmployeeSkillRating> = JSON.parse(rawRatings);
-      matrix.employees = matrix.employees.map((emp) => {
-        const empSkills = { ...emp.skills };
-        for (const [key, rating] of Object.entries(storedRatings)) {
-          const [empCode, skillId] = key.split(':');
-          if (empCode === emp.employee_code) {
-            empSkills[skillId] = rating;
-          }
-        }
-        return { ...emp, skills: empSkills };
-      });
-    }
-  } catch {}
-
-  return matrix;
+  return mergeSkillsMatrix(matrix);
 }
 
-export async function rateSkill(payload: RateSkillPayload): Promise<EmployeeSkillRating> {
+export async function rateSkill(payload: RateSkillPayload, skillName?: string): Promise<EmployeeSkillRating> {
   const rating: EmployeeSkillRating = {
     level: payload.level,
     verified: payload.verified !== undefined ? payload.verified : true,
     updated_at: new Date().toISOString(),
   };
 
-  try {
-    const rawRatings = localStorage.getItem(RATINGS_KEY);
-    const storedRatings: Record<string, EmployeeSkillRating> = rawRatings ? JSON.parse(rawRatings) : {};
-    storedRatings[`${payload.employee_id}:${payload.skill_id}`] = rating;
-    localStorage.setItem(RATINGS_KEY, JSON.stringify(storedRatings));
-  } catch {}
+  saveStoredRating(payload.employee_id, payload.skill_id, skillName, rating);
 
   try {
     const res = await api.post('/learn/skills/rate', payload);

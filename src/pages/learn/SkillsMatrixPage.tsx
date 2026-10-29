@@ -62,11 +62,23 @@ export const SkillsMatrixPage: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      await createSkill({
+      const created = await createSkill({
         name: skillName.trim(),
         category: skillCategory.trim(),
         description: skillDesc.trim() || undefined,
       });
+
+      setData(prev => {
+        if (!prev) return prev;
+        const skills = prev.skills.some(s => s.id === created.id || s.name.toLowerCase() === created.name.toLowerCase())
+          ? prev.skills
+          : [...prev.skills, created];
+        const categories = prev.categories.includes(created.category)
+          ? prev.categories
+          : [...prev.categories, created.category];
+        return { ...prev, skills, categories };
+      });
+
       showToast('success', `Created skill: ${skillName}`);
       setIsAddSkillOpen(false);
       setSkillName('');
@@ -83,14 +95,39 @@ export const SkillsMatrixPage: React.FC = () => {
     e.preventDefault();
     if (!selectedEmpCode || !selectedSkillId) return;
 
+    const skillObj = data?.skills.find(s => s.id === selectedSkillId || s.name === selectedSkillId);
+    const skillName = skillObj?.name;
+
     try {
       setIsSubmitting(true);
-      await rateSkill({
-        employee_id: selectedEmpCode,
-        skill_id: selectedSkillId,
-        level: ratingLevel,
-        verified: isVerified,
+      await rateSkill(
+        {
+          employee_id: selectedEmpCode,
+          skill_id: selectedSkillId,
+          level: ratingLevel,
+          verified: isVerified,
+        },
+        skillName
+      );
+
+      setData(prev => {
+        if (!prev) return prev;
+        const newRating = {
+          level: ratingLevel,
+          verified: isVerified,
+          updated_at: new Date().toISOString(),
+        };
+        const employees = prev.employees.map(emp => {
+          if (emp.employee_code === selectedEmpCode) {
+            const empSkills = { ...emp.skills, [selectedSkillId]: newRating };
+            if (skillName) empSkills[skillName] = newRating;
+            return { ...emp, skills: empSkills };
+          }
+          return emp;
+        });
+        return { ...prev, employees };
       });
+
       showToast('success', 'Skill rating updated successfully.');
       setIsRateModalOpen(false);
       await loadMatrix();
@@ -102,8 +139,8 @@ export const SkillsMatrixPage: React.FC = () => {
   };
 
   const handleOpenRate = (empCode: string, skillId: string, currentLevel?: SkillLevel) => {
-    setSelectedEmpCode(empCode);
-    setSelectedSkillId(skillId);
+    setSelectedEmpCode(empCode || data?.employees[0]?.employee_code || '');
+    setSelectedSkillId(skillId || data?.skills[0]?.id || '');
     setRatingLevel(currentLevel || 'Intermediate');
     setIsVerified(true);
     setIsRateModalOpen(true);
@@ -172,9 +209,9 @@ export const SkillsMatrixPage: React.FC = () => {
           <button
             className={styles.primaryBtn}
             onClick={() => {
-              if (data?.employees[0] && data?.skills[0]) {
-                handleOpenRate(data.employees[0].employee_code, data.skills[0].id);
-              }
+              const defaultEmp = data?.employees[0]?.employee_code || '';
+              const defaultSkill = data?.skills[0]?.id || '';
+              handleOpenRate(defaultEmp, defaultSkill);
             }}
           >
             Rate Proficiency
@@ -283,7 +320,7 @@ export const SkillsMatrixPage: React.FC = () => {
                     </td>
 
                     {filteredSkills.map((s) => {
-                      const rating = emp.skills[s.id];
+                      const rating = emp.skills[s.id] || (s.name ? emp.skills[s.name] : undefined);
                       return (
                         <td key={s.id} className={styles.cell}>
                           {rating ? (

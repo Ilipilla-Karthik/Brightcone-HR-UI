@@ -109,8 +109,20 @@ export const AssignCourseModal: React.FC<AssignCourseModalProps> = ({
 
       const payload =
         mode === 'audience'
-          ? { audience: selectedAudience, due_date: dueDate || undefined }
-          : { employee_ids: selectedEmpCodes, due_date: dueDate || undefined };
+          ? {
+              audience: selectedAudience,
+              due_date: dueDate || undefined,
+              course_title: course.title,
+              category: (course as any).category || (course as any).category_name || 'General',
+              duration: course.duration,
+            }
+          : {
+              employee_ids: selectedEmpCodes,
+              due_date: dueDate || undefined,
+              course_title: course.title,
+              category: (course as any).category || (course as any).category_name || 'General',
+              duration: course.duration,
+            };
 
       const res = await assignCourse(course.id, payload);
       try {

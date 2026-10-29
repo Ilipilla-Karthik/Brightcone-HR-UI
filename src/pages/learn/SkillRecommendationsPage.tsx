@@ -10,7 +10,8 @@ import {
   Clock,
 } from 'lucide-react';
 import { RecommendationsResponse } from '../../services/types';
-import { getSkillRecommendations } from '../../services/api';
+import { getSkillRecommendations, api } from '../../services/api';
+import { addCustomAssignment } from '../../services/learnStorage';
 import { Toast } from '../../components/kit/Toast';
 import styles from './SkillRecommendationsPage.module.css';
 
@@ -52,6 +53,32 @@ export const SkillRecommendationsPage: React.FC = () => {
       growth: data.recommendations.filter((r) => r.rule_type === 'proficiency_growth').length,
     };
   }, [data]);
+
+  const handleShowInMyLearning = async (rec: any) => {
+    addCustomAssignment({
+      course_id: rec.course_id || rec.id,
+      course_title: rec.title,
+      training_type: rec.rule_type === 'mandatory_compliance' ? 'Security' : 'Course',
+      due_date: rec.due_date || null,
+      employee_ids: ['*'],
+      category: rec.category,
+      duration: rec.duration,
+    });
+
+    try {
+      await api.post(`/learn/courses/${rec.course_id || rec.id}/assign`, {
+        audience: 'Everyone',
+        due_date: rec.due_date || undefined,
+      });
+    } catch {}
+
+    navigate('/learn/my-learning', {
+      state: {
+        highlightCourseId: rec.course_id || rec.id,
+        highlightTitle: rec.title,
+      },
+    });
+  };
 
   return (
     <div className={styles.page}>
@@ -182,9 +209,10 @@ export const SkillRecommendationsPage: React.FC = () => {
                 </span>
                 <button
                   className={styles.cardAction}
-                  onClick={() => navigate('/learn/my-learning')}
+                  onClick={() => handleShowInMyLearning(rec)}
+                  title="Enroll and open in My Learning"
                 >
-                  View in My Learning
+                  Show in My Learning
                   <ArrowRight size={14} />
                 </button>
               </div>

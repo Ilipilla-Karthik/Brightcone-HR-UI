@@ -130,7 +130,7 @@ export const CandidateDetailModal: React.FC<CandidateModalProps> = ({
         <div className="flex items-center justify-between pb-3 border-b border-[var(--line)]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 text-white font-bold text-sm flex items-center justify-center">
-              {candidate.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+              {(candidate.full_name || 'Candidate').split(' ').filter(Boolean).map((n) => n[0]).join('').slice(0, 2)}
             </div>
             <div>
               <h3 className="text-base font-bold text-[var(--text)]">{candidate.full_name}</h3>

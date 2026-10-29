@@ -1,5 +1,6 @@
 import React from 'react';
 import { ic } from '../icons';
+import { getPendingApprovalsCount } from '../../services/suiteStorage';
 
 export interface NavItem {
   label: string;
@@ -317,12 +318,13 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
   // 9. Suite Module & Default
   if (p.startsWith('/suite')) {
     if (role === 'employee') return EMPLOYEE_PORTAL_NAV;
+    const pendingApprovals = getPendingApprovalsCount();
     return [
       {
         title: 'OVERVIEW',
         items: [
           { label: 'Suite dashboard', to: '/suite', icon: ic('grid', 15) },
-          { label: 'Approvals inbox', to: '/suite/approvals', icon: ic('inbox', 15) },
+          { label: 'Approvals inbox', to: '/suite/approvals', icon: ic('inbox', 15), badge: pendingApprovals > 0 ? String(pendingApprovals) : undefined },
           { label: 'Reports & analytics', to: '/suite/reports', icon: ic('chart', 15) },
         ],
       },
@@ -352,12 +354,13 @@ export const getSidebarSections = (p: string, role: 'hr_admin' | 'employee'): Na
   // 10. People Plus Portal (Default)
   if (role === 'employee') return EMPLOYEE_PORTAL_NAV;
 
+  const pendingApprovals = getPendingApprovalsCount();
   return [
     {
       title: 'EXECUTIVE SUITE',
       items: [
         { label: 'Suite dashboard', to: '/suite', icon: ic('grid', 15) },
-        { label: 'Approvals inbox', to: '/suite/approvals', icon: ic('inbox', 15) },
+        { label: 'Approvals inbox', to: '/suite/approvals', icon: ic('inbox', 15), badge: pendingApprovals > 0 ? String(pendingApprovals) : undefined },
         { label: 'Reports & analytics', to: '/suite/reports', icon: ic('chart', 15) },
       ],
     },

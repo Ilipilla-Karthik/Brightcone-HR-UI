@@ -173,7 +173,7 @@ export const AdminSuiteDashboard: React.FC<{ onOpenLauncher?: () => void }> = ({
             ].map((c, i) => (
               <div key={i} className="row py-2 flex items-center gap-3">
                 <span className="av w-7 h-7 rounded-full bg-pink-100 text-pink-600 text-xs font-bold flex items-center justify-center shrink-0">
-                  {c.name.split(' ').map(n => n[0]).join('')}
+                  {(c.name || 'Staff').split(' ').filter(Boolean).map(n => n[0]).join('')}
                 </span>
                 <div className="grow min-w-0">
                   <b className="text-xs text-[var(--text)] block truncate">{c.name}</b>

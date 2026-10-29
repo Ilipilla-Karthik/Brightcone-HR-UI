@@ -115,11 +115,12 @@ export const attendanceApi = {
   },
 
   async createAttendance(payload: CreateAttendancePayload): Promise<DailyAttendanceRecord> {
+    const code = (payload as any).employee_code || (payload.employee_id === 2 ? 'BC-1004' : payload.employee_id === 6 ? 'BC-1006' : `BC-100${payload.employee_id}`);
     const newRecord: DailyAttendanceRecord = {
       id: Date.now(),
       employee_id: payload.employee_id,
       employee_name: payload.employee_id === 2 ? 'Ananya Rao' : payload.employee_id === 6 ? 'Rahul Varma' : 'Team Member',
-      employee_email: 'staff@brightcone.ai',
+      employee_email: `${code.toLowerCase()}@brightcone.ai`,
       employee_department: 'Engineering',
       attendance_date: payload.date,
       attendance_status: payload.attendance_status,
@@ -137,10 +138,18 @@ export const attendanceApi = {
     } catch {}
 
     try {
-      return await request<DailyAttendanceRecord>('/v1/attendance', {
+      const saved = await request<any>('/v1/attendance', {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          employee_code: code,
+          date: payload.date,
+          attendance_status: payload.attendance_status,
+          in_time: payload.in_time,
+          out_time: payload.out_time,
+          work_mode: payload.notes || 'Office',
+        }),
       });
+      return { ...newRecord, id: saved?.id || newRecord.id };
     } catch {
       return newRecord;
     }

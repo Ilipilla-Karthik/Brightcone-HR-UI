@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../../services/api';
 import { fetchEmployees } from '../../services/peopleApi';
+import { getAccessControlOverrides, saveAccessControlOverride } from '../../services/suiteStorage';
 
 interface AdminUser {
   id: string;
@@ -25,14 +26,20 @@ export const AccessControlPage: React.FC = () => {
     fetchEmployees()
       .then(emps => {
         if (mounted) {
-          setUsers(emps.map(e => ({
-            id: e.employee_code,
-            name: e.full_name,
-            email: e.work_email,
-            role: e.department === 'Leadership' || e.department === 'People Ops' ? 'hr_admin' : e.manager_name ? 'employee' : 'manager',
-            status: e.status?.toLowerCase() === 'active' ? 'active' : 'inactive',
-            last_login: e.joined || 'Recent',
-          })));
+          const overrides = getAccessControlOverrides();
+          setUsers(emps.map(e => {
+            const ov = overrides[e.employee_code];
+            const defaultRole = e.department === 'Leadership' || e.department === 'People Ops' ? 'hr_admin' : e.manager_name ? 'employee' : 'manager';
+            const defaultStatus = e.status?.toLowerCase() === 'active' ? 'active' : 'inactive';
+            return {
+              id: e.employee_code,
+              name: e.full_name,
+              email: e.work_email,
+              role: ov?.role || defaultRole,
+              status: (ov?.status as any) || defaultStatus,
+              last_login: e.joined || 'Recent',
+            };
+          }));
         }
       })
       .catch(() => {
@@ -44,9 +51,10 @@ export const AccessControlPage: React.FC = () => {
 
   const toggleStatus = async (user: AdminUser) => {
     setToggling(user.id);
-    const next = user.status === 'active' ? 'inactive' : 'active';
-    try { await api.put(`/admin/users/${user.id}`, { status: next }); } catch { /* optimistic */ }
+    const next: 'active' | 'inactive' = user.status === 'active' ? 'inactive' : 'active';
+    saveAccessControlOverride(user.id, { status: next });
     setUsers(prev => prev.map(u => u.id === user.id ? { ...u, status: next } : u));
+    try { await api.put(`/employees/${user.id}`, { status: next === 'active' ? 'Active' : 'Inactive' }); } catch {}
     setToggling(null);
   };
 

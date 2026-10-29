@@ -170,8 +170,8 @@ export const TrainingCompletionPage: React.FC = () => {
     addToast('success', `Exported ${filteredRecords.length} records to CSV.`);
   };
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase();
+  const getInitials = (name?: string) => {
+    return (name || 'Employee').split(' ').filter(Boolean).map((n) => n[0]).slice(0, 2).join('').toUpperCase();
   };
 
   if (isLoading && !trackerData) {

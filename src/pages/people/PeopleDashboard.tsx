@@ -137,7 +137,7 @@ export const PeopleDashboard: React.FC = () => {
                 <div key={hire.employee_code} className="py-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="w-8 h-8 rounded-full bg-[#12A58E] text-white flex items-center justify-center font-bold text-xs shrink-0">
-                      {hire.full_name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                      {(hire.full_name || 'New Hire').split(' ').filter(Boolean).map((n) => n[0]).join('').slice(0, 2)}
                     </span>
                     <div>
                       <b className="block text-xs font-semibold text-[var(--text)]">{hire.full_name}</b>

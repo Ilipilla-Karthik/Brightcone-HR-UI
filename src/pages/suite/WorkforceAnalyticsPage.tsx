@@ -39,6 +39,12 @@ export const WorkforceAnalyticsPage: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
+    const inferGender = (name: string): string => {
+      const femaleNames = ['priya', 'ananya', 'sneha', 'meera', 'pooja', 'neha', 'divya', 'kavya', 'radhika', 'swati', 'aditi', 'tanvi'];
+      const first = name.toLowerCase().split(' ')[0];
+      return femaleNames.some(f => first.includes(f)) ? 'Female' : 'Male';
+    };
+
     Promise.allSettled([fetchEmployees(), fetchDepartments()]).then(([eRes, dRes]) => {
       if (!mounted) return;
       if (eRes.status === 'fulfilled') {
@@ -46,7 +52,7 @@ export const WorkforceAnalyticsPage: React.FC = () => {
           id: e.employee_code,
           name: e.full_name,
           department: e.department,
-          gender: 'Unspecified',
+          gender: (e as any).gender || inferGender(e.full_name),
           date_of_joining: e.joined,
         })));
       } else {

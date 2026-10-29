@@ -1,39 +1,60 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { LeaveType } from '../../types';
-import { INITIAL_LEAVE_TYPES } from '../../services/shiftApi';
+import { request } from '../../services/shiftApi';
 import { LeaveTypesPage } from '../LeaveTypesPage';
 
-const STORAGE_KEY = 'brightcone_leave_types';
-
 export const LeaveTypesAdminPage: React.FC = () => {
-  const [types, setTypes] = useState<LeaveType[]>(() => {
+  const [types, setTypes] = useState<LeaveType[]>([]);
+
+  const loadData = useCallback(async () => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : INITIAL_LEAVE_TYPES;
-    } catch {
-      return INITIAL_LEAVE_TYPES;
-    }
-  });
+      const data = await request<any[]>('/v1/time/leave-types');
+      if (Array.isArray(data)) {
+        setTypes(data);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleAdd = async (t: any) => {
-    const newTypes = [...types, { id: Date.now(), ...t }];
-    setTypes(newTypes);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(newTypes)); } catch {}
-    return true;
+    try {
+      await request('/v1/time/leave-types', {
+        method: 'POST',
+        body: JSON.stringify(t),
+      });
+      await loadData();
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleUpdate = async (id: number, t: any) => {
-    const updated = types.map((item) => (item.id === id ? { ...item, ...t } : item));
-    setTypes(updated);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); } catch {}
-    return true;
+    try {
+      await request(`/v1/time/leave-types/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(t),
+      });
+      await loadData();
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleDelete = async (id: number) => {
-    const remaining = types.filter((item) => item.id !== id);
-    setTypes(remaining);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(remaining)); } catch {}
-    return true;
+    try {
+      await request(`/v1/time/leave-types/${id}`, {
+        method: 'DELETE',
+      });
+      await loadData();
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   return (

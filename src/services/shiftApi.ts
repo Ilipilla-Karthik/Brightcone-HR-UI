@@ -23,7 +23,6 @@ import {
   INITIAL_LEAVE_TYPES,
   INITIAL_LEAVE_QUOTAS,
   INITIAL_SHIFTS,
-  INITIAL_SWAP_REQUESTS,
   DEFAULT_EMPLOYEES_LIST,
 } from './shiftMockData';
 
@@ -59,8 +58,6 @@ export async function request<T>(endpoint: string, options?: RequestInit): Promi
   return res.json();
 }
 
-const SWAP_STORAGE_KEY = 'brightcone_swap_requests';
-
 export const shiftApi = {
   async fetchEmployees(): Promise<ApiResponse<Employee[]>> {
     try {
@@ -84,11 +81,8 @@ export const shiftApi = {
   async fetchShifts(): Promise<ApiResponse<Shift[]>> {
     try {
       const data = await request<any[]>('/v1/shifts');
-      const list = Array.isArray(data) ? data : [];
-      return { data: list.map((s: any) => ({
-        id: s.id,
-        name: s.name,
-        code: s.code,
+      return { data: (data || []).map((s: any) => ({
+        id: s.id, name: s.name, code: s.code,
         start_time: s.startTime || s.start_time || '09:00',
         end_time: s.endTime || s.end_time || '18:00',
         break_duration_minutes: s.breakDurationMinutes || s.break_duration_minutes || 60,
@@ -119,26 +113,28 @@ export const shiftApi = {
   async fetchHolidays(): Promise<ApiResponse<Holiday[]>> {
     try {
       const data = await request<any[]>('/v1/holidays');
-      const list = Array.isArray(data) ? data : [];
-      return { data: list.map((h: any) => ({
-        id: h.id,
-        name: h.name,
-        holiday_date: h.holidayDate || h.holiday_date,
-        description: h.description,
-        applicable_location: h.applicableLocation || h.applicable_location || null,
+      return { data: (data || []).map((h: any) => ({
+        id: h.id, name: h.name, holiday_date: h.holidayDate || h.holiday_date,
+        description: h.description, applicable_location: h.applicableLocation || h.applicable_location || null,
         is_recurring: h.isRecurring ?? h.is_recurring ?? true,
       })), error: null };
-    } catch {
-      return { data: [], error: null };
-    }
+    } catch { return { data: [], error: null }; }
   },
 
   async fetchLeaveTypes(): Promise<ApiResponse<LeaveType[]>> {
-    return { data: INITIAL_LEAVE_TYPES, error: null };
+    try {
+      const data = await request<any[]>('/v1/time/leave-types');
+      const list = Array.isArray(data) ? data : [];
+      return { data: list.length > 0 ? list : INITIAL_LEAVE_TYPES, error: null };
+    } catch { return { data: INITIAL_LEAVE_TYPES, error: null }; }
   },
 
   async fetchLeaveQuotas(): Promise<ApiResponse<LeaveQuota[]>> {
-    return { data: INITIAL_LEAVE_QUOTAS, error: null };
+    try {
+      const data = await request<any[]>('/v1/time/leave-quotas');
+      const list = Array.isArray(data) ? data : [];
+      return { data: list.length > 0 ? list : INITIAL_LEAVE_QUOTAS, error: null };
+    } catch { return { data: INITIAL_LEAVE_QUOTAS, error: null }; }
   },
 
   async fetchLeaveBalances(employeeId: number, year = 2026): Promise<ApiResponse<LeaveBalanceResponse>> {
@@ -148,10 +144,8 @@ export const shiftApi = {
         year,
         balances: [
           { leave_type_id: 1, leave_type_name: 'Casual Leave', leave_type_code: 'CL', is_paid: true, entitled_days: 12, consumed_days: 0, pending_days: 0, remaining_days: 12 },
-          { leave_type_id: 2, leave_type_name: 'Sick Leave', leave_type_code: 'SL', is_paid: true, entitled_days: 12, consumed_days: 0, pending_days: 0, remaining_days: 12 },
-          { leave_type_id: 4, leave_type_name: 'Maternity Leave', leave_type_code: 'ML', is_paid: true, entitled_days: 182, consumed_days: 0, pending_days: 0, remaining_days: 182 },
-          { leave_type_id: 5, leave_type_name: 'Leave Without Pay', leave_type_code: 'LWP', is_paid: false, entitled_days: 12, consumed_days: 0, pending_days: 0, remaining_days: 0 },
-          { leave_type_id: 6, leave_type_name: 'Bereavement Leave', leave_type_code: 'BL', is_paid: true, entitled_days: 12, consumed_days: 0, pending_days: 0, remaining_days: 12 },
+          { leave_type_id: 2, leave_type_name: 'Sick Leave', leave_type_code: 'SL', is_paid: true, entitled_days: 10, consumed_days: 0, pending_days: 0, remaining_days: 10 },
+          { leave_type_id: 3, leave_type_name: 'Privilege Leave', leave_type_code: 'PL', is_paid: true, entitled_days: 18, consumed_days: 5, pending_days: 0, remaining_days: 13 },
         ],
       },
       error: null,
@@ -159,47 +153,72 @@ export const shiftApi = {
   },
 
   async fetchLeaveRequests(_params?: any): Promise<ApiResponse<LeaveRequest[]>> {
-    return { data: [], error: null };
+    try {
+      const data = await request<any[]>('/v1/leave');
+      const list = Array.isArray(data) ? data : [];
+      const mapped: LeaveRequest[] = list.map((r: any, idx: number) => ({
+        id: r.id || idx + 1,
+        employee_id: r.employee_code === 'BC-1004' ? 2 : r.employee_code === 'BC-1006' ? 6 : 1,
+        employee_name: r.employee_name || 'Rahul Varma',
+        leave_type_id: 1,
+        leave_type_name: r.leave_type || 'Casual Leave',
+        leave_type_code: r.leave_type?.slice(0, 4) || 'CL',
+        start_date: r.from_date || r.fromDate,
+        end_date: r.to_date || r.toDate,
+        reason: r.reason || '',
+        chargeable_days: parseFloat(r.days) || 1,
+        status: (r.status?.toUpperCase()?.includes('APPROV') ? 'APPROVED' : r.status?.toUpperCase()?.includes('REJECT') ? 'REJECTED' : 'PENDING') as any,
+      }));
+      return { data: mapped, error: null };
+    } catch {
+      return { data: [], error: null };
+    }
   },
 
   async createLeaveRequest(payload: CreateLeaveRequestPayload): Promise<any> {
-    return { id: 1, ...payload, status: 'PENDING' };
+    const emp = (await this.fetchEmployees()).data?.find(e => e.id === payload.employee_id);
+    const body = {
+      employee_code: emp?.pid || (payload.employee_id === 2 ? 'BC-1004' : payload.employee_id === 6 ? 'BC-1006' : 'BC-1038'),
+      employee_name: emp?.name || 'Rahul Varma',
+      leave_type: (payload as any).leave_type_code || 'CL',
+      from_date: payload.start_date,
+      to_date: payload.end_date,
+      days: String((payload as any).chargeable_days || 1),
+      reason: payload.reason || 'Leave requested',
+    };
+    return request('/v1/leave/apply', { method: 'POST', body: JSON.stringify(body) });
   },
 
-  async approveLeaveRequest(id: number, payload?: any): Promise<any> {
-    return { id, ...payload, status: 'APPROVED' };
+  async approveLeaveRequest(id: number, _payload?: any): Promise<any> {
+    return request(`/v1/leave/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'Approved' }) });
   },
 
-  async rejectLeaveRequest(id: number, payload?: any): Promise<any> {
-    return { id, ...payload, status: 'REJECTED' };
+  async rejectLeaveRequest(id: number, _payload?: any): Promise<any> {
+    return request(`/v1/leave/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'Rejected' }) });
   },
 
-  async cancelLeaveRequest(_id: number): Promise<boolean> {
+  async cancelLeaveRequest(id: number): Promise<boolean> {
+    await request(`/v1/leave/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'Cancelled' }) }).catch(() => {});
     return true;
   },
 
   async calculateLeaveDays(payload: any): Promise<ApiResponse<LeaveCalculationResult>> {
-    const s = new Date(payload.start_date);
-    const e = new Date(payload.end_date);
-    const diff = Math.max(1, Math.round((e.getTime() - s.getTime()) / (1000 * 3600 * 24)) + 1);
-    const chargeable = payload.is_half_day ? 0.5 : diff;
-    return {
-      data: {
-        start_date: payload.start_date,
-        end_date: payload.end_date,
-        total_calendar_days: diff,
-        chargeable_days: chargeable,
-        weekend_days_count: 0,
-        weekend_days: 0,
-        holidays_count: 0,
-        holiday_days: 0,
-        working_days: diff,
-        policy_applied: 'Standard Policy',
-        leave_type_code: payload.leave_type_code,
-        breakdown: [],
-      },
-      error: null,
-    };
+    try {
+      const res = await request<LeaveCalculationResult>('/v1/time/leave-calculator', { method: 'POST', body: JSON.stringify(payload) });
+      return { data: res, error: null };
+    } catch {
+      const s = new Date(payload.start_date), e = new Date(payload.end_date);
+      const diff = Math.max(1, Math.round((e.getTime() - s.getTime()) / (1000 * 3600 * 24)) + 1);
+      return {
+        data: {
+          start_date: payload.start_date, end_date: payload.end_date, total_calendar_days: diff,
+          chargeable_days: payload.is_half_day ? 0.5 : diff, weekend_days_count: 0, weekend_days: 0,
+          holidays_count: 0, holiday_days: 0, working_days: diff, policy_applied: 'Standard Policy',
+          leave_type_code: payload.leave_type_code, breakdown: [],
+        },
+        error: null,
+      };
+    }
   },
 
   async countLeaveDays(payload: CountLeaveDaysRequest): Promise<any> {
@@ -208,30 +227,46 @@ export const shiftApi = {
   },
 
   async fetchWfhRequests(_params?: any): Promise<ApiResponse<WorkFromHomeRequest[]>> {
-    return { data: [], error: null };
+    try {
+      const data = await request<any[]>('/v1/time/wfh');
+      return { data: (data || []).map((w: any, idx: number) => ({
+        id: Number(String(w.id).replace(/\D/g, '')) || idx + 1,
+        employee_id: 1,
+        employee_name: w.employee_name || 'Rahul Varma',
+        start_date: w.dates || new Date().toISOString().slice(0, 10),
+        end_date: w.dates || new Date().toISOString().slice(0, 10),
+        reason: w.reason || '',
+        status: (w.status || 'PENDING') as any,
+      })), error: null };
+    } catch {
+      return { data: [], error: null };
+    }
   },
 
   async createWfhRequest(payload: CreateWfhPayload): Promise<any> {
-    return { id: 1, ...payload, status: 'PENDING' };
+    const emp = (await this.fetchEmployees()).data?.find(e => e.id === payload.employee_id);
+    return request('/v1/time/wfh', {
+      method: 'POST',
+      body: JSON.stringify({
+        employee_id: emp?.pid || 'BC-1038',
+        employee_name: emp?.name || 'Rahul Varma',
+        dates: payload.start_date || new Date().toISOString().slice(0, 10),
+        reason: payload.reason,
+      }),
+    });
   },
 
-  async approveWfhRequest(id: number, payload?: any): Promise<any> {
-    return { id, ...payload, status: 'APPROVED' };
+  async approveWfhRequest(id: string | number, _payload?: any): Promise<any> {
+    return request(`/v1/time/wfh/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'Approved' }) });
   },
 
-  async rejectWfhRequest(id: number, payload?: any): Promise<any> {
-    return { id, ...payload, status: 'REJECTED' };
+  async rejectWfhRequest(id: string | number, _payload?: any): Promise<any> {
+    return request(`/v1/time/wfh/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'Rejected' }) });
   },
 
   async fetchCompOffBalance(employeeId: number): Promise<ApiResponse<CompOffBalance>> {
     return {
-      data: {
-        employee_id: employeeId,
-        available_days: 0.0,
-        total_earned_days: 0.0,
-        used_days: 0.0,
-        pending_days: 0.0,
-      },
+      data: { employee_id: employeeId, available_days: 2.0, total_earned_days: 3.0, used_days: 1.0, pending_days: 0.0 },
       error: null,
     };
   },
@@ -241,7 +276,20 @@ export const shiftApi = {
   },
 
   async fetchCompOffRequests(_params?: any): Promise<ApiResponse<CompOffRequest[]>> {
-    return { data: [], error: null };
+    try {
+      const data = await request<any[]>('/v1/time/compoff');
+      return { data: (data || []).map((c: any, idx: number) => ({
+        id: Number(String(c.id).replace(/\D/g, '')) || idx + 1,
+        employee_id: 1,
+        employee_name: c.employee_name || 'Rahul Varma',
+        requested_date: c.worked_date || c.comp_off_date || new Date().toISOString().slice(0, 10),
+        days_requested: 1,
+        reason: c.reason || '',
+        status: (c.status || 'PENDING') as any,
+      })), error: null };
+    } catch {
+      return { data: [], error: null };
+    }
   },
 
   async fetchCompOffEntitlements(_employeeId?: number): Promise<ApiResponse<CompOffEntitlement[]>> {
@@ -253,94 +301,85 @@ export const shiftApi = {
   },
 
   async createCompOffRequest(payload: CreateCompOffRequestPayload): Promise<any> {
-    return { id: 1, ...payload, status: 'PENDING' };
+    const emp = (await this.fetchEmployees()).data?.find(e => e.id === payload.employee_id);
+    return request('/v1/time/compoff', {
+      method: 'POST',
+      body: JSON.stringify({
+        employee_id: emp?.pid || 'BC-1038',
+        employee_name: emp?.name || 'Rahul Varma',
+        worked_date: payload.requested_date || new Date().toISOString().slice(0, 10),
+        comp_off_date: payload.requested_date || new Date().toISOString().slice(0, 10),
+        reason: payload.reason,
+      }),
+    });
   },
 
-  async approveCompOffRequest(id: number, payload?: any): Promise<any> {
-    return { id, ...payload, status: 'APPROVED' };
+  async approveCompOffRequest(id: string | number, _payload?: any): Promise<any> {
+    return request(`/v1/time/compoff/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'Approved' }) });
   },
 
-  async rejectCompOffRequest(id: number, payload?: any): Promise<any> {
-    return { id, ...payload, status: 'REJECTED' };
+  async rejectCompOffRequest(id: string | number, _payload?: any): Promise<any> {
+    return request(`/v1/time/compoff/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'Rejected' }) });
   },
 
   async fetchSwapRequests(params?: any): Promise<ApiResponse<SwapRequestDetail[]>> {
-    let list: SwapRequestDetail[] = INITIAL_SWAP_REQUESTS;
     try {
-      const raw = localStorage.getItem(SWAP_STORAGE_KEY);
-      if (raw) {
-        list = JSON.parse(raw);
-      } else {
-        localStorage.setItem(SWAP_STORAGE_KEY, JSON.stringify(INITIAL_SWAP_REQUESTS));
+      const data = await request<any[]>('/v1/time/swaps');
+      let list: SwapRequestDetail[] = Array.isArray(data) ? data.map((s: any) => ({
+        id: Number(s.id),
+        requester_id: Number(s.requester_id) || 7,
+        requester_name: s.requester_name || 'Rahul Varma',
+        requester_email: `${(s.requester_name || 'emp').toLowerCase().replace(/\s+/g, '.')}@brightcone.ai`,
+        source_shift_code: s.original_shift || 'GEN',
+        request_date: s.original_date || new Date().toISOString().slice(0, 10),
+        target_employee_id: Number(s.target_employee_id) || 2,
+        target_employee_name: s.target_employee_name || 'Ananya Rao',
+        target_shift_code: s.target_shift || 'MORN',
+        target_date: s.original_date || new Date().toISOString().slice(0, 10),
+        reason: s.reason || '',
+        status: (s.status?.toUpperCase()?.includes('APPROV') ? 'APPROVED' : s.status?.toUpperCase()?.includes('REJECT') ? 'REJECTED' : 'PENDING') as any,
+        created_at: s.created_at || new Date().toISOString(),
+      })) : [];
+
+      if (params?.status && params.status !== 'ALL') {
+        list = list.filter((r) => r.status === params.status);
       }
-    } catch {}
-
-    if (params?.status && params.status !== 'ALL') {
-      list = list.filter((r) => r.status === params.status);
+      return { data: list, error: null };
+    } catch {
+      return { data: [], error: null };
     }
-    if (params?.employee_id) {
-      list = list.filter((r) => r.requester_id === params.employee_id || r.target_employee_id === params.employee_id);
-    }
-
-    return { data: list, error: null };
   },
 
   async createSwapRequest(payload: CreateSwapPayload): Promise<any> {
-    const raw = localStorage.getItem(SWAP_STORAGE_KEY);
-    const list: SwapRequestDetail[] = raw ? JSON.parse(raw) : INITIAL_SWAP_REQUESTS;
-    const emps = DEFAULT_EMPLOYEES_LIST;
+    const emps = (await this.fetchEmployees()).data || [];
     const reqEmp = emps.find(e => e.id === payload.requester_id);
     const tgtEmp = emps.find(e => e.id === payload.target_employee_id);
-
-    const newReq: SwapRequestDetail = {
-      id: Date.now(),
-      requester_id: payload.requester_id,
-      requester_name: reqEmp ? reqEmp.name : 'Rahul Varma',
-      requester_email: reqEmp ? reqEmp.email : 'rahul.varma@brightcone.ai',
-      source_shift_code: 'GEN',
-      request_date: payload.request_date,
-      target_employee_id: payload.target_employee_id,
-      target_employee_name: tgtEmp ? tgtEmp.name : 'Ananya Rao',
-      target_shift_code: 'MORN',
-      target_date: payload.target_date,
-      reason: payload.reason,
-      status: 'PENDING',
-      created_at: new Date().toISOString(),
-    };
-    const updated = [newReq, ...list];
-    try {
-      localStorage.setItem(SWAP_STORAGE_KEY, JSON.stringify(updated));
-    } catch {}
-    return newReq;
+    return request('/v1/time/swaps', {
+      method: 'POST',
+      body: JSON.stringify({
+        requester_id: payload.requester_id,
+        requester_name: reqEmp ? reqEmp.name : 'Rahul Varma',
+        requester_code: reqEmp?.pid || 'BC-1038',
+        target_employee_id: payload.target_employee_id,
+        target_employee_name: tgtEmp ? tgtEmp.name : 'Ananya Rao',
+        original_date: payload.request_date,
+        original_shift: 'General Shift (09:30 - 18:30)',
+        target_shift: 'Morning Shift (06:00 - 15:00)',
+        reason: payload.reason,
+      }),
+    });
   },
 
-  async approveSwapRequest(id: number, payload?: any): Promise<any> {
-    const raw = localStorage.getItem(SWAP_STORAGE_KEY);
-    const list: SwapRequestDetail[] = raw ? JSON.parse(raw) : INITIAL_SWAP_REQUESTS;
-    const updated = list.map((r) => (r.id === id ? { ...r, status: 'APPROVED' as const, ...payload } : r));
-    try {
-      localStorage.setItem(SWAP_STORAGE_KEY, JSON.stringify(updated));
-    } catch {}
-    return { id, status: 'APPROVED' };
+  async approveSwapRequest(id: number, _payload?: any): Promise<any> {
+    return request(`/v1/time/swaps/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'Approved' }) });
   },
 
-  async rejectSwapRequest(id: number, payload?: any): Promise<any> {
-    const raw = localStorage.getItem(SWAP_STORAGE_KEY);
-    const list: SwapRequestDetail[] = raw ? JSON.parse(raw) : INITIAL_SWAP_REQUESTS;
-    const updated = list.map((r) => (r.id === id ? { ...r, status: 'REJECTED' as const, ...payload } : r));
-    try {
-      localStorage.setItem(SWAP_STORAGE_KEY, JSON.stringify(updated));
-    } catch {}
-    return { id, status: 'REJECTED' };
+  async rejectSwapRequest(id: number, _payload?: any): Promise<any> {
+    return request(`/v1/time/swaps/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status: 'Rejected' }) });
   },
 
   async cancelSwapRequest(id: number): Promise<boolean> {
-    const raw = localStorage.getItem(SWAP_STORAGE_KEY);
-    const list: SwapRequestDetail[] = raw ? JSON.parse(raw) : INITIAL_SWAP_REQUESTS;
-    const updated = list.filter((r) => r.id !== id);
-    try {
-      localStorage.setItem(SWAP_STORAGE_KEY, JSON.stringify(updated));
-    } catch {}
+    await request(`/v1/time/swaps/${id}`, { method: 'DELETE' }).catch(() => {});
     return true;
   },
 

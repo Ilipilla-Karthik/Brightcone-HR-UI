@@ -1,25 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
-
-interface AuditRecord {
-  id: string;
-  timestamp: string;
-  actorName: string;
-  actorEmail: string;
-  actorRole: string;
-  action: string;
-  category: 'Security' | 'Payroll' | 'People' | 'Sign' | 'Access';
-  target: string;
-  ipAddress: string;
-  status: 'Success' | 'Warning' | 'Failed';
-}
+import { AuditRecord, getAuditLogs } from '../../services/suiteStorage';
 
 export const AuditLogPage: React.FC = () => {
-  const [logs] = useState<AuditRecord[]>([]);
+  const [logs, setLogs] = useState<AuditRecord[]>(() => getAuditLogs());
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [toastMsg, setToastMsg] = useState('');
+
+  useEffect(() => {
+    setLogs(getAuditLogs());
+  }, []);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);

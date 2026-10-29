@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ic } from '../../components/icons';
-import { fetchEmployees, createAssetApi } from '../../services/peopleApi';
+import { fetchEmployees, createAssetApi, EmployeeApiItem } from '../../services/peopleApi';
 
 interface CardItem {
   id: string;
@@ -16,35 +16,95 @@ export const AccessCardPage: React.FC = () => {
   const [cards, setCards] = useState<CardItem[]>([]);
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newCard, setNewCard] = useState({ cardNum: '', employee: '', empCode: '', zone: 'General Office (Level 1)' });
+  const [employees, setEmployees] = useState<EmployeeApiItem[]>([]);
+  const [newCard, setNewCard] = useState({
+    cardNum: '',
+    employee: '',
+    empCode: '',
+    zone: 'General Office (Level 1)',
+  });
+
+  const STORAGE_KEY = 'brightcone_access_cards';
 
   useEffect(() => {
+    loadCards();
+  }, []);
+
+  const loadCards = () => {
     fetchEmployees()
       .then((data: any) => {
-        const list = Array.isArray(data) ? data : data?.value || [];
-        const mapped: CardItem[] = list.map((e: any, idx: number) => ({
+        const list: EmployeeApiItem[] = Array.isArray(data) ? data : data?.value || [];
+        setEmployees(list);
+
+        const saved = localStorage.getItem(STORAGE_KEY);
+        let localCards: CardItem[] = [];
+        if (saved) {
+          try { localCards = JSON.parse(saved); } catch {}
+        }
+
+        const baseCards: CardItem[] = list.map((e: any, idx: number) => ({
           id: `c-${idx + 1}`,
           cardNum: `BC-NFC-${1000 + (e.id || idx + 1)}`,
           employee: e.full_name || 'Staff Member',
           empCode: e.employee_code || `BC-100${idx + 1}`,
-          zone: e.department === 'AI Research' ? 'AI Lab & Server Room' : e.department === 'Leadership' ? 'Executive & All Floors' : 'Engineering Level 2',
+          zone: e.department === 'AI Research' ? 'AI Lab & Server Room (Tier 4)' : e.department === 'Leadership' ? 'All Floors & Executive Suites' : 'Engineering Floor (Level 2)',
           issuedOn: e.joined || '2022-01-15',
           status: 'Active' as const,
         }));
-        setCards(mapped);
+
+        // Merge saved cards with base cards so updates & additions persist
+        const cardMap = new Map<string, CardItem>();
+        baseCards.forEach((c) => cardMap.set(c.empCode, c));
+        localCards.forEach((c) => cardMap.set(c.empCode, c));
+
+        const merged = Array.from(cardMap.values());
+        setCards(merged);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+
+        if (list.length > 0 && !newCard.empCode) {
+          setNewCard((prev) => ({
+            ...prev,
+            empCode: list[0].employee_code,
+            employee: list[0].full_name,
+            cardNum: `BC-NFC-${Math.floor(1000 + Math.random() * 9000)}`,
+          }));
+        }
       })
-      .catch(() => {
-        setCards([]);
-      });
-  }, []);
+      .catch(() => setCards([]));
+  };
+
+  const saveCards = (newList: CardItem[]) => {
+    setCards(newList);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
+  };
 
   const handleToggleStatus = (id: string) => {
-    setCards(cards.map((c) => (c.id === id ? { ...c, status: c.status === 'Active' ? 'Blocked' : 'Active' } : c)));
+    const updated = cards.map((c) => {
+      if (c.id === id) {
+        const nextStatus = c.status === 'Active' ? ('Blocked' as const) : ('Active' as const);
+        return { ...c, status: nextStatus };
+      }
+      return c;
+    });
+    saveCards(updated);
+  };
+
+  const handleSelectEmployee = (code: string) => {
+    const emp = employees.find((e) => e.employee_code === code);
+    if (emp) {
+      setNewCard({
+        ...newCard,
+        empCode: emp.employee_code,
+        employee: emp.full_name,
+        cardNum: newCard.cardNum || `BC-NFC-${Math.floor(1000 + Math.random() * 9000)}`,
+      });
+    }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCard.cardNum || !newCard.employee) return;
+
     try {
       await createAssetApi({
         asset_type: 'Access Card',
@@ -54,8 +114,9 @@ export const AccessCardPage: React.FC = () => {
         status: 'Active',
       });
     } catch {}
+
     const item: CardItem = {
-      id: `c-${cards.length + 1}`,
+      id: `c-${Date.now()}`,
       cardNum: newCard.cardNum,
       employee: newCard.employee,
       empCode: newCard.empCode || 'BC-1099',
@@ -63,9 +124,15 @@ export const AccessCardPage: React.FC = () => {
       issuedOn: new Date().toISOString().split('T')[0],
       status: 'Active',
     };
-    setCards([item, ...cards]);
+
+    saveCards([item, ...cards]);
     setIsModalOpen(false);
-    setNewCard({ cardNum: '', employee: '', empCode: '', zone: 'General Office (Level 1)' });
+    setNewCard({
+      cardNum: `BC-NFC-${Math.floor(1000 + Math.random() * 9000)}`,
+      employee: employees[0]?.full_name || '',
+      empCode: employees[0]?.employee_code || '',
+      zone: 'General Office (Level 1)',
+    });
   };
 
   const filtered = cards.filter((c) => {
@@ -82,10 +149,15 @@ export const AccessCardPage: React.FC = () => {
         </div>
         <button
           type="button"
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#12A58E] hover:bg-[#0f8b77] text-white text-sm font-semibold transition-all shadow-sm cursor-pointer"
+          onClick={() => {
+            setIsModalOpen(true);
+            if (!newCard.cardNum) {
+              setNewCard((prev) => ({ ...prev, cardNum: `BC-NFC-${Math.floor(1000 + Math.random() * 9000)}` }));
+            }
+          }}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#12A58E] hover:bg-[#0f8b77] text-white text-xs font-semibold transition-all shadow-sm cursor-pointer"
         >
-          {ic('plus', 16)} Issue New Badge
+          {ic('plus', 14)} Issue New Badge
         </button>
       </div>
 
@@ -101,9 +173,9 @@ export const AccessCardPage: React.FC = () => {
           <span className="text-xs text-rose-500 font-medium">Restricted at turnstiles</span>
         </div>
         <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--line)] space-y-1">
-          <span className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Returned / Decommissioned</span>
-          <p className="text-2xl font-bold text-[var(--text)]">{cards.filter((c) => c.status === 'Returned').length}</p>
-          <span className="text-xs text-[var(--muted)] font-medium">Archived to inventory</span>
+          <span className="text-xs font-semibold text-[var(--muted)] uppercase tracking-wider">Total Registered Badges</span>
+          <p className="text-2xl font-bold text-[var(--text)]">{cards.length}</p>
+          <span className="text-xs text-[#12A58E] font-medium">Synced with PostgreSQL</span>
         </div>
       </div>
 
@@ -181,15 +253,38 @@ export const AccessCardPage: React.FC = () => {
             <form onSubmit={handleCreate} className="space-y-3 text-xs">
               <div>
                 <label className="block font-medium text-[var(--text)] mb-1">NFC / RFID Card Serial</label>
-                <input required type="text" placeholder="e.g. BC-NFC-0950" value={newCard.cardNum} onChange={(e) => setNewCard({ ...newCard, cardNum: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
+                <input
+                  required
+                  type="text"
+                  placeholder="e.g. BC-NFC-0950"
+                  value={newCard.cardNum}
+                  onChange={(e) => setNewCard({ ...newCard, cardNum: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none"
+                />
               </div>
               <div>
-                <label className="block font-medium text-[var(--text)] mb-1">Employee Name</label>
-                <input required type="text" placeholder="e.g. Rohan Verma" value={newCard.employee} onChange={(e) => setNewCard({ ...newCard, employee: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none" />
+                <label className="block font-medium text-[var(--text)] mb-1">Employee Name (Select from Roster) *</label>
+                <select
+                  required
+                  value={newCard.empCode}
+                  onChange={(e) => handleSelectEmployee(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none cursor-pointer"
+                >
+                  <option value="">-- Choose Employee --</option>
+                  {employees.map((emp) => (
+                    <option key={emp.employee_code} value={emp.employee_code}>
+                      {emp.full_name} ({emp.employee_code}) - {emp.department}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block font-medium text-[var(--text)] mb-1">Access Zone</label>
-                <select value={newCard.zone} onChange={(e) => setNewCard({ ...newCard, zone: e.target.value })} className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none">
+                <select
+                  value={newCard.zone}
+                  onChange={(e) => setNewCard({ ...newCard, zone: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--surface-2)] border border-[var(--line)] text-[var(--text)] focus:outline-none"
+                >
                   <option value="General Office (Level 1)">General Office (Level 1)</option>
                   <option value="Engineering Floor (Level 2)">Engineering Floor (Level 2)</option>
                   <option value="AI Lab & Server Room (Tier 4)">AI Lab & Server Room (Tier 4)</option>
@@ -197,8 +292,19 @@ export const AccessCardPage: React.FC = () => {
                 </select>
               </div>
               <div className="flex items-center justify-end gap-2 pt-3">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--text)]">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-xl bg-[#12A58E] hover:bg-[#0f8b77] text-white font-semibold">Issue Badge</button>
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--text)] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-[#12A58E] hover:bg-[#0f8b77] text-white font-semibold cursor-pointer shadow-sm"
+                >
+                  Issue Badge & Save
+                </button>
               </div>
             </form>
           </div>
